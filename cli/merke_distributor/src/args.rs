@@ -32,7 +32,7 @@ pub struct ConfigOverride {
     global = true,
     short,
     long,
-    default_value_t = voter::id().to_string()
+    default_value_t = merkle_distributor::id().to_string()
     )]
     pub program_id: String,
 }
