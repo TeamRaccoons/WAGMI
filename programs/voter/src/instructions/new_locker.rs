@@ -47,7 +47,6 @@ impl<'info> NewLocker<'info> {
         locker.bump = bump;
         locker.params = params;
         locker.expiration = expiration;
-        locker.phase = Phase::InitialPhase;
 
         emit!(NewLockerEvent {
             governor: locker.governor,

@@ -4,14 +4,26 @@
 use crate::*;
 use num_traits::ToPrimitive;
 
+
 impl Locker {
+    pub fn get_current_phase(&self) -> Result<Phase>{
+        let now = Clock::get()?.unix_timestamp;
+        if self.expiration > now {
+            return Ok(Phase::InitialPhase);
+        }
+        Ok(Phase::TokenLaunchPhase)
+    }
     /// Calculates the amount of voting power an [Escrow] has.
     pub fn calculate_voter_power(&self, escrow: &Escrow, now: i64) -> Option<u64> {
         // invalid `now` argument, should never happen.
         if now == 0 {
             return None;
         }
-        if self.phase == Phase::InitialPhase {
+        let phase: Phase = match self.get_current_phase() {
+            Ok(value) => value,
+            Err(_) => return  None,
+        };
+        if phase == Phase::InitialPhase {
             if self.expiration <= now {
                 return Some(0);
             }

@@ -39,7 +39,8 @@ impl<'info> Validate<'info> for ChangeLockerExpiration<'info> {
         assert_keys_eq!(self.governor, self.locker.governor, "governor mismatch");
         assert_keys_eq!(self.smart_wallet, self.governor.smart_wallet);
         // only allow in initial phase
-        assert_eq!(self.locker.phase, Phase::InitialPhase);
+        let phase = self.locker.get_current_phase()?;
+        assert_eq!(phase, Phase::InitialPhase);
         Ok(())
     }
 }

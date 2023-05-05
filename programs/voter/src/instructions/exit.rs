@@ -73,7 +73,8 @@ impl<'info> Validate<'info> for Exit<'info> {
         assert_keys_eq!(self.escrow.tokens, self.escrow_tokens);
         assert_keys_neq!(self.escrow_tokens, self.destination_tokens);
 
-        let expiration = if self.locker.phase == Phase::InitialPhase {
+        let phase = self.locker.get_current_phase()?;
+        let expiration = if phase == Phase::InitialPhase {
             self.locker.expiration
         } else {
             self.escrow.escrow_ends_at
