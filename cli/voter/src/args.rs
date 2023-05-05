@@ -99,6 +99,16 @@ pub enum CliCommand {
         #[clap(long)]
         new_delegate: Pubkey,
     },
+    ViewLocker {
+        #[clap(long)]
+        locker: Pubkey,
+    },
+    ViewEscrow {
+        #[clap(long)]
+        locker: Pubkey,
+        #[clap(long)]
+        owner: Pubkey,
+    },
 }
 
 #[derive(Parser, Debug)]

@@ -14,5 +14,3 @@ anchor-spl = "0.26.0"
 anchor-client = "0.26.0"
 anyhow = "1.0.57"
 solana-program = "1.14.12"
-# spl-token = { version = "3.5.0", features = ["no-entrypoint"] }
-# spl-associated-token-account = { version = "1.0.3", features = ["no-entrypoint"] }
