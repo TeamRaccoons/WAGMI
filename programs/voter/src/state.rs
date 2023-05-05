@@ -14,11 +14,6 @@ pub enum Phase {
     /// In TokenLauchPhase, voting escrow works with normal functions
     TokenLaunchPhase,
 }
-impl Default for Phase {
-    fn default() -> Self {
-        Phase::InitialPhase
-    }
-}
 
 /// A group of [Escrow]s.
 #[account]
@@ -37,8 +32,6 @@ pub struct Locker {
     /// Indicate whether a locker expired, if then all escrow can be withdraw before expiration
     /// This is only used for our inital phase, in the next phase, smartwallet cannot change expiration
     pub expiration: i64,
-    /// This field indicates whether smartwallet can change expiration
-    pub phase: Phase,
     /// Mutable parameters of how a [Locker] should behave.
     pub params: LockerParams,
 }
@@ -168,7 +161,7 @@ mod tests {
     #[test]
     fn test_voting_powers_one_week() {
         let locker = &mut Locker {
-            phase: Phase::TokenLaunchPhase,
+            // phase: Phase::TokenLaunchPhase,
             params: LockerParams {
                 max_stake_duration: MAX_TIME as u64,
                 max_stake_vote_multiplier: DEFAULT_STAKE_MULTIPLIER,
@@ -237,7 +230,7 @@ mod tests {
     #[test]
     fn test_voting_powers_two_users() {
         let locker = &mut Locker {
-            phase: Phase::TokenLaunchPhase,
+            // phase: Phase::TokenLaunchPhase,
             params: LockerParams {
                 max_stake_duration: MAX_TIME as u64,
                 max_stake_vote_multiplier: DEFAULT_STAKE_MULTIPLIER,

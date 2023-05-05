@@ -45,12 +45,6 @@ pub mod voter {
         ctx.accounts.change_locker_expiration(expiration)
     }
 
-    /// go to token launch phase [Locker].
-    #[access_control(ctx.accounts.validate())]
-    pub fn switch_to_token_launch_phase(ctx: Context<SwitchToTokenLaunchPhase>) -> Result<()> {
-        ctx.accounts.switch_to_token_launch_phase()
-    }
-
     /// Creates a new [Escrow] for an account.
     ///
     /// A Vote Escrow, or [Escrow] for short, is an agreement between an account (known as the `authority`) and the DAO to

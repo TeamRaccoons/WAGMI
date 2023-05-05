@@ -81,7 +81,8 @@ impl<'info> ExtendLockDuration<'info> {
 impl<'info> Validate<'info> for ExtendLockDuration<'info> {
     fn validate(&self) -> Result<()> {
         // Only allow in TokenLaunchPhase
-        assert_eq!(self.locker.phase, Phase::TokenLaunchPhase);
+        let phase = self.locker.get_current_phase()?;
+        assert_eq!(phase, Phase::TokenLaunchPhase);
         assert_keys_eq!(self.locker, self.escrow.locker);
         assert_keys_eq!(self.escrow.tokens, self.escrow_tokens);
         assert_keys_eq!(self.escrow.owner, self.escrow_owner);

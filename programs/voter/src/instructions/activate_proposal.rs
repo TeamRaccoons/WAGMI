@@ -61,6 +61,14 @@ impl<'info> Validate<'info> for ActivateProposal<'info> {
             self.current_voting_power()? >= self.locker.params.proposal_activation_min_votes,
             "insufficient voting power to activate a proposal"
         );
+        let phase = self.locker.get_current_phase()?;
+        if phase == Phase::InitialPhase {
+            // in InitialPhase we only allow proposal ended before locker.expiration - 7days
+            invariant!(
+                self.locker.expiration > self.proposal.voting_ends_at + 604800, // 3600 * 24 * 7
+                "cannot activate proposal caused expiration is reached"
+            );
+        }
 
         Ok(())
     }
