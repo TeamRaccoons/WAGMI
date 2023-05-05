@@ -12,7 +12,7 @@ pub struct CreateTransaction<'info> {
         init,
         seeds = [
             b"Transaction".as_ref(),
-            smart_wallet.key().to_bytes().as_ref(),
+            smart_wallet.key().as_ref(),
             smart_wallet.num_transactions.to_le_bytes().as_ref()
         ],
         bump,

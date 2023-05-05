@@ -51,7 +51,7 @@ pub mod voter {
     /// lock up tokens for a specific period of time, in exchange for voting rights
     /// linearly proportional to the amount of votes given.
     #[access_control(ctx.accounts.validate())]
-    pub fn new_escrow(ctx: Context<NewEscrow>, _bump: u8) -> Result<()> {
+    pub fn new_escrow(ctx: Context<NewEscrow>) -> Result<()> {
         ctx.accounts.new_escrow(unwrap_bump!(ctx, "escrow"))
     }
 
@@ -75,13 +75,21 @@ pub mod voter {
 
     /// Exits the DAO; i.e., withdraws all staked tokens in an [Escrow] if the [Escrow] is unlocked.
     #[access_control(ctx.accounts.validate())]
-    pub fn exit(ctx: Context<Exit>) -> Result<()> {
-        ctx.accounts.exit()
+    pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
+        ctx.accounts.withdraw()
     }
 
-    /// Activates a proposal.
+    /// Activates a proposal in tokenlaunch phase
     #[access_control(ctx.accounts.validate())]
     pub fn activate_proposal(ctx: Context<ActivateProposal>) -> Result<()> {
+        ctx.accounts.activate_proposal()
+    }
+
+    /// Activates a proposal in inital phase
+    #[access_control(ctx.accounts.validate())]
+    pub fn activate_proposal_initial_phase(
+        ctx: Context<ActivateProposalInitialPhase>,
+    ) -> Result<()> {
         ctx.accounts.activate_proposal()
     }
 

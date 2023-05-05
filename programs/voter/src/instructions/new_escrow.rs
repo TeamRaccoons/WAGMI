@@ -11,8 +11,8 @@ pub struct NewEscrow<'info> {
         init,
         seeds = [
             b"Escrow".as_ref(),
-            locker.key().to_bytes().as_ref(),
-            escrow_owner.key().to_bytes().as_ref()
+            locker.key().as_ref(),
+            escrow_owner.key().as_ref()
         ],
         bump,
         payer = payer,

@@ -18,10 +18,11 @@ impl<'info> OwnerInvokeInstruction<'info> {
         remaining_accounts: &[AccountInfo<'info>],
     ) -> Result<()> {
         let smart_wallet = &self.smart_wallet;
+        let smart_wallet_key = smart_wallet.key();
         // Execute the transaction signed by the smart_wallet.
         let invoker_seeds: &[&[&[u8]]] = &[&[
             b"SmartWalletOwnerInvoker" as &[u8],
-            &smart_wallet.key().to_bytes(),
+            &smart_wallet_key.as_ref(),
             &index.to_le_bytes(),
             &[bump],
         ]];
@@ -40,10 +41,11 @@ impl<'info> OwnerInvokeInstruction<'info> {
         remaining_accounts: &[AccountInfo<'info>],
     ) -> Result<()> {
         let smart_wallet = &self.smart_wallet;
+        let smart_wallet_key = smart_wallet.key();
         // Execute the transaction signed by the smart_wallet.
         let invoker_seeds: &[&[&[u8]]] = &[&[
             b"SmartWalletOwnerInvoker" as &[u8],
-            &smart_wallet.key().to_bytes(),
+            &smart_wallet_key.as_ref(),
             &index.to_le_bytes(),
             &[bump],
         ]];

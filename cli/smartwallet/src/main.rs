@@ -39,14 +39,7 @@ fn main() -> Result<()> {
             minimum_delay,
             owners,
         } => {
-            create_smart_wallet(
-                &program,
-                &payer,
-                max_owners,
-                threshold,
-                minimum_delay,
-                owners,
-            )?;
+            create_smart_wallet(&program, max_owners, threshold, minimum_delay, owners)?;
         }
         CliCommand::SetOwners {
             smart_wallet,
@@ -94,7 +87,6 @@ fn main() -> Result<()> {
 
 fn create_smart_wallet(
     program: &Program,
-    authority: &Keypair,
     max_owners: u8,
     threshold: u64,
     minimum_delay: i64,
@@ -104,7 +96,7 @@ fn create_smart_wallet(
     let base = base_keypair.pubkey();
 
     let (smart_wallet, bump) = Pubkey::find_program_address(
-        &[b"SmartWallet".as_ref(), base.to_bytes().as_ref()],
+        &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
     );
     println!("smart_wallet address {}", smart_wallet);
@@ -123,7 +115,6 @@ fn create_smart_wallet(
             threshold,
             minimum_delay,
         })
-        .signer(authority)
         .signer(&base_keypair);
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
@@ -234,7 +225,7 @@ fn create_dummy_transaction(program: &Program, smart_wallet: Pubkey) -> Result<(
     let (transaction, bump) = Pubkey::find_program_address(
         &[
             b"Transaction".as_ref(),
-            smart_wallet.to_bytes().as_ref(),
+            smart_wallet.as_ref(),
             smart_wallet_state.num_transactions.to_le_bytes().as_ref(),
         ],
         &smart_wallet::id(),

@@ -3,7 +3,7 @@ use anchor_spl::token;
 
 /// Accounts for [voter::exit].
 #[derive(Accounts)]
-pub struct Exit<'info> {
+pub struct Withdraw<'info> {
     /// The [Locker] being exited from.
     #[account(mut)]
     pub locker: Account<'info, Locker>,
@@ -29,8 +29,8 @@ pub struct Exit<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-impl<'info> Exit<'info> {
-    pub fn exit(&mut self) -> Result<()> {
+impl<'info> Withdraw<'info> {
+    pub fn withdraw(&mut self) -> Result<()> {
         let seeds: &[&[&[u8]]] = escrow_seeds!(self.escrow);
 
         // transfer tokens from the escrow
@@ -66,7 +66,7 @@ impl<'info> Exit<'info> {
     }
 }
 
-impl<'info> Validate<'info> for Exit<'info> {
+impl<'info> Validate<'info> for Withdraw<'info> {
     fn validate(&self) -> Result<()> {
         assert_keys_eq!(self.locker, self.escrow.locker);
         assert_keys_eq!(self.escrow.owner, self.escrow_owner);

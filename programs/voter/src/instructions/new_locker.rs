@@ -11,7 +11,7 @@ pub struct NewLocker<'info> {
         init,
         seeds = [
             b"Locker".as_ref(),
-            base.key().to_bytes().as_ref()
+            base.key().as_ref()
         ],
         bump,
         payer = payer,

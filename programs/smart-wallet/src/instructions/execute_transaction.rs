@@ -15,9 +15,10 @@ pub struct ExecuteTransaction<'info> {
 impl<'info> ExecuteTransaction<'info> {
     pub fn execute_transaction(&mut self, remaining_accounts: &[AccountInfo<'info>]) -> Result<()> {
         let smart_wallet = &self.smart_wallet;
+        let smart_wallet_base = smart_wallet.base;
         let wallet_seeds: &[&[&[u8]]] = &[&[
             b"SmartWallet" as &[u8],
-            &smart_wallet.base.to_bytes(),
+            &smart_wallet_base.as_ref(),
             &[smart_wallet.bump],
         ]];
         self.do_execute_transaction(wallet_seeds, remaining_accounts)
