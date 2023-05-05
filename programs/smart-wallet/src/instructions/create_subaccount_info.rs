@@ -9,7 +9,7 @@ pub struct CreateSubaccountInfo<'info> {
         init,
         seeds = [
             b"SubaccountInfo".as_ref(),
-            &subaccount.to_bytes()
+            &subaccount.as_ref()
         ],
         bump,
         space = 8 + std::mem::size_of::<SubaccountInfo>(),
@@ -35,7 +35,7 @@ impl<'info> CreateSubaccountInfo<'info> {
             SubaccountType::Derived => Pubkey::find_program_address(
                 &[
                     b"SmartWalletDerived" as &[u8],
-                    &smart_wallet.to_bytes(),
+                    &smart_wallet.as_ref(),
                     &index.to_le_bytes(),
                 ],
                 &crate::ID,
@@ -43,7 +43,7 @@ impl<'info> CreateSubaccountInfo<'info> {
             SubaccountType::OwnerInvoker => Pubkey::find_program_address(
                 &[
                     b"SmartWalletOwnerInvoker" as &[u8],
-                    &smart_wallet.to_bytes(),
+                    &smart_wallet.as_ref(),
                     &index.to_le_bytes(),
                 ],
                 &crate::ID,

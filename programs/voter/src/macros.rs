@@ -4,11 +4,7 @@
 #[macro_export]
 macro_rules! locker_seeds {
     ($locker: expr) => {
-        &[&[
-            b"Locker" as &[u8],
-            &$locker.base.to_bytes(),
-            &[$locker.bump],
-        ]]
+        &[&[b"Locker" as &[u8], &$locker.base.as_ref(), &[$locker.bump]]]
     };
 }
 
@@ -18,8 +14,8 @@ macro_rules! escrow_seeds {
     ($escrow: expr) => {
         &[&[
             b"Escrow" as &[u8],
-            &$escrow.locker.to_bytes(),
-            &$escrow.owner.to_bytes(),
+            &$escrow.locker.as_ref(),
+            &$escrow.owner.as_ref(),
             &[$escrow.bump],
         ]]
     };

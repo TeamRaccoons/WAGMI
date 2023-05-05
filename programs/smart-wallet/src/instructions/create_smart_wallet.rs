@@ -12,7 +12,7 @@ pub struct CreateSmartWallet<'info> {
         init,
         seeds = [
             b"SmartWallet".as_ref(),
-            base.key().to_bytes().as_ref()
+            base.key().as_ref()
         ],
         bump,
         payer = payer,

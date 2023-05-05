@@ -12,22 +12,8 @@ pub struct ExtendLockDuration<'info> {
     #[account(mut, has_one = locker)]
     pub escrow: Account<'info, Escrow>,
 
-    /// Token account held by the [Escrow].
-    #[account(
-        mut,
-        constraint = escrow.tokens == escrow_tokens.key()
-    )]
-    pub escrow_tokens: Account<'info, TokenAccount>,
-
-    /// Authority of the [Escrow] and [Self::source_tokens].
+    /// Authority of the [Escrow] and
     pub escrow_owner: Signer<'info>,
-
-    /// The source of deposited tokens.
-    #[account(mut)]
-    pub source_tokens: Account<'info, TokenAccount>,
-
-    /// Token program.
-    pub token_program: Program<'info, Token>,
 }
 
 impl<'info> ExtendLockDuration<'info> {
@@ -84,12 +70,7 @@ impl<'info> Validate<'info> for ExtendLockDuration<'info> {
         let phase = self.locker.get_current_phase()?;
         assert_eq!(phase, Phase::TokenLaunchPhase);
         assert_keys_eq!(self.locker, self.escrow.locker);
-        assert_keys_eq!(self.escrow.tokens, self.escrow_tokens);
         assert_keys_eq!(self.escrow.owner, self.escrow_owner);
-        assert_keys_eq!(self.escrow_owner, self.source_tokens.owner);
-
-        assert_keys_eq!(self.source_tokens.mint, self.locker.token_mint);
-        assert_keys_neq!(self.escrow_tokens, self.source_tokens);
 
         Ok(())
     }

@@ -77,7 +77,7 @@ pub mod merkle_distributor {
         // Verify the merkle proof.
         let node = anchor_lang::solana_program::keccak::hashv(&[
             &index.to_le_bytes(),
-            &claimant_account.key().to_bytes(),
+            &claimant_account.key().as_ref(),
             &amount.to_le_bytes(),
         ]);
         invariant!(
@@ -93,7 +93,7 @@ pub mod merkle_distributor {
 
         let seeds = [
             b"MerkleDistributor".as_ref(),
-            &distributor.base.to_bytes(),
+            &distributor.base.as_ref(),
             &[ctx.accounts.distributor.bump],
         ];
         let seeds = &[&seeds[..]];
@@ -149,7 +149,7 @@ pub struct NewDistributor<'info> {
         init,
         seeds = [
             b"MerkleDistributor".as_ref(),
-            base.key().to_bytes().as_ref()
+            base.key().as_ref()
         ],
         bump,
         space = 8 + std::mem::size_of::<MerkleDistributor>(),
@@ -186,7 +186,7 @@ pub struct Claim<'info> {
         seeds = [
             b"ClaimStatus".as_ref(),
             index.to_le_bytes().as_ref(),
-            distributor.key().to_bytes().as_ref()
+            distributor.key().as_ref()
         ],
         bump,
         space = 8 + std::mem::size_of::<ClaimStatus>(),
@@ -226,8 +226,8 @@ pub struct Claim<'info> {
     #[account(
         seeds = [
             b"Escrow".as_ref(),
-            locker.key().to_bytes().as_ref(),
-            claimant.key().to_bytes().as_ref()
+            locker.key().as_ref(),
+            claimant.key().as_ref()
         ],
         bump,
     )]

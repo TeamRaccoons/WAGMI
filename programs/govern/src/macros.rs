@@ -6,7 +6,7 @@ macro_rules! governor_seeds {
     ($governor: expr) => {
         &[
             b"MeteoraGovernor" as &[u8],
-            &$governor.base.to_bytes(),
+            &$governor.base.as_ref(),
             &[$governor.bump],
         ]
     };

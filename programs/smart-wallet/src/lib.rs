@@ -141,10 +141,11 @@ pub mod smart_wallet {
         bump: u8,
     ) -> Result<()> {
         let smart_wallet = &ctx.accounts.smart_wallet;
+        let smart_wallet_key = smart_wallet.key();
         // Execute the transaction signed by the smart_wallet.
         let wallet_seeds: &[&[&[u8]]] = &[&[
             b"SmartWalletDerived" as &[u8],
-            &smart_wallet.key().to_bytes(),
+            &smart_wallet_key.as_ref(),
             &index.to_le_bytes(),
             &[bump],
         ]];
