@@ -207,13 +207,24 @@ pub struct Claim<'info> {
     pub voter_program: Program<'info, voter::program::Voter>,
 
     /// CHECK: Locker
+    #[account(mut)]
     pub locker: UncheckedAccount<'info>,
 
     /// CHECK: escrow
-    #[account(mut, constraint = escrow.locker == locker.key() && escrow.owner == claimant.key() && escrow.tokens == escrow_tokens.key())]
+    #[account(mut,
+        seeds = [
+            b"Escrow".as_ref(),
+            locker.key().as_ref(),
+            claimant.key().as_ref()
+        ],
+        seeds::program = voter_program.key(),
+        bump,
+        constraint = escrow.locker == locker.key() && escrow.owner == claimant.key() && escrow.tokens == escrow_tokens.key())
+    ]
     pub escrow: Account<'info, voter::Escrow>,
 
     /// CHECK: escrow_tokens
+    #[account(mut)]
     pub escrow_tokens: UncheckedAccount<'info>,
 }
 

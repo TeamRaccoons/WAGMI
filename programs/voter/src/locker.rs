@@ -4,9 +4,8 @@
 use crate::*;
 use num_traits::ToPrimitive;
 
-
 impl Locker {
-    pub fn get_current_phase(&self) -> Result<Phase>{
+    pub fn get_current_phase(&self) -> Result<Phase> {
         let now = Clock::get()?.unix_timestamp;
         if self.expiration > now {
             return Ok(Phase::InitialPhase);
@@ -21,7 +20,7 @@ impl Locker {
         }
         let phase: Phase = match self.get_current_phase() {
             Ok(value) => value,
-            Err(_) => return  None,
+            Err(_) => return None,
         };
         if phase == Phase::InitialPhase {
             if self.expiration <= now {
