@@ -80,6 +80,18 @@ fn main() -> Result<()> {
         } => {
             set_vote_delegate(&program, locker, new_delegate)?;
         }
+        CliCommand::ViewLocker { locker } => {
+            let locker: voter::Locker = program.account(locker)?;
+            println!("{:?}", locker);
+        }
+        CliCommand::ViewEscrow { locker, owner } => {
+            let (escrow, _bump) = Pubkey::find_program_address(
+                &[b"Escrow".as_ref(), locker.as_ref(), owner.as_ref()],
+                &voter::id(),
+            );
+            let escrow_state: voter::Escrow = program.account(escrow)?;
+            println!("{:?}", escrow_state);
+        }
     }
 
     Ok(())

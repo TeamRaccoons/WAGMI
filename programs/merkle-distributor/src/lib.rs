@@ -31,7 +31,6 @@ pub mod merkle_distributor {
     /// After creating this [MerkleDistributor], the account should be seeded with tokens via its ATA.
     pub fn new_distributor(
         ctx: Context<NewDistributor>,
-        _bump: u8,
         locker: Pubkey,
         root: [u8; 32],
         max_total_claim: u64,
@@ -57,15 +56,7 @@ pub mod merkle_distributor {
     }
 
     /// Claims tokens from the [MerkleDistributor].
-    pub fn claim(
-        ctx: Context<Claim>,
-        _bump: u8,
-        index: u64,
-        amount: u64,
-        proof: Vec<[u8; 32]>,
-    ) -> Result<()> {
-        assert_keys_neq!(ctx.accounts.from, ctx.accounts.to);
-
+    pub fn claim(ctx: Context<Claim>, index: u64, amount: u64, proof: Vec<[u8; 32]>) -> Result<()> {
         let claim_status = &mut ctx.accounts.claim_status;
         invariant!(
             // This check is redundant, we should not be able to initialize a claim status account at the same key.
@@ -98,7 +89,7 @@ pub mod merkle_distributor {
         ];
         let seeds = &[&seeds[..]];
 
-        assert_keys_eq!(ctx.accounts.to.owner, claimant_account.key(), OwnerMismatch);
+        // assert_keys_eq!(ctx.accounts.to.owner, claimant_account.key(), OwnerMismatch);
 
         // CPI to voter
         let cpi_ctx = CpiContext::new(
@@ -170,7 +161,7 @@ pub struct NewDistributor<'info> {
 
 /// [merkle_distributor::claim] accounts.
 #[derive(Accounts)]
-#[instruction(_bump: u8, index: u64)]
+#[instruction(index: u64)]
 pub struct Claim<'info> {
     /// The [MerkleDistributor].
     #[account(
@@ -198,12 +189,8 @@ pub struct Claim<'info> {
     #[account(mut, constraint = from.mint == distributor.mint @ ErrorCode::MintMismatch)]
     pub from: Account<'info, TokenAccount>,
 
-    /// Account to send the claimed tokens to.
-    #[account(mut)]
-    pub to: Account<'info, TokenAccount>,
-
     /// CHECK: Who is claiming the tokens.
-    #[account(address = to.owner @ ErrorCode::OwnerMismatch)]
+    // #[account(address = to.owner @ ErrorCode::OwnerMismatch)]
     pub claimant: UncheckedAccount<'info>,
 
     /// Payer of the claim, must be claimant or admin
@@ -220,26 +207,30 @@ pub struct Claim<'info> {
     pub voter_program: Program<'info, voter::program::Voter>,
 
     /// CHECK: Locker
+    #[account(mut)]
     pub locker: UncheckedAccount<'info>,
 
     /// CHECK: escrow
-    #[account(
+    #[account(mut,
         seeds = [
             b"Escrow".as_ref(),
             locker.key().as_ref(),
             claimant.key().as_ref()
         ],
+        seeds::program = voter_program.key(),
         bump,
-    )]
-    pub escrow: AccountInfo<'info>,
+        constraint = escrow.locker == locker.key() && escrow.owner == claimant.key() && escrow.tokens == escrow_tokens.key())
+    ]
+    pub escrow: Account<'info, voter::Escrow>,
 
     /// CHECK: escrow_tokens
+    #[account(mut)]
     pub escrow_tokens: UncheckedAccount<'info>,
 }
 
 /// State for the account which distributes tokens.
 #[account]
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct MerkleDistributor {
     /// Base key used to generate the PDA.
     pub base: Pubkey,
@@ -271,7 +262,7 @@ pub struct MerkleDistributor {
 ///
 /// TODO: this is probably better stored as the node that was verified.
 #[account]
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct ClaimStatus {
     /// If true, the tokens have been claimed.
     pub is_claimed: bool,

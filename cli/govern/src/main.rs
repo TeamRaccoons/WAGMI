@@ -75,6 +75,14 @@ fn main() -> Result<()> {
         CliCommand::ViewProposalMeta { proposal } => {
             view_proposal_meta(&program, proposal)?;
         }
+        CliCommand::ViewVote { proposal, voter } => {
+            let (vote, _bump) = Pubkey::find_program_address(
+                &[b"MeteoraVote".as_ref(), proposal.as_ref(), voter.as_ref()],
+                &govern::id(),
+            );
+            let vote_state: govern::Vote = program.account(vote)?;
+            println!("{:?}", vote_state);
+        }
     }
 
     Ok(())

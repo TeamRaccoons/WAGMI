@@ -32,70 +32,40 @@ pub struct ConfigOverride {
     global = true,
     short,
     long,
-    default_value_t = govern::id().to_string()
+    default_value_t = merkle_distributor::id().to_string()
     )]
     pub program_id: String,
 }
 
 #[derive(Parser, Debug)]
 pub enum CliCommand {
-    CreateGovernor {
+    NewDistributor {
         #[clap(long)]
-        electorate: Pubkey,
-        /// The delay before voting on a proposal may take place, once proposed, in seconds
+        locker: Pubkey,
         #[clap(long)]
-        voting_delay: u64,
-        /// The duration of voting on a proposal, in seconds
+        token_mint: Pubkey,
         #[clap(long)]
-        voting_period: u64,
-        /// The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
-        #[clap(long)]
-        quorum_votes: u64,
-        /// The timelock delay of the DAO's created proposals.
-        #[clap(long)]
-        timelock_delay_seconds: i64,
+        path_to_snapshot: String,
     },
-    CreateDummyProposal {
+    Claim {
         #[clap(long)]
-        governor: Pubkey,
+        distributor: Pubkey,
+        #[clap(long)]
+        claimant: Pubkey,
+        #[clap(long)]
+        path_to_snapshot: String,
     },
-    CancelProposal {
+    ViewDistributor {
         #[clap(long)]
-        proposal: Pubkey,
+        distributor: Pubkey,
     },
-    QueueProposal {
+    ViewClaimStatus {
         #[clap(long)]
-        proposal: Pubkey,
-    },
-    NewVote {
+        distributor: Pubkey,
         #[clap(long)]
-        proposal: Pubkey,
-    },
-    CreateProposalMeta {
+        claimant: Pubkey,
         #[clap(long)]
-        proposal: Pubkey,
-        #[clap(long)]
-        title: String,
-        #[clap(long)]
-        description_link: String,
-    },
-    ViewGovernor {
-        #[clap(long)]
-        governor: Pubkey,
-    },
-    ViewProposal {
-        #[clap(long)]
-        proposal: Pubkey,
-    },
-    ViewProposalMeta {
-        #[clap(long)]
-        proposal: Pubkey,
-    },
-    ViewVote {
-        #[clap(long)]
-        proposal: Pubkey,
-        #[clap(long)]
-        voter: Pubkey,
+        path_to_snapshot: String,
     },
 }
 
