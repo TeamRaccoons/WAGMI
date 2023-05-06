@@ -1589,6 +1589,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "govern-cli"
+version = "0.1.0"
+dependencies = [
+ "anchor-client",
+ "anchor-lang",
+ "anchor-spl",
+ "anyhow",
+ "clap 3.2.25",
+ "govern",
+ "shellexpand",
+ "smart-wallet",
+ "solana-program",
+]
+
+[[package]]
 name = "h2"
 version = "0.3.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2064,6 +2079,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "marke-distributor-cli"
+version = "0.1.0"
+dependencies = [
+ "anchor-client",
+ "anchor-lang",
+ "anchor-spl",
+ "anyhow",
+ "clap 3.2.25",
+ "merkle-distributor",
+ "serde",
+ "serde_json",
+ "shellexpand",
+ "solana-program",
+ "voter",
 ]
 
 [[package]]
@@ -4709,6 +4741,22 @@ dependencies = [
  "num-traits",
  "proptest",
  "vipers",
+]
+
+[[package]]
+name = "voter-cli"
+version = "0.1.0"
+dependencies = [
+ "anchor-client",
+ "anchor-lang",
+ "anchor-spl",
+ "anyhow",
+ "clap 3.2.25",
+ "govern",
+ "shellexpand",
+ "smart-wallet",
+ "solana-program",
+ "voter",
 ]
 
 [[package]]
