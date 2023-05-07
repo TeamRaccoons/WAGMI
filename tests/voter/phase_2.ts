@@ -6,6 +6,7 @@ import {
   IProposalInstruction,
   SMART_WALLET_PROGRAM_ID,
   VOTER_PROGRAM_ID,
+  VoteSide,
   createAndFundWallet,
   createGovernProgram,
   createGovernor,
@@ -18,8 +19,10 @@ import {
   deriveGovern,
   deriveLocker,
   deriveSmartWallet,
+  deriveVote,
   getOnChainTime,
   getOrCreateATA,
+  getOrCreateVote,
   invokeAndAssertError,
   sleep,
 } from "../utils";
@@ -52,7 +55,7 @@ describe("Locked voter", () => {
 
   // Voter config
   const expiration: BN = new BN(10); // 10 seconds to 2nd phase
-  const maxStakeDuration: BN = new BN(60); // 60 seconds
+  const maxStakeDuration: BN = new BN(20); // 20 seconds
   const minStakeDuration: BN = new BN(10); // 10 seconds
   const maxStakeVoteMultiplier: number = 1;
   const proposalActivationMinVotes: BN = new BN(2); // min 2 vote to activate proposal
@@ -292,6 +295,50 @@ describe("Locked voter", () => {
     }
   });
 
+  it("cannot extend lock duration more than max stake duration", async () => {
+    const keypair = userKeypairs[0];
+    const userWallet = new Wallet(keypair);
+    const voterProgram = createVoterProgram(userWallet, VOTER_PROGRAM_ID);
+    const [escrow, _bump] = deriveEscrow(locker, userWallet.publicKey);
+
+    invokeAndAssertError(
+      () => {
+        return voterProgram.methods
+          .extendLockDuration(maxStakeDuration.add(new BN(1)))
+          .accounts({
+            escrow,
+            escrowOwner: userWallet.publicKey,
+            locker,
+          })
+          .rpc();
+      },
+      "Lockup duration must at most be the max stake duration",
+      true
+    );
+  });
+
+  it("cannot extend lock duration lesser than min stake duration", async () => {
+    const keypair = userKeypairs[0];
+    const userWallet = new Wallet(keypair);
+    const voterProgram = createVoterProgram(userWallet, VOTER_PROGRAM_ID);
+    const [escrow, _bump] = deriveEscrow(locker, userWallet.publicKey);
+
+    invokeAndAssertError(
+      () => {
+        return voterProgram.methods
+          .extendLockDuration(minStakeDuration.sub(new BN(1)))
+          .accounts({
+            escrow,
+            escrowOwner: userWallet.publicKey,
+            locker,
+          })
+          .rpc();
+      },
+      "Lockup duration must at least be the min stake duration",
+      true
+    );
+  });
+
   it("able to withdraw if doesn't extend lock duration", async () => {
     const newWallet = await createAndFundWallet(provider.connection);
     const userWallet = new Wallet(newWallet.keypair);
@@ -357,5 +404,334 @@ describe("Locked voter", () => {
         tokenProgram: TOKEN_PROGRAM_ID,
       })
       .rpc();
+  });
+
+  it("users extend lock duration", async () => {
+    for (const keypair of userKeypairs) {
+      const userWallet = new Wallet(keypair);
+      const voterProgram = createVoterProgram(userWallet, VOTER_PROGRAM_ID);
+      const [escrow, _bump] = deriveEscrow(locker, userWallet.publicKey);
+
+      let escrowState = await voterProgram.account.escrow.fetch(escrow);
+
+      expect(escrowState.escrowEndsAt.toString()).to.equal("0");
+
+      await voterProgram.methods
+        .extendLockDuration(maxStakeDuration)
+        .accounts({
+          escrow,
+          escrowOwner: userWallet.publicKey,
+          locker,
+        })
+        .rpc();
+
+      escrowState = await voterProgram.account.escrow.fetch(escrow);
+
+      expect(escrowState.escrowEndsAt.toString()).not.equal("0");
+    }
+  });
+
+  it("cannot shorten lock duration", async () => {
+    const keypair = userKeypairs[0];
+    const userWallet = new Wallet(keypair);
+    const voterProgram = createVoterProgram(userWallet, VOTER_PROGRAM_ID);
+    const [escrow, _bump] = deriveEscrow(locker, userWallet.publicKey);
+
+    invokeAndAssertError(
+      () => {
+        return voterProgram.methods
+          .extendLockDuration(minStakeDuration)
+          .accounts({
+            escrow,
+            escrowOwner: userWallet.publicKey,
+            locker,
+          })
+          .rpc();
+      },
+      "A voting escrow refresh cannot shorten the escrow time remaining",
+      true
+    );
+  });
+
+  it("cannot vote on inactive proposal", async () => {
+    const keypair = userKeypairs[0];
+    const userWallet = new Wallet(keypair);
+
+    const governProgram = createGovernProgram(userWallet, GOVERN_PROGRAM_ID);
+    const voterProgram = createVoterProgram(userWallet, VOTER_PROGRAM_ID);
+
+    const [escrow, _bump] = deriveEscrow(locker, userWallet.publicKey);
+
+    const vote = await getOrCreateVote(proposal, governProgram);
+
+    invokeAndAssertError(
+      () => {
+        return voterProgram.methods
+          .castVote(VoteSide.For)
+          .accounts({
+            escrow,
+            locker,
+            governor: govern,
+            governProgram: GOVERN_PROGRAM_ID,
+            proposal,
+            vote,
+            voteDelegate: userWallet.publicKey,
+          })
+          .rpc();
+      },
+      "Invariant failed: proposal must be active",
+      false
+    );
+  });
+
+  it("user activate proposal", async () => {
+    const keypair = userKeypairs[0];
+    const wallet = new Wallet(keypair);
+    const voterProgram = createVoterProgram(wallet, VOTER_PROGRAM_ID);
+
+    const [escrow, _bump] = deriveEscrow(locker, wallet.publicKey);
+
+    await voterProgram.methods
+      .activateProposal()
+      .accounts({
+        governor: govern,
+        governProgram: GOVERN_PROGRAM_ID,
+        locker,
+        proposal,
+        escrow,
+        escrowOwner: wallet.publicKey,
+      })
+      .rpc();
+
+    const governProgram = createGovernProgram(wallet, GOVERN_PROGRAM_ID);
+
+    const proposalState = await governProgram.account.proposal.fetch(proposal);
+    expect(proposalState.activatedAt.toString()).not.equal("0");
+    expect(proposalState.votingEndsAt.toString()).not.equal("0");
+  });
+
+  it("user #1 delegate voting power to new user and vote against a proposal", async () => {
+    const keypair = userKeypairs[0];
+    const wallet = new Wallet(keypair);
+
+    const { keypair: delegateKeypair } = await createAndFundWallet(
+      provider.connection
+    );
+    const delegateWallet = new Wallet(delegateKeypair);
+
+    let voterProgram = createVoterProgram(wallet, VOTER_PROGRAM_ID);
+    const [escrow, _eBump] = deriveEscrow(locker, wallet.publicKey);
+
+    // Delegate voting power
+    await voterProgram.methods
+      .setVoteDelegate(delegateWallet.publicKey)
+      .accounts({
+        escrow,
+        escrowOwner: wallet.publicKey,
+      })
+      .rpc();
+
+    const escrowState = await voterProgram.account.escrow.fetch(escrow);
+
+    expect(escrowState.voteDelegate.toBase58()).to.be.equal(
+      delegateWallet.publicKey.toBase58()
+    );
+
+    // Create vote
+    const governProgram = createGovernProgram(wallet, GOVERN_PROGRAM_ID);
+
+    const vote = await getOrCreateVote(proposal, governProgram);
+
+    // Delegate wallet cast against a proposal using delegated vote
+    voterProgram = createVoterProgram(delegateWallet, VOTER_PROGRAM_ID);
+
+    await voterProgram.methods
+      .castVote(VoteSide.Against)
+      .accounts({
+        escrow, // Use delegated escrow,
+        governor: govern,
+        governProgram: GOVERN_PROGRAM_ID,
+        locker,
+        proposal,
+        vote, // Use delegated vote
+        voteDelegate: voterProgram.provider.publicKey,
+      })
+      .rpc();
+
+    const voteState = await governProgram.account.vote.fetch(vote);
+    const proposalState = await governProgram.account.proposal.fetch(proposal);
+
+    expect(voteState.side.toString()).to.be.equal(VoteSide.Against.toString());
+    expect(proposalState.againstVotes.toString()).to.be.equal(
+      voteState.weight.toString()
+    );
+  });
+
+  it("cannot vote anymore if delegated to other user", async () => {
+    const keypair = userKeypairs[0];
+    const wallet = new Wallet(keypair);
+
+    const voterProgram = createVoterProgram(wallet, VOTER_PROGRAM_ID);
+    const [escrow, _eBump] = deriveEscrow(locker, wallet.publicKey);
+    const [vote, _vBump] = deriveVote(wallet.publicKey, proposal);
+
+    invokeAndAssertError(
+      () => {
+        return voterProgram.methods
+          .castVote(VoteSide.Against)
+          .accounts({
+            escrow,
+            governor: govern,
+            governProgram: GOVERN_PROGRAM_ID,
+            locker,
+            proposal,
+            vote,
+            voteDelegate: voterProgram.provider.publicKey,
+          })
+          .rpc();
+      },
+      "self.escrow.vote_delegate != self.vote_delegate",
+      false
+    );
+  });
+
+  it("user #2 cast for proposal", async () => {
+    const keypair = userKeypairs[1];
+    const wallet = new Wallet(keypair);
+
+    const voterProgram = createVoterProgram(wallet, VOTER_PROGRAM_ID);
+    const governProgram = createGovernProgram(wallet, GOVERN_PROGRAM_ID);
+
+    const [escrow, _eBump] = deriveEscrow(locker, wallet.publicKey);
+
+    const beforeProposalState = await governProgram.account.proposal.fetch(
+      proposal
+    );
+
+    const vote = await getOrCreateVote(proposal, governProgram);
+
+    await voterProgram.methods
+      .castVote(VoteSide.For)
+      .accounts({
+        escrow,
+        governor: govern,
+        governProgram: GOVERN_PROGRAM_ID,
+        locker,
+        proposal,
+        vote,
+        voteDelegate: voterProgram.provider.publicKey,
+      })
+      .rpc();
+
+    const voteState = await governProgram.account.vote.fetch(vote);
+    const afterProposalState = await governProgram.account.proposal.fetch(
+      proposal
+    );
+
+    const proposalForVoteDelta = afterProposalState.forVotes
+      .sub(beforeProposalState.forVotes)
+      .toString();
+
+    expect(voteState.side.toString()).to.be.equal(VoteSide.For.toString());
+    expect(proposalForVoteDelta).to.be.equal(voteState.weight.toString());
+  });
+
+  it("user #3 cast abstain proposal", async () => {
+    const keypair = userKeypairs[2];
+    const wallet = new Wallet(keypair);
+
+    const voterProgram = createVoterProgram(wallet, VOTER_PROGRAM_ID);
+    const governProgram = createGovernProgram(wallet, GOVERN_PROGRAM_ID);
+
+    const [escrow, _eBump] = deriveEscrow(locker, wallet.publicKey);
+
+    const beforeProposalState = await governProgram.account.proposal.fetch(
+      proposal
+    );
+
+    const vote = await getOrCreateVote(proposal, governProgram);
+
+    await voterProgram.methods
+      .castVote(VoteSide.Abstain)
+      .accounts({
+        escrow,
+        governor: govern,
+        governProgram: GOVERN_PROGRAM_ID,
+        locker,
+        proposal,
+        vote,
+        voteDelegate: voterProgram.provider.publicKey,
+      })
+      .rpc();
+
+    const voteState = await governProgram.account.vote.fetch(vote);
+    const afterProposalState = await governProgram.account.proposal.fetch(
+      proposal
+    );
+
+    const proposalAbstainVoteDelta = afterProposalState.abstainVotes
+      .sub(beforeProposalState.abstainVotes)
+      .toString();
+
+    expect(voteState.side.toString()).to.be.equal(VoteSide.Abstain.toString());
+    expect(proposalAbstainVoteDelta).to.be.equal(voteState.weight.toString());
+  });
+
+  it("users able to exit when escrow ended", async () => {
+    for (const keypair of userKeypairs) {
+      const userWallet = new Wallet(keypair);
+      const voterProgram = createVoterProgram(userWallet, VOTER_PROGRAM_ID);
+
+      const [escrow, _bump] = deriveEscrow(locker, userWallet.publicKey);
+
+      while (true) {
+        const [escrowState, onchainTimestamp] = await Promise.all([
+          voterProgram.account.escrow.fetch(escrow),
+          getOnChainTime(provider.connection),
+        ]);
+
+        if (escrowState.escrowEndsAt.toNumber() > onchainTimestamp) {
+          console.log(
+            `${
+              escrowState.escrowEndsAt.toNumber() - onchainTimestamp
+            } seconds until escrow expire`
+          );
+          await sleep(1000);
+        } else {
+          break;
+        }
+      }
+
+      await sleep(1000);
+
+      const userATA = await getOrCreateATA(
+        rewardMint,
+        userWallet.publicKey,
+        keypair,
+        provider.connection
+      );
+
+      const escrowATA = await getOrCreateATA(
+        rewardMint,
+        escrow,
+        keypair,
+        provider.connection
+      );
+
+      await voterProgram.methods
+        .withdraw()
+        .accounts({
+          destinationTokens: userATA,
+          escrow,
+          escrowOwner: voterProgram.provider.publicKey,
+          escrowTokens: escrowATA,
+          locker,
+          payer: voterProgram.provider.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .rpc();
+
+      // Escrow account closed
+    }
   });
 });

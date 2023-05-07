@@ -343,6 +343,31 @@ export async function createLocker(
   return locker;
 }
 
+export async function getOrCreateVote(
+  proposal: web3.PublicKey,
+  governProgram: Program<Govern>
+) {
+  const [vote, _bump] = deriveVote(governProgram.provider.publicKey, proposal);
+
+  const voteAccount = await governProgram.provider.connection.getAccountInfo(
+    vote
+  );
+
+  if (!voteAccount) {
+    await governProgram.methods
+      .newVote(governProgram.provider.publicKey)
+      .accounts({
+        payer: governProgram.provider.publicKey,
+        proposal,
+        systemProgram: web3.SystemProgram.programId,
+        vote,
+      })
+      .rpc();
+  }
+
+  return vote;
+}
+
 export async function getOrCreateATA(
   mint: web3.PublicKey,
   owner: web3.PublicKey,
@@ -394,8 +419,8 @@ export async function invokeAndAssertError(
       );
     } else {
       const logs: string[] = error.logs;
-      expect(logs.find((s) => s.toLowerCase() == message.toLowerCase())).to.be
-        .not.null;
+      expect(logs.find((s) => s.toLowerCase().includes(message.toLowerCase())))
+        .to.be.not.undefined;
     }
   }
 
