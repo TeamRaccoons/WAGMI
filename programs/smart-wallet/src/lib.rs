@@ -89,7 +89,7 @@ pub mod smart_wallet {
     #[access_control(ctx.accounts.validate())]
     pub fn create_transaction(
         ctx: Context<CreateTransaction>,
-        bump: u8, // weird bug from Anchor
+        _bump: u8, // weird bug from Anchor
         instructions: Vec<TXInstruction>,
     ) -> Result<()> {
         ctx.accounts
@@ -100,7 +100,7 @@ pub mod smart_wallet {
     #[access_control(ctx.accounts.validate())]
     pub fn create_transaction_with_timelock(
         ctx: Context<CreateTransaction>,
-        bump: u8, // weird bug from Anchor
+        _bump: u8, // weird bug from Anchor
         instructions: Vec<TXInstruction>,
         eta: i64,
     ) -> Result<()> {
