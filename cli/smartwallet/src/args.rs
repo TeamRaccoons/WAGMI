@@ -50,27 +50,27 @@ pub enum CliCommand {
         owners: Vec<Pubkey>,
     },
 
-    SetOwners {
+    CreateSetOwnersTx {
         #[clap(long)]
         smart_wallet: Pubkey,
         #[clap(long)]
         owners: Vec<Pubkey>,
     },
 
-    ChangeThreshold {
+    CreateChangeThresholdTx {
         #[clap(long)]
         smart_wallet: Pubkey,
         #[clap(long)]
         threshold: u64,
     },
 
-    AprroveTransaction {
+    ApproveTransaction {
         #[clap(long)]
         smart_wallet: Pubkey,
         #[clap(long)]
         transaction: Pubkey,
     },
-    UnAprroveTransaction {
+    UnApproveTransaction {
         #[clap(long)]
         smart_wallet: Pubkey,
         #[clap(long)]

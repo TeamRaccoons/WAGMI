@@ -28,11 +28,11 @@ pub mod govern {
     #[access_control(ctx.accounts.validate())]
     pub fn create_governor(
         ctx: Context<CreateGovernor>,
-        electorate: Pubkey,
+        voter: Pubkey,
         params: GovernanceParameters,
     ) -> Result<()> {
         ctx.accounts
-            .create_governor(unwrap_bump!(ctx, "governor"), electorate, params)
+            .create_governor(unwrap_bump!(ctx, "governor"), voter, params)
     }
 
     /// Creates a [Proposal].

@@ -41,7 +41,9 @@ pub struct ConfigOverride {
 pub enum CliCommand {
     CreateGovernor {
         #[clap(long)]
-        electorate: Pubkey,
+        smart_wallet: Pubkey, // smart_wallet
+        #[clap(long)]
+        voter: Pubkey, // voter
         /// The delay before voting on a proposal may take place, once proposed, in seconds
         #[clap(long)]
         voting_delay: u64,

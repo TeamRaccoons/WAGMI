@@ -3,6 +3,7 @@ mod args;
 use crate::args::*;
 use anyhow::Result;
 
+use anchor_client::anchor_lang::InstructionData;
 use anchor_client::anchor_lang::ToAccountMetas;
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
 use anchor_client::solana_sdk::pubkey::Pubkey;
@@ -41,25 +42,25 @@ fn main() -> Result<()> {
         } => {
             create_smart_wallet(&program, max_owners, threshold, minimum_delay, owners)?;
         }
-        CliCommand::SetOwners {
+        CliCommand::CreateSetOwnersTx {
             smart_wallet,
             owners,
         } => {
-            set_owners(&program, smart_wallet, owners)?;
+            create_set_owners_tx(&program, smart_wallet, owners)?;
         }
-        CliCommand::ChangeThreshold {
+        CliCommand::CreateChangeThresholdTx {
             smart_wallet,
             threshold,
         } => {
-            change_threshold(&program, smart_wallet, threshold)?;
+            create_change_threshold_tx(&program, smart_wallet, threshold)?;
         }
-        CliCommand::AprroveTransaction {
+        CliCommand::ApproveTransaction {
             smart_wallet,
             transaction,
         } => {
             approve_transaction(&program, smart_wallet, transaction)?;
         }
-        CliCommand::UnAprroveTransaction {
+        CliCommand::UnApproveTransaction {
             smart_wallet,
             transaction,
         } => {
@@ -121,26 +122,42 @@ fn create_smart_wallet(
     Ok(())
 }
 
-fn set_owners(program: &Program, smart_wallet: Pubkey, owners: Vec<Pubkey>) -> Result<()> {
-    println!("Set owner");
-    let builder = program
-        .request()
-        .accounts(smart_wallet::accounts::Auth { smart_wallet })
-        .args(smart_wallet::instruction::SetOwners { owners });
-    let signature = builder.send()?;
-    println!("Signature {:?}", signature);
-    Ok(())
+fn create_set_owners_tx(
+    program: &Program,
+    smart_wallet: Pubkey,
+    owners: Vec<Pubkey>,
+) -> Result<()> {
+    let data = smart_wallet::instruction::SetOwners { owners }.data();
+    let instruction = smart_wallet::TXInstruction {
+        program_id: smart_wallet::id(),
+        keys: vec![smart_wallet::TXAccountMeta {
+            pubkey: smart_wallet,
+            is_signer: true,
+            is_writable: true,
+        }],
+        data,
+    };
+    create_transaction(program, smart_wallet, vec![instruction])
 }
 
-fn change_threshold(program: &Program, smart_wallet: Pubkey, threshold: u64) -> Result<()> {
+fn create_change_threshold_tx(
+    program: &Program,
+    smart_wallet: Pubkey,
+    threshold: u64,
+) -> Result<()> {
     println!("Change threshold");
-    let builder = program
-        .request()
-        .accounts(smart_wallet::accounts::Auth { smart_wallet })
-        .args(smart_wallet::instruction::ChangeThreshold { threshold });
-    let signature = builder.send()?;
-    println!("Signature {:?}", signature);
-    Ok(())
+    let data = smart_wallet::instruction::ChangeThreshold { threshold }.data();
+    let instruction = smart_wallet::TXInstruction {
+        program_id: smart_wallet::id(),
+        keys: vec![smart_wallet::TXAccountMeta {
+            pubkey: smart_wallet,
+            is_signer: true,
+            is_writable: true,
+        }],
+        data,
+    };
+
+    create_transaction(program, smart_wallet, vec![instruction])
 }
 
 fn approve_transaction(program: &Program, smart_wallet: Pubkey, transaction: Pubkey) -> Result<()> {
@@ -185,7 +202,7 @@ fn execute_transaction(program: &Program, smart_wallet: Pubkey, transaction: Pub
         for key in ix.keys.iter() {
             remaining_accounts.push(AccountMeta {
                 pubkey: key.pubkey,
-                is_signer: key.is_signer,
+                is_signer: false,
                 is_writable: key.is_writable,
             });
         }
@@ -221,8 +238,16 @@ fn view_smartwallet(program: &Program, smart_wallet: Pubkey) -> Result<()> {
 }
 
 fn create_dummy_transaction(program: &Program, smart_wallet: Pubkey) -> Result<()> {
+    create_transaction(program, smart_wallet, vec![])
+}
+
+fn create_transaction(
+    program: &Program,
+    smart_wallet: Pubkey,
+    instructions: Vec<smart_wallet::TXInstruction>,
+) -> Result<()> {
     let smart_wallet_state: smart_wallet::SmartWallet = program.account(smart_wallet)?;
-    let (transaction, bump) = Pubkey::find_program_address(
+    let (transaction, _bump) = Pubkey::find_program_address(
         &[
             b"Transaction".as_ref(),
             smart_wallet.as_ref(),
@@ -230,10 +255,9 @@ fn create_dummy_transaction(program: &Program, smart_wallet: Pubkey) -> Result<(
         ],
         &smart_wallet::id(),
     );
+    println!("Tx {}", transaction);
 
-    println!("Create Dummy transaction {}", transaction);
-
-    let mut accounts = smart_wallet::accounts::CreateTransaction {
+    let accounts = smart_wallet::accounts::CreateTransaction {
         smart_wallet,
         transaction,
         proposer: program.payer(),
@@ -248,7 +272,7 @@ fn create_dummy_transaction(program: &Program, smart_wallet: Pubkey) -> Result<(
             .accounts(accounts)
             .args(smart_wallet::instruction::CreateTransaction {
                 bump: 0,
-                instructions: vec![],
+                instructions,
             });
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
