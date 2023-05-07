@@ -9,9 +9,9 @@ pub enum Phase {
     /// In InitalPhase:
     /// - User cannot extend expiration
     /// - Smartwallet can update expiration in locker
-    /// - Voting power is consant, If expiration is reached, Voting Power is zero
+    /// - Voting power is constant, If expiration is reached, Voting Power is zero
     InitialPhase,
-    /// In TokenLauchPhase, voting escrow works with normal functions
+    /// In TokenLaunchPhase, voting escrow works with normal functions
     TokenLaunchPhase,
 }
 
@@ -30,7 +30,7 @@ pub struct Locker {
     /// Governor associated with the [Locker].
     pub governor: Pubkey,
     /// Indicate whether a locker expired, if then all escrow can be withdraw before expiration
-    /// This is only used for our inital phase, in the next phase, smartwallet cannot change expiration
+    /// This is only used for our initial phase, in the next phase, smartwallet cannot change expiration
     pub expiration: i64,
     /// Mutable parameters of how a [Locker] should behave.
     pub params: LockerParams,

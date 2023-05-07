@@ -292,13 +292,13 @@ pub struct ClaimedEvent {
 /// Error codes.
 #[error_code]
 pub enum ErrorCode {
-    #[msg("Invalid Merkle proof.")]
+    #[msg("Invalid Merkle proof")]
     InvalidProof,
-    #[msg("Drop already claimed.")]
+    #[msg("Drop already claimed")]
     DropAlreadyClaimed,
-    #[msg("Exceeded maximum claim amount.")]
+    #[msg("Exceeded maximum claim amount")]
     ExceededMaxClaim,
-    #[msg("Exceeded maximum number of claimed nodes.")]
+    #[msg("Exceeded maximum number of claimed nodes")]
     ExceededMaxNumNodes,
     #[msg("Account is not authorized to execute this instruction")]
     Unauthorized,
