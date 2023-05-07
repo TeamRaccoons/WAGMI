@@ -153,7 +153,7 @@ fn create_dummy_proposal(program: &Program, governor: Pubkey) -> Result<()> {
             system_program: solana_program::system_program::ID,
         })
         .args(govern::instruction::CreateProposal {
-            bump: 0,
+            _bump: 0,
             instructions: vec![],
         });
     let signature = builder.send()?;
@@ -252,7 +252,7 @@ fn create_proposal_meta(
             system_program: solana_program::system_program::ID,
         })
         .args(govern::instruction::CreateProposalMeta {
-            bump: 0,
+            _bump: 0,
             title,
             description_link,
         });

@@ -271,7 +271,7 @@ fn create_transaction(
             .request()
             .accounts(accounts)
             .args(smart_wallet::instruction::CreateTransaction {
-                bump: 0,
+                _bump: 0,
                 instructions,
             });
     let signature = builder.send()?;
