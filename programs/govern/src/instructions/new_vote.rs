@@ -2,7 +2,7 @@ use crate::*;
 
 /// Accounts for [govern::new_vote].
 #[derive(Accounts)]
-#[instruction(_bump: u8, voter: Pubkey)]
+#[instruction(voter: Pubkey)]
 pub struct NewVote<'info> {
     /// Proposal being voted on.
     pub proposal: Account<'info, Proposal>,

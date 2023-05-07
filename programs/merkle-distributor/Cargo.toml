@@ -22,6 +22,7 @@ no-entrypoint = []
 no-idl = []
 cpi = ["no-entrypoint"]
 default = []
+test-bpf = []
 
 [dependencies]
 anchor-lang = "0.26.0"
