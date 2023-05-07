@@ -5,7 +5,7 @@
 
 pub mod macros;
 
-use anchor_lang::{prelude::*, InstructionData};
+use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 use govern::{Governor, Proposal, Vote};
 use vipers::prelude::*;
