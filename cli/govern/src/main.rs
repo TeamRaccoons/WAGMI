@@ -32,7 +32,8 @@ fn main() -> Result<()> {
     let program = client.program(program_id);
     match opts.command {
         CliCommand::CreateGovernor {
-            electorate,
+            smart_wallet,
+            voter,
             voting_delay,
             voting_period,
             quorum_votes,
@@ -40,7 +41,8 @@ fn main() -> Result<()> {
         } => {
             create_governor(
                 &program,
-                electorate,
+                smart_wallet,
+                voter,
                 voting_delay,
                 voting_period,
                 quorum_votes,
@@ -90,7 +92,8 @@ fn main() -> Result<()> {
 
 fn create_governor(
     program: &Program,
-    electorate: Pubkey,
+    smart_wallet: Pubkey,
+    voter: Pubkey,
     voting_delay: u64,
     voting_period: u64,
     quorum_votes: u64,
@@ -108,12 +111,12 @@ fn create_governor(
         .accounts(govern::accounts::CreateGovernor {
             base,
             governor,
-            smart_wallet: electorate,
+            smart_wallet,
             payer: program.payer(),
             system_program: solana_program::system_program::ID,
         })
         .args(govern::instruction::CreateGovernor {
-            electorate,
+            voter,
             params: govern::GovernanceParameters {
                 voting_delay,
                 voting_period,

@@ -39,7 +39,7 @@ impl<'info> ActivateProposal<'info> {
         govern::cpi::accounts::ActivateProposal {
             governor: self.governor.to_account_info(),
             proposal: self.proposal.to_account_info(),
-            electorate: self.locker.to_account_info(),
+            voter: self.locker.to_account_info(),
         }
     }
 
@@ -51,7 +51,7 @@ impl<'info> ActivateProposal<'info> {
 
 impl<'info> Validate<'info> for ActivateProposal<'info> {
     fn validate(&self) -> Result<()> {
-        assert_keys_eq!(self.locker, self.governor.electorate);
+        assert_keys_eq!(self.locker, self.governor.voter);
         assert_keys_eq!(self.governor, self.locker.governor);
         assert_keys_eq!(self.proposal.governor, self.governor);
         assert_keys_eq!(self.escrow.locker, self.locker);

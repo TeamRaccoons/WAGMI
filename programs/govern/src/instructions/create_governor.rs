@@ -30,7 +30,7 @@ impl<'info> CreateGovernor<'info> {
     pub fn create_governor(
         &mut self,
         bump: u8,
-        electorate: Pubkey,
+        voter: Pubkey,
         params: GovernanceParameters,
     ) -> Result<()> {
         invariant!(
@@ -43,14 +43,14 @@ impl<'info> CreateGovernor<'info> {
         governor.bump = bump;
 
         governor.proposal_count = 0;
-        governor.electorate = electorate;
+        governor.voter = voter;
         governor.smart_wallet = self.smart_wallet.key();
 
         governor.params = params;
 
         emit!(GovernorCreateEvent {
             governor: governor.key(),
-            electorate,
+            voter,
             smart_wallet: self.smart_wallet.key(),
             parameters: params,
         });
@@ -77,7 +77,7 @@ pub struct GovernorCreateEvent {
     #[index]
     pub governor: Pubkey,
     /// The electorate of the created [Governor].
-    pub electorate: Pubkey,
+    pub voter: Pubkey,
     /// The [SmartWallet].
     pub smart_wallet: Pubkey,
     /// Governance parameters.

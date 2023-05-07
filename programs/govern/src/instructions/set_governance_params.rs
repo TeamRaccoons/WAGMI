@@ -23,14 +23,14 @@ impl<'info> SetGovernanceParams<'info> {
         Ok(())
     }
 
-    pub fn set_electorate(&mut self, new_electorate: Pubkey) -> Result<()> {
-        let prev_electorate = self.governor.electorate;
-        self.governor.electorate = new_electorate;
+    pub fn set_electorate(&mut self, voter: Pubkey) -> Result<()> {
+        let prev_voter = self.governor.voter;
+        self.governor.voter = voter;
 
         emit!(GovernorSetElectorateEvent {
             governor: self.governor.key(),
-            prev_electorate,
-            new_electorate,
+            prev_voter,
+            new_voter: voter,
         });
 
         Ok(())
@@ -67,7 +67,7 @@ pub struct GovernorSetElectorateEvent {
     #[index]
     pub governor: Pubkey,
     /// Previous [Governor::electorate].
-    pub prev_electorate: Pubkey,
+    pub prev_voter: Pubkey,
     /// New [Governor::electorate].
-    pub new_electorate: Pubkey,
+    pub new_voter: Pubkey,
 }
