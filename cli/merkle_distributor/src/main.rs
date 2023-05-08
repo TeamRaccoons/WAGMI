@@ -1,6 +1,8 @@
 mod args;
+mod helpers;
 mod utils;
 use crate::args::*;
+use crate::helpers::*;
 use crate::utils::*;
 use anyhow::Result;
 
@@ -9,12 +11,13 @@ use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signer::keypair::*;
 use anchor_client::solana_sdk::signer::Signer;
 use anchor_client::{Client, Program};
+use anchor_lang::InstructionData;
+use anchor_lang::ToAccountMetas;
 use anchor_spl::associated_token::get_associated_token_address;
-
+use clap::*;
+use solana_program::instruction::Instruction;
 use std::rc::Rc;
 use std::str::FromStr;
-
-use clap::*;
 
 fn main() -> Result<()> {
     let opts = Opts::parse();
@@ -147,12 +150,35 @@ fn claim(
         ],
         &voter::id(),
     );
-
-    let escrow_state: voter::Escrow = program.account(escrow)?;
-
-    let builder = program
-        .request()
-        .accounts(merkle_distributor::accounts::Claim {
+    // check whether escrow is created
+    let mut instructions = vec![];
+    let escrow_info = program.rpc().get_account(&escrow);
+    if escrow_info.is_err() {
+        instructions = vec![Instruction {
+            accounts: voter::accounts::NewEscrow {
+                locker: distributor_state.locker,
+                escrow,
+                escrow_owner: claimant,
+                payer: program.payer(),
+                system_program: solana_program::system_program::ID,
+            }
+            .to_account_metas(None),
+            data: voter::instruction::NewEscrow {}.data(),
+            program_id: voter::id(),
+        }];
+    }
+    let escrow_tokens = get_associated_token_address(&escrow, &distributor_state.mint);
+    if program.rpc().get_account_data(&escrow_tokens).is_err() {
+        instructions.push(
+            spl_associated_token_account::create_associated_token_account(
+                &program.payer(),
+                &escrow,
+                &distributor_state.mint,
+            ),
+        );
+    }
+    instructions.push(Instruction {
+        accounts: merkle_distributor::accounts::Claim {
             distributor,
             claim_status,
             from,
@@ -163,14 +189,28 @@ fn claim(
             voter_program: voter::ID,
             locker: distributor_state.locker,
             escrow,
-            escrow_tokens: escrow_state.tokens,
-        })
-        .args(merkle_distributor::instruction::Claim {
+            escrow_tokens,
+        }
+        .to_account_metas(None),
+        data: merkle_distributor::instruction::Claim {
             index,
             amount,
             proof,
-        });
+        }
+        .data(),
+        program_id: merkle_distributor::id(),
+    });
+
+    let builder = program.request();
+    let builder = instructions
+        .into_iter()
+        .fold(builder, |bld, ix| bld.instruction(ix));
+
+    // let result = simulate_transaction(&builder, program, &vec![&default_keypair()]).unwrap();
+    // println!("{:?}", result);
+    // return Ok(());
+
     let signature = builder.send()?;
-    println!("Signature {:?}", signature);
+    println!("{}", signature);
     Ok(())
 }

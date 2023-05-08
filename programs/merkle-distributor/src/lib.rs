@@ -218,10 +218,9 @@ pub struct Claim<'info> {
             claimant.key().as_ref()
         ],
         seeds::program = voter_program.key(),
-        bump,
-        constraint = escrow.locker == locker.key() && escrow.owner == claimant.key() && escrow.tokens == escrow_tokens.key())
-    ]
-    pub escrow: Account<'info, voter::Escrow>,
+        bump
+    )]
+    pub escrow: AccountInfo<'info>,
 
     /// CHECK: escrow_tokens
     #[account(mut)]

@@ -22,11 +22,11 @@ pub struct ConfigOverride {
     )]
     pub wallet_path: String,
 
-    /// Base keypair file required to initialize the vault
+    /// Base keypair file required to initialize the governor
     ///
     /// /path/to/base/keypair.json
-    // #[clap(global = true, short, long, default_value_t = String::from(""))]
-    // pub base: String,
+    #[clap(global = true, short, long)]
+    pub base: Option<String>,
 
     #[clap(
     global = true,
@@ -40,10 +40,6 @@ pub struct ConfigOverride {
 #[derive(Parser, Debug)]
 pub enum CliCommand {
     CreateGovernor {
-        #[clap(long)]
-        smart_wallet: Pubkey, // smart_wallet
-        #[clap(long)]
-        locker: Pubkey, // locker
         /// The delay before voting on a proposal may take place, once proposed, in seconds
         #[clap(long)]
         voting_delay: u64,

@@ -30,11 +30,17 @@ fn main() -> Result<()> {
         CommitmentConfig::finalized(),
     );
 
+    let base = match opts.config_override.base {
+        Some(value) => {
+            read_keypair_file(&*shellexpand::tilde(&value)).expect("Requires a keypair file")
+        }
+        None => Keypair::new(),
+    };
+
     let program = client.program(program_id);
     match opts.command {
         CliCommand::NewLocker {
             token_mint,
-            governor,
             expiration,
             max_stake_vote_multiplier,
             min_stake_duration,
@@ -43,8 +49,8 @@ fn main() -> Result<()> {
         } => {
             new_locker(
                 &program,
+                base,
                 token_mint,
-                governor,
                 expiration,
                 max_stake_vote_multiplier,
                 min_stake_duration,
@@ -99,16 +105,17 @@ fn main() -> Result<()> {
 
 fn new_locker(
     program: &Program,
+    base_keypair: Keypair,
     token_mint: Pubkey,
-    governor: Pubkey,
     expiration: i64,
     max_stake_vote_multiplier: u8,
     min_stake_duration: u64,
     max_stake_duration: u64,
     proposal_activation_min_votes: u64,
 ) -> Result<()> {
-    let base_keypair = Keypair::new();
     let base = base_keypair.pubkey();
+    let (governor, bump) =
+        Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
 
     let (locker, _bump) =
         Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());

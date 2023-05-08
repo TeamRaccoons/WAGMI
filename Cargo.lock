@@ -1601,6 +1601,7 @@ dependencies = [
  "shellexpand",
  "smart-wallet",
  "solana-program",
+ "voter",
 ]
 
 [[package]]
@@ -2134,10 +2135,12 @@ dependencies = [
  "anyhow",
  "clap 3.2.25",
  "merkle-distributor",
+ "regex",
  "serde",
  "serde_json",
  "shellexpand",
  "solana-program",
+ "spl-associated-token-account",
  "voter",
 ]
 
@@ -3361,6 +3364,7 @@ dependencies = [
  "anchor-spl",
  "anyhow",
  "clap 3.2.25",
+ "govern",
  "shellexpand",
  "smart-wallet",
  "solana-program",

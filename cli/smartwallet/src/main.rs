@@ -31,7 +31,12 @@ fn main() -> Result<()> {
         Rc::new(Keypair::from_bytes(&payer.to_bytes())?),
         CommitmentConfig::finalized(),
     );
-
+    let base = match opts.config_override.base {
+        Some(value) => {
+            read_keypair_file(&*shellexpand::tilde(&value)).expect("Requires a keypair file")
+        }
+        None => Keypair::new(),
+    };
     let program = client.program(program_id);
     match opts.command {
         CliCommand::CreateSmartWallet {
@@ -40,7 +45,7 @@ fn main() -> Result<()> {
             minimum_delay,
             owners,
         } => {
-            create_smart_wallet(&program, max_owners, threshold, minimum_delay, owners)?;
+            create_smart_wallet(&program, base, max_owners, threshold, minimum_delay, owners)?;
         }
         CliCommand::CreateSetOwnersTx {
             smart_wallet,
@@ -88,18 +93,26 @@ fn main() -> Result<()> {
 
 fn create_smart_wallet(
     program: &Program,
+    base_keypair: Keypair,
     max_owners: u8,
     threshold: u64,
     minimum_delay: i64,
     owners: Vec<Pubkey>,
 ) -> Result<()> {
-    let base_keypair = Keypair::new();
     let base = base_keypair.pubkey();
 
     let (smart_wallet, bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
     );
+
+    // push governor in the owner
+    let mut owners = owners.to_vec();
+    let (governor, bump) =
+        Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
+    owners.push(governor);
+    assert_eq!(max_owners >= owners.len() as u8, true);
+
     println!("smart_wallet address {}", smart_wallet);
 
     let builder = program
@@ -112,7 +125,7 @@ fn create_smart_wallet(
         })
         .args(smart_wallet::instruction::CreateSmartWallet {
             max_owners,
-            owners,
+            owners: owners.to_vec(),
             threshold,
             minimum_delay,
         })

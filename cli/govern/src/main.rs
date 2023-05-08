@@ -29,11 +29,16 @@ fn main() -> Result<()> {
         CommitmentConfig::finalized(),
     );
 
+    let base = match opts.config_override.base {
+        Some(value) => {
+            read_keypair_file(&*shellexpand::tilde(&value)).expect("Requires a keypair file")
+        }
+        None => Keypair::new(),
+    };
+
     let program = client.program(program_id);
     match opts.command {
         CliCommand::CreateGovernor {
-            smart_wallet,
-            locker,
             voting_delay,
             voting_period,
             quorum_votes,
@@ -41,8 +46,7 @@ fn main() -> Result<()> {
         } => {
             create_governor(
                 &program,
-                smart_wallet,
-                locker,
+                base,
                 voting_delay,
                 voting_period,
                 quorum_votes,
@@ -92,15 +96,22 @@ fn main() -> Result<()> {
 
 fn create_governor(
     program: &Program,
-    smart_wallet: Pubkey,
-    locker: Pubkey,
+    base_keypair: Keypair,
     voting_delay: u64,
     voting_period: u64,
     quorum_votes: u64,
     timelock_delay_seconds: i64,
 ) -> Result<()> {
-    let base_keypair = Keypair::new();
     let base = base_keypair.pubkey();
+
+    let (smart_wallet, bump) = Pubkey::find_program_address(
+        &[b"SmartWallet".as_ref(), base.as_ref()],
+        &smart_wallet::id(),
+    );
+
+    // create locker pda
+    let (locker, _bump) =
+        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
 
     let (governor, bump) =
         Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
