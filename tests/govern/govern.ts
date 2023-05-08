@@ -30,7 +30,7 @@ describe("Govern", () => {
     let bump: Number;
     let governorState: Govern;
     let governor: Pubkey;
-    let voter = anchor.web3.PublicKey.unique();
+    let locker = anchor.web3.PublicKey.unique();
     before(async () => {
         // create smartwallet
         const [governorAddr, gBump] = await anchor.web3.PublicKey.findProgramAddress(
@@ -62,7 +62,7 @@ describe("Govern", () => {
         //create govern
 
         governor = governorAddr
-        await program.methods.createGovernor(voter, DEFAULT_GOVERNANCE_PARAMETERS).accounts({
+        await program.methods.createGovernor(locker, DEFAULT_GOVERNANCE_PARAMETERS).accounts({
             base: governBase.publicKey,
             governor,
             smartWallet,

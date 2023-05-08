@@ -23,14 +23,14 @@ impl<'info> SetGovernanceParams<'info> {
         Ok(())
     }
 
-    pub fn set_voter(&mut self, voter: Pubkey) -> Result<()> {
-        let prev_voter = self.governor.voter;
-        self.governor.voter = voter;
+    pub fn set_locker(&mut self, locker: Pubkey) -> Result<()> {
+        let prev_locker = self.governor.locker;
+        self.governor.locker = locker;
 
         emit!(GovernorSetVoterEvent {
             governor: self.governor.key(),
-            prev_voter,
-            new_voter: voter,
+            prev_locker,
+            new_locker: locker,
         });
 
         Ok(())
@@ -66,8 +66,8 @@ pub struct GovernorSetVoterEvent {
     /// The governor being created.
     #[index]
     pub governor: Pubkey,
-    /// Previous [Governor::voter].
-    pub prev_voter: Pubkey,
-    /// New [Governor::voter].
-    pub new_voter: Pubkey,
+    /// Previous [Governor::locker].
+    pub prev_locker: Pubkey,
+    /// New [Governor::locker].
+    pub new_locker: Pubkey,
 }

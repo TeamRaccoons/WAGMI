@@ -11,8 +11,8 @@ pub struct SetVote<'info> {
     /// The [Vote].
     #[account(mut)]
     pub vote: Account<'info, Vote>,
-    /// The [Governor::voter].
-    pub voter: Signer<'info>,
+    /// The [Governor::locker].
+    pub locker: Signer<'info>,
 }
 
 impl<'info> SetVote<'info> {
@@ -43,7 +43,7 @@ impl<'info> SetVote<'info> {
 
 impl<'info> Validate<'info> for SetVote<'info> {
     fn validate(&self) -> Result<()> {
-        assert_keys_eq!(self.governor.voter, self.voter);
+        assert_keys_eq!(self.governor.locker, self.locker);
         assert_keys_eq!(
             self.governor,
             self.proposal.governor,

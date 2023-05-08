@@ -43,7 +43,7 @@ pub enum CliCommand {
         #[clap(long)]
         smart_wallet: Pubkey, // smart_wallet
         #[clap(long)]
-        voter: Pubkey, // voter
+        locker: Pubkey, // locker
         /// The delay before voting on a proposal may take place, once proposed, in seconds
         #[clap(long)]
         voting_delay: u64,

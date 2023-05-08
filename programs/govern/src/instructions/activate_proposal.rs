@@ -8,8 +8,8 @@ pub struct ActivateProposal<'info> {
     /// The [Proposal] to activate.
     #[account(mut)]
     pub proposal: Account<'info, Proposal>,
-    /// The voter of the [Governor] that may activate the proposal.
-    pub voter: Signer<'info>,
+    /// The locker of the [Governor] that may activate the proposal.
+    pub locker: Signer<'info>,
 }
 
 impl<'info> ActivateProposal<'info> {
@@ -37,7 +37,7 @@ impl<'info> ActivateProposal<'info> {
 impl<'info> Validate<'info> for ActivateProposal<'info> {
     fn validate(&self) -> Result<()> {
         assert_keys_eq!(self.governor, self.proposal.governor);
-        assert_keys_eq!(self.voter, self.governor.voter);
+        assert_keys_eq!(self.locker, self.governor.locker);
         invariant!(
             self.proposal.get_state()? == ProposalState::Draft,
             ProposalNotDraft

@@ -28,11 +28,11 @@ pub mod govern {
     #[access_control(ctx.accounts.validate())]
     pub fn create_governor(
         ctx: Context<CreateGovernor>,
-        voter: Pubkey,
+        locker: Pubkey,
         params: GovernanceParameters,
     ) -> Result<()> {
         ctx.accounts
-            .create_governor(unwrap_bump!(ctx, "governor"), voter, params)
+            .create_governor(unwrap_bump!(ctx, "governor"), locker, params)
     }
 
     /// Creates a [Proposal].
@@ -94,10 +94,10 @@ pub mod govern {
         ctx.accounts.set_governance_params(params)
     }
 
-    /// Sets the voter of the [Governor].
+    /// Sets the locker of the [Governor].
     #[access_control(ctx.accounts.validate())]
-    pub fn set_voter(ctx: Context<SetGovernanceParams>, new_voter: Pubkey) -> Result<()> {
-        ctx.accounts.set_voter(new_voter)
+    pub fn set_locker(ctx: Context<SetGovernanceParams>, new_locker: Pubkey) -> Result<()> {
+        ctx.accounts.set_locker(new_locker)
     }
 
     /// Creates a [ProposalMeta].

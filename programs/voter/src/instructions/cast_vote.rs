@@ -40,7 +40,7 @@ impl<'info> CastVote<'info> {
                 governor: self.governor.to_account_info(),
                 proposal: self.proposal.to_account_info(),
                 vote: self.vote.to_account_info(),
-                voter: self.locker.to_account_info(),
+                locker: self.locker.to_account_info(),
             },
         )
         .with_signer(seeds);

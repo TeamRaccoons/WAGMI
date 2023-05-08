@@ -33,7 +33,7 @@ fn main() -> Result<()> {
     match opts.command {
         CliCommand::CreateGovernor {
             smart_wallet,
-            voter,
+            locker,
             voting_delay,
             voting_period,
             quorum_votes,
@@ -42,7 +42,7 @@ fn main() -> Result<()> {
             create_governor(
                 &program,
                 smart_wallet,
-                voter,
+                locker,
                 voting_delay,
                 voting_period,
                 quorum_votes,
@@ -93,7 +93,7 @@ fn main() -> Result<()> {
 fn create_governor(
     program: &Program,
     smart_wallet: Pubkey,
-    voter: Pubkey,
+    locker: Pubkey,
     voting_delay: u64,
     voting_period: u64,
     quorum_votes: u64,
@@ -116,7 +116,7 @@ fn create_governor(
             system_program: solana_program::system_program::ID,
         })
         .args(govern::instruction::CreateGovernor {
-            voter,
+            locker,
             params: govern::GovernanceParameters {
                 voting_delay,
                 voting_period,
