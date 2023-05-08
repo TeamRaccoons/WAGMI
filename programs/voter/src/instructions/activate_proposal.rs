@@ -64,7 +64,10 @@ impl<'info> Validate<'info> for ActivateProposal<'info> {
         let phase = self.locker.get_current_phase()?;
 
         // Only allow this function when we are in TokenLaunchPhase
-        invariant!(phase == Phase::TokenLaunchPhase, "phase is not correct");
+        invariant!(
+            phase == Phase::TokenLaunchPhase,
+            "must be token launch phase"
+        );
 
         Ok(())
     }

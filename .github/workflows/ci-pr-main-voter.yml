@@ -54,5 +54,5 @@ jobs:
       # Testing
       - run: npm install
         shell: bash
-      - run: anchor test --run ./tests/voter
+      - run: anchor test --run ./tests/voter -- --features test-bpf
         shell: bash

@@ -13,6 +13,17 @@ import {
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import { expect } from "chai";
+import { MerkleDistributor } from "../../target/types/merkle_distributor";
+
+export interface IProposalInstruction {
+  programId: web3.PublicKey;
+  keys: web3.AccountMeta[];
+  data: Buffer;
+}
+
+export async function sleep(ms: number) {
+  return new Promise((res) => setTimeout(res, ms));
+}
 
 export async function getOnChainTime(
   connection: web3.Connection
@@ -26,6 +37,13 @@ export async function getOnChainTime(
 
   const currentTime = parsedClockAccount.info.unixTimestamp;
   return currentTime as number;
+}
+
+export function deriveVote(voter: web3.PublicKey, proposal: web3.PublicKey) {
+  return web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("MeteoraVote"), proposal.toBytes(), voter.toBytes()],
+    GOVERN_PROGRAM_ID
+  );
 }
 
 export function deriveDistributor(basePubkey: web3.PublicKey) {
@@ -75,6 +93,122 @@ export function deriveEscrow(
     [Buffer.from("Escrow"), locker.toBytes(), escrowOwner.toBytes()],
     VOTER_PROGRAM_ID
   );
+}
+
+export function deriveTransaction(smartWallet: web3.PublicKey, txNo: BN) {
+  return web3.PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("Transaction"),
+      smartWallet.toBytes(),
+      new Uint8Array(txNo.toBuffer("le", 8)),
+    ],
+    SMART_WALLET_PROGRAM_ID
+  );
+}
+
+export function deriveProposal(governor: web3.PublicKey, proposalCount: BN) {
+  return web3.PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("MeteoraProposal"),
+      governor.toBytes(),
+      new Uint8Array(proposalCount.toBuffer("le", 8)),
+    ],
+    GOVERN_PROGRAM_ID
+  );
+}
+
+export function deriveProposalMeta(proposal: web3.PublicKey) {
+  return web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("MeteoraProposalMeta"), proposal.toBytes()],
+    GOVERN_PROGRAM_ID
+  );
+}
+
+export async function createProposal(
+  governor: web3.PublicKey,
+  instruction: IProposalInstruction[],
+  governProgram: Program<Govern>
+) {
+  const governState = await governProgram.account.governor.fetch(governor);
+  const [proposal, bump] = deriveProposal(governor, governState.proposalCount);
+
+  console.log("Creating proposal", proposal.toBase58());
+
+  const tx = await governProgram.methods
+    .createProposal(bump, instruction)
+    .accounts({
+      governor,
+      payer: governProgram.provider.publicKey,
+      proposal,
+      proposer: governProgram.provider.publicKey,
+      systemProgram: web3.SystemProgram.programId,
+    })
+    .rpc();
+
+  console.log("Create proposal tx", tx);
+
+  return proposal;
+}
+
+export async function createProposalMeta(
+  proposal: web3.PublicKey,
+  title: string,
+  descriptionLink: string,
+  governProgram: Program<Govern>
+) {
+  const [proposalMeta, bump] = deriveProposalMeta(proposal);
+
+  console.log("Creating proposal meta", proposalMeta.toBase58());
+
+  const tx = await governProgram.methods
+    .createProposalMeta(bump, title, descriptionLink)
+    .accounts({
+      payer: governProgram.provider.publicKey,
+      proposal,
+      proposalMeta,
+      proposer: governProgram.provider.publicKey,
+      systemProgram: web3.SystemProgram.programId,
+    })
+    .rpc();
+
+  console.log("Create proposal meta tx", tx);
+
+  return proposalMeta;
+}
+
+export async function createDistributor(
+  baseKeypair: web3.Keypair,
+  locker: web3.PublicKey,
+  maxTotalClaim: BN,
+  maxNodesClaimed: BN,
+  root: Buffer,
+  rewardMint: web3.PublicKey,
+  mdProgram: Program<MerkleDistributor>
+) {
+  const [distributor, _bump] = deriveDistributor(baseKeypair.publicKey);
+
+  console.log("Creating distributor", distributor.toBase58());
+
+  const tx = await mdProgram.methods
+    .newDistributor(
+      locker,
+      Array.from(new Uint8Array(root)),
+      maxTotalClaim,
+      maxNodesClaimed
+    )
+    .accounts({
+      base: baseKeypair.publicKey,
+      distributor,
+      mint: rewardMint,
+      payer: mdProgram.provider.publicKey,
+      systemProgram: web3.SystemProgram.programId,
+    })
+    .signers([baseKeypair])
+    .rpc();
+
+  console.log("Create distributor tx", tx);
+
+  return distributor;
 }
 
 export async function createSmartWallet(
@@ -209,6 +343,31 @@ export async function createLocker(
   return locker;
 }
 
+export async function getOrCreateVote(
+  proposal: web3.PublicKey,
+  governProgram: Program<Govern>
+) {
+  const [vote, _bump] = deriveVote(governProgram.provider.publicKey, proposal);
+
+  const voteAccount = await governProgram.provider.connection.getAccountInfo(
+    vote
+  );
+
+  if (!voteAccount) {
+    await governProgram.methods
+      .newVote(governProgram.provider.publicKey)
+      .accounts({
+        payer: governProgram.provider.publicKey,
+        proposal,
+        systemProgram: web3.SystemProgram.programId,
+        vote,
+      })
+      .rpc();
+  }
+
+  return vote;
+}
+
 export async function getOrCreateATA(
   mint: web3.PublicKey,
   owner: web3.PublicKey,
@@ -260,8 +419,8 @@ export async function invokeAndAssertError(
       );
     } else {
       const logs: string[] = error.logs;
-      expect(logs.find((s) => s.toLowerCase() == message.toLowerCase())).to.be
-        .not.null;
+      expect(logs.find((s) => s.toLowerCase().includes(message.toLowerCase())))
+        .to.be.not.undefined;
     }
   }
 

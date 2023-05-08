@@ -51,7 +51,7 @@ impl<'info> Validate<'info> for ActivateProposalInitialPhase<'info> {
         let phase = self.locker.get_current_phase()?;
 
         // Only allow this function when we are in InitialPhase
-        invariant!(phase == Phase::InitialPhase, "phase is not correct");
+        invariant!(phase == Phase::InitialPhase, "must be initial phase");
 
         Ok(())
     }

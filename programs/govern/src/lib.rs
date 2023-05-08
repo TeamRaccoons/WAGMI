@@ -41,7 +41,7 @@ pub mod govern {
     #[access_control(ctx.accounts.validate())]
     pub fn create_proposal(
         ctx: Context<CreateProposal>,
-        bump: u8, // weird bug from anchor
+        _bump: u8, // weird bug from anchor
         instructions: Vec<ProposalInstruction>,
     ) -> Result<()> {
         ctx.accounts
@@ -104,7 +104,7 @@ pub mod govern {
     #[access_control(ctx.accounts.validate())]
     pub fn create_proposal_meta(
         ctx: Context<CreateProposalMeta>,
-        bump: u8, // fix anchor weird bug
+        _bump: u8, // fix anchor weird bug
         title: String,
         description_link: String,
     ) -> Result<()> {

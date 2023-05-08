@@ -79,7 +79,7 @@ pub mod voter {
         ctx.accounts.withdraw()
     }
 
-    /// Activates a proposal in tokenlaunch phase
+    /// Activates a proposal in token launch phase
     #[access_control(ctx.accounts.validate())]
     pub fn activate_proposal(ctx: Context<ActivateProposal>) -> Result<()> {
         ctx.accounts.activate_proposal()
@@ -115,13 +115,13 @@ pub mod voter {
 /// [voter] errors.
 #[error_code]
 pub enum ErrorCode {
-    #[msg("Lockup duration must at least be the min stake duration.")]
+    #[msg("Lockup duration must at least be the min stake duration")]
     LockupDurationTooShort,
-    #[msg("Lockup duration must at most be the max stake duration.")]
+    #[msg("Lockup duration must at most be the max stake duration")]
     LockupDurationTooLong,
-    #[msg("A voting escrow refresh cannot shorten the escrow time remaining.")]
+    #[msg("A voting escrow refresh cannot shorten the escrow time remaining")]
     RefreshCannotShorten,
-    #[msg("Escrow has not ended.")]
+    #[msg("Escrow has not ended")]
     EscrowNotEnded,
     #[msg("Cannot set expiration less than the current time")]
     ExpirationIsLessThanCurrentTime,

@@ -17,15 +17,15 @@ You may run tests belong to specific program by:
 
 ```
 Govern:
-anchor test --run ./tests/govern
+anchor test --run ./tests/govern -- --features test-bpf
 
 Merkle distributor:
-anchor test --run ./tests/merkle-distributor
+anchor test --run ./tests/merkle-distributor -- --features test-bpf
 
 Smart wallet:
-anchor test --run ./tests/smartwallet
+anchor test --run ./tests/smartwallet -- --features test-bpf
 
 Voter:
-anchor test --run ./tests/voter
+anchor test --run ./tests/voter -- --features test-bpf
 
 ```

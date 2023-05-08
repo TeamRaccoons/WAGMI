@@ -26,6 +26,7 @@ impl Locker {
             if self.expiration <= now {
                 return Some(0);
             }
+            // Constant voting power
             let power_if_max_lockup = escrow
                 .amount
                 .checked_mul(self.params.max_stake_vote_multiplier.into())?;
@@ -52,6 +53,7 @@ impl Locker {
             .amount
             .checked_mul(self.params.max_stake_vote_multiplier.into())?;
 
+        // Linear voting power
         // multiply the max lockup power by the fraction of the max stake duration
         let power = (power_if_max_lockup as u128)
             .checked_mul(relevant_seconds_until_lockup_expiry.into())?

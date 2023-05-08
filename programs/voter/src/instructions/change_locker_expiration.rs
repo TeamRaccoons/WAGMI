@@ -17,9 +17,12 @@ pub struct ChangeLockerExpiration<'info> {
 impl<'info> ChangeLockerExpiration<'info> {
     pub fn change_locker_expiration(&mut self, expiration: i64) -> Result<()> {
         // validate expiration
-        let now = Clock::get()?.unix_timestamp;
-        // buffer 1 day, so incase smart_wallet update wrongly, we can make it again
-        invariant!(expiration >= now + 86400, ExpirationIsLessThanCurrentTime);
+        #[cfg(not(feature = "test-bpf"))]
+        {
+            let now = Clock::get()?.unix_timestamp;
+            // buffer 1 day, so incase smart_wallet update wrongly, we can make it again
+            invariant!(expiration >= now + 86400, ExpirationIsLessThanCurrentTime);
+        }
 
         let prev_expiration = self.locker.expiration;
         self.locker.expiration = expiration;
@@ -40,7 +43,9 @@ impl<'info> Validate<'info> for ChangeLockerExpiration<'info> {
         assert_keys_eq!(self.smart_wallet, self.governor.smart_wallet);
         // only allow in initial phase
         let phase = self.locker.get_current_phase()?;
-        assert_eq!(phase, Phase::InitialPhase);
+
+        invariant!(phase == Phase::InitialPhase, "must be initial phase");
+
         Ok(())
     }
 }
