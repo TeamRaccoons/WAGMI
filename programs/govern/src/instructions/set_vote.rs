@@ -1,6 +1,6 @@
 use crate::*;
 
-/// Accounts for [govern::set_vote].
+/// Accounts for [govern::set_voter].
 #[derive(Accounts)]
 pub struct SetVote<'info> {
     /// The [Governor].
@@ -11,7 +11,7 @@ pub struct SetVote<'info> {
     /// The [Vote].
     #[account(mut)]
     pub vote: Account<'info, Vote>,
-    /// The [Governor::electorate].
+    /// The [Governor::voter].
     pub voter: Signer<'info>,
 }
 

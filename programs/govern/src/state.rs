@@ -106,7 +106,7 @@ pub struct ProposalMeta {
     pub description_link: String,
 }
 
-/// A [Vote] is a vote made by a `voter` by an `electorate`.
+/// A [Vote] is a vote made by a `voter`
 #[account]
 #[derive(Debug, Default)]
 pub struct Vote {

@@ -1,5 +1,5 @@
 use crate::*;
-/// Accounts for [govern::set_governance_params] and [govern::set_electorate].
+/// Accounts for [govern::set_governance_params] and [govern::set_voter].
 #[derive(Accounts)]
 pub struct SetGovernanceParams<'info> {
     /// The [Governor]
@@ -23,11 +23,11 @@ impl<'info> SetGovernanceParams<'info> {
         Ok(())
     }
 
-    pub fn set_electorate(&mut self, voter: Pubkey) -> Result<()> {
+    pub fn set_voter(&mut self, voter: Pubkey) -> Result<()> {
         let prev_voter = self.governor.voter;
         self.governor.voter = voter;
 
-        emit!(GovernorSetElectorateEvent {
+        emit!(GovernorSetVoterEvent {
             governor: self.governor.key(),
             prev_voter,
             new_voter: voter,
@@ -60,14 +60,14 @@ pub struct GovernorSetParamsEvent {
     pub params: GovernanceParameters,
 }
 
-/// Event called in [govern::set_electorate].
+/// Event called in [govern::set_voter].
 #[event]
-pub struct GovernorSetElectorateEvent {
+pub struct GovernorSetVoterEvent {
     /// The governor being created.
     #[index]
     pub governor: Pubkey,
-    /// Previous [Governor::electorate].
+    /// Previous [Governor::voter].
     pub prev_voter: Pubkey,
-    /// New [Governor::electorate].
+    /// New [Governor::voter].
     pub new_voter: Pubkey,
 }

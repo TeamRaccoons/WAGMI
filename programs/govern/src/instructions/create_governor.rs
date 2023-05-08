@@ -76,7 +76,7 @@ pub struct GovernorCreateEvent {
     /// The governor being created.
     #[index]
     pub governor: Pubkey,
-    /// The electorate of the created [Governor].
+    /// The voter of the created [Governor].
     pub voter: Pubkey,
     /// The [SmartWallet].
     pub smart_wallet: Pubkey,

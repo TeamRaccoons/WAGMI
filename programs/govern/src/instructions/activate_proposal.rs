@@ -8,7 +8,7 @@ pub struct ActivateProposal<'info> {
     /// The [Proposal] to activate.
     #[account(mut)]
     pub proposal: Account<'info, Proposal>,
-    /// The electorate of the [Governor] that may activate the proposal.
+    /// The voter of the [Governor] that may activate the proposal.
     pub voter: Signer<'info>,
 }
 

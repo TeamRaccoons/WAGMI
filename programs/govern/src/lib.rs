@@ -49,7 +49,7 @@ pub mod govern {
     }
 
     /// Activates a proposal.
-    /// Only the [Governor::electorate] may call this; that program
+    /// Only the [Governor::voter] may call this; that program
     /// may ensure that only certain types of users can activate proposals.
     #[access_control(ctx.accounts.validate())]
     pub fn activate_proposal(ctx: Context<ActivateProposal>) -> Result<()> {
@@ -78,7 +78,7 @@ pub mod govern {
     }
 
     /// Sets a [Vote] weight and side.
-    /// This may only be called by the [Governor::electorate].
+    /// This may only be called by the [Governor::voter].
     #[access_control(ctx.accounts.validate())]
     pub fn set_vote(ctx: Context<SetVote>, side: u8, weight: u64) -> Result<()> {
         ctx.accounts.set_vote(side, weight)
@@ -94,10 +94,10 @@ pub mod govern {
         ctx.accounts.set_governance_params(params)
     }
 
-    /// Sets the electorate of the [Governor].
+    /// Sets the voter of the [Governor].
     #[access_control(ctx.accounts.validate())]
-    pub fn set_electorate(ctx: Context<SetGovernanceParams>, new_electorate: Pubkey) -> Result<()> {
-        ctx.accounts.set_electorate(new_electorate)
+    pub fn set_voter(ctx: Context<SetGovernanceParams>, new_voter: Pubkey) -> Result<()> {
+        ctx.accounts.set_voter(new_voter)
     }
 
     /// Creates a [ProposalMeta].
