@@ -47,6 +47,7 @@ fn main() -> Result<()> {
         } => {
             create_smart_wallet(&program, base, max_owners, threshold, minimum_delay, owners)?;
         }
+
         CliCommand::CreateSetOwnersTx {
             smart_wallet,
             owners,
@@ -58,6 +59,12 @@ fn main() -> Result<()> {
             threshold,
         } => {
             create_change_threshold_tx(&program, smart_wallet, threshold)?;
+        }
+        CliCommand::CreateActivateProposalTx {
+            smart_wallet,
+            proposal,
+        } => {
+            create_activate_proposal_tx(&program, smart_wallet, proposal)?;
         }
         CliCommand::ApproveTransaction {
             smart_wallet,
@@ -173,6 +180,50 @@ fn create_change_threshold_tx(
     create_transaction(program, smart_wallet, vec![instruction])
 }
 
+fn create_activate_proposal_tx(
+    program: &Program,
+    smart_wallet: Pubkey,
+    proposal: Pubkey,
+) -> Result<()> {
+    let proposal_state: govern::Proposal = program.account(proposal)?;
+    let governor_state: govern::Governor = program.account(proposal_state.governor)?;
+
+    let data = voter::instruction::ActivateProposalInitialPhase {}.data();
+    let instruction = smart_wallet::TXInstruction {
+        program_id: voter::id(),
+        keys: vec![
+            smart_wallet::TXAccountMeta {
+                pubkey: governor_state.locker,
+                is_signer: false,
+                is_writable: true,
+            },
+            smart_wallet::TXAccountMeta {
+                pubkey: proposal_state.governor,
+                is_signer: false,
+                is_writable: true,
+            },
+            smart_wallet::TXAccountMeta {
+                pubkey: proposal,
+                is_signer: false,
+                is_writable: true,
+            },
+            smart_wallet::TXAccountMeta {
+                pubkey: govern::id(),
+                is_signer: false,
+                is_writable: false,
+            },
+            smart_wallet::TXAccountMeta {
+                pubkey: smart_wallet,
+                is_signer: true,
+                is_writable: true,
+            },
+        ],
+        data,
+    };
+
+    create_transaction(program, smart_wallet, vec![instruction])
+}
+
 fn approve_transaction(program: &Program, smart_wallet: Pubkey, transaction: Pubkey) -> Result<()> {
     println!("Approve transaction {}", transaction);
     let builder = program
@@ -233,7 +284,7 @@ fn execute_transaction(program: &Program, smart_wallet: Pubkey, transaction: Pub
     let builder = program
         .request()
         .accounts(accounts)
-        .args(smart_wallet::instruction::Unapprove {});
+        .args(smart_wallet::instruction::ExecuteTransaction {});
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())

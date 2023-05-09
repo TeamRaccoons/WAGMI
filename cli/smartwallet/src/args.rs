@@ -63,7 +63,12 @@ pub enum CliCommand {
         #[clap(long)]
         threshold: u64,
     },
-
+    CreateActivateProposalTx {
+        #[clap(long)]
+        smart_wallet: Pubkey,
+        #[clap(long)]
+        proposal: Pubkey,
+    },
     ApproveTransaction {
         #[clap(long)]
         smart_wallet: Pubkey,
