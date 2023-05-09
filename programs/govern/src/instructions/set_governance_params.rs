@@ -1,5 +1,5 @@
 use crate::*;
-/// Accounts for [govern::set_governance_params] and [govern::set_electorate].
+/// Accounts for [govern::set_governance_params] and [govern::set_voter].
 #[derive(Accounts)]
 pub struct SetGovernanceParams<'info> {
     /// The [Governor]
@@ -23,14 +23,14 @@ impl<'info> SetGovernanceParams<'info> {
         Ok(())
     }
 
-    pub fn set_electorate(&mut self, voter: Pubkey) -> Result<()> {
-        let prev_voter = self.governor.voter;
-        self.governor.voter = voter;
+    pub fn set_locker(&mut self, locker: Pubkey) -> Result<()> {
+        let prev_locker = self.governor.locker;
+        self.governor.locker = locker;
 
-        emit!(GovernorSetElectorateEvent {
+        emit!(GovernorSetVoterEvent {
             governor: self.governor.key(),
-            prev_voter,
-            new_voter: voter,
+            prev_locker,
+            new_locker: locker,
         });
 
         Ok(())
@@ -60,14 +60,14 @@ pub struct GovernorSetParamsEvent {
     pub params: GovernanceParameters,
 }
 
-/// Event called in [govern::set_electorate].
+/// Event called in [govern::set_voter].
 #[event]
-pub struct GovernorSetElectorateEvent {
+pub struct GovernorSetVoterEvent {
     /// The governor being created.
     #[index]
     pub governor: Pubkey,
-    /// Previous [Governor::electorate].
-    pub prev_voter: Pubkey,
-    /// New [Governor::electorate].
-    pub new_voter: Pubkey,
+    /// Previous [Governor::locker].
+    pub prev_locker: Pubkey,
+    /// New [Governor::locker].
+    pub new_locker: Pubkey,
 }

@@ -1,6 +1,7 @@
 mod args;
-
+mod helpers;
 use crate::args::*;
+use crate::helpers::*;
 use anyhow::Result;
 
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
@@ -8,11 +9,13 @@ use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signer::keypair::*;
 use anchor_client::solana_sdk::signer::Signer;
 use anchor_client::{Client, Program};
+use anchor_lang::InstructionData;
+use anchor_lang::ToAccountMetas;
 use anchor_spl::associated_token::get_associated_token_address;
+use clap::*;
+use solana_program::instruction::Instruction;
 use std::rc::Rc;
 use std::str::FromStr;
-
-use clap::*;
 
 fn main() -> Result<()> {
     let opts = Opts::parse();
@@ -30,11 +33,17 @@ fn main() -> Result<()> {
         CommitmentConfig::finalized(),
     );
 
+    let base = match opts.config_override.base {
+        Some(value) => {
+            read_keypair_file(&*shellexpand::tilde(&value)).expect("Requires a keypair file")
+        }
+        None => Keypair::new(),
+    };
+
     let program = client.program(program_id);
     match opts.command {
         CliCommand::NewLocker {
             token_mint,
-            governor,
             expiration,
             max_stake_vote_multiplier,
             min_stake_duration,
@@ -43,8 +52,8 @@ fn main() -> Result<()> {
         } => {
             new_locker(
                 &program,
+                base,
                 token_mint,
-                governor,
                 expiration,
                 max_stake_vote_multiplier,
                 min_stake_duration,
@@ -99,16 +108,17 @@ fn main() -> Result<()> {
 
 fn new_locker(
     program: &Program,
+    base_keypair: Keypair,
     token_mint: Pubkey,
-    governor: Pubkey,
     expiration: i64,
     max_stake_vote_multiplier: u8,
     min_stake_duration: u64,
     max_stake_duration: u64,
     proposal_activation_min_votes: u64,
 ) -> Result<()> {
-    let base_keypair = Keypair::new();
     let base = base_keypair.pubkey();
+    let (governor, bump) =
+        Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
 
     let (locker, _bump) =
         Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
@@ -295,10 +305,26 @@ fn cast_vote(program: &Program, locker: Pubkey, proposal: Pubkey, side: u8) -> R
         ],
         &govern::id(),
     );
-
-    let builder = program
-        .request()
-        .accounts(voter::accounts::CastVote {
+    let mut instructions = vec![];
+    if program.rpc().get_account_data(&vote).is_err() {
+        instructions.push(Instruction {
+            program_id: govern::id(),
+            accounts: govern::accounts::NewVote {
+                proposal,
+                vote,
+                payer: program.payer(),
+                system_program: solana_program::system_program::ID,
+            }
+            .to_account_metas(None),
+            data: govern::instruction::NewVote {
+                voter: program.payer(),
+            }
+            .data(),
+        });
+    }
+    instructions.push(Instruction {
+        program_id: voter::id(),
+        accounts: voter::accounts::CastVote {
             locker,
             escrow,
             vote,
@@ -306,8 +332,20 @@ fn cast_vote(program: &Program, locker: Pubkey, proposal: Pubkey, side: u8) -> R
             vote_delegate: program.payer(),
             governor: locker_state.governor,
             govern_program: govern::ID,
-        })
-        .args(voter::instruction::CastVote { side });
+        }
+        .to_account_metas(None),
+        data: voter::instruction::CastVote { side }.data(),
+    });
+
+    let builder = program.request();
+    let builder = instructions
+        .into_iter()
+        .fold(builder, |bld, ix| bld.instruction(ix));
+
+    // let result = simulate_transaction(&builder, program, &vec![&default_keypair()]).unwrap();
+    // println!("{:?}", result);
+    // return Ok(());
+
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())

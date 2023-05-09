@@ -18,7 +18,7 @@ pub struct Governor {
     /// This account is responsible for handling vote proceedings, such as:
     /// - activating proposals
     /// - setting the number of votes per voter
-    pub voter: Pubkey,
+    pub locker: Pubkey,
     /// The public key of the [smart_wallet::SmartWallet] account.
     /// This smart wallet executes proposals.
     pub smart_wallet: Pubkey,
@@ -106,7 +106,7 @@ pub struct ProposalMeta {
     pub description_link: String,
 }
 
-/// A [Vote] is a vote made by a `voter` by an `electorate`.
+/// A [Vote] is a vote made by a `voter`
 #[account]
 #[derive(Debug, Default)]
 pub struct Vote {

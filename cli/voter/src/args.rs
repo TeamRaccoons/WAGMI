@@ -23,10 +23,9 @@ pub struct ConfigOverride {
     pub wallet_path: String,
 
     /// Base keypair file required to initialize the vault
-    ///
-    /// /path/to/base/keypair.json
-    // #[clap(global = true, short, long, default_value_t = String::from(""))]
-    // pub base: String,
+    // path/to/base/keypair.json
+    #[clap(global = true, short, long)]
+    pub base: Option<String>,
 
     #[clap(
     global = true,
@@ -42,8 +41,6 @@ pub enum CliCommand {
     NewLocker {
         #[clap(long)]
         token_mint: Pubkey,
-        #[clap(long)]
-        governor: Pubkey,
         #[clap(long)]
         expiration: i64,
         /// For example, veCRV is 10 because 1 CRV locked for 4 years = 10 veCRV.
