@@ -14,46 +14,76 @@ pub struct TokenAllocation {
     pub amount: String,
 }
 #[derive(Debug)]
-pub struct MerkleTree(pub HashMap<u64, Vec<[u8; 32]>>);
+pub struct MerkleTree {
+    pub tree: Vec<Vec<[u8; 32]>>,
+    pub first_branch: Vec<[u8; 32]>,
+}
 impl MerkleTree {
     pub fn get_root(&self) -> [u8; 32] {
-        let root_index = self.0.len() as u64 - 1;
-        let root = self.0.get(&root_index).unwrap();
-        return root[0];
+        return self.tree[self.tree.len() - 1][0];
     }
-    pub fn find_proof(&self, index: u64) -> Vec<[u8; 32]> {
+    pub fn find_proof(&self, hash: [u8; 32]) -> Vec<[u8; 32]> {
         let mut proof = vec![];
-        let layer_length = self.0.len();
-        let mut current_index = index;
-        for i in 0..(layer_length - 1) {
-            let current_layer = self.0.get(&(i as u64)).unwrap();
-            // find adjacent in this layer
+        // let mut idx = index;
+        let mut idx: u64 = 0;
+        for (i, val) in self.first_branch.iter().enumerate() {
+            if *val == hash {
+                idx = i as u64;
+                break;
+            }
+        }
+        for (i, layer) in self.tree.iter().enumerate() {
+            let pair_element = get_pair_element(idx, layer);
 
-            let adjacent_index = if current_index % 2 == 0 {
-                if current_index + 1 >= current_layer.len() as u64 {
-                    current_index
-                } else {
-                    current_index + 1
-                }
-            } else {
-                current_index - 1
-            };
-            if adjacent_index != current_index {
-                proof.push(current_layer[adjacent_index as usize]);
+            // if (pairElement)
+            if pair_element != None {
+                let pair_element = pair_element.unwrap();
+                proof.push(pair_element);
             }
 
-            current_index = current_index / 2;
+            // }
 
-            // update current index in this layer
+            idx = idx / 2;
         }
         return proof;
+    }
+}
+
+pub fn get_pair_element(idx: u64, layer: &Vec<[u8; 32]>) -> Option<[u8; 32]> {
+    let pair_id = if idx % 2 == 0 { idx + 1 } else { idx - 1 };
+    if pair_id > (layer.len() - 1) as u64 {
+        return None;
+    }
+    return Some(layer[pair_id as usize]);
+}
+
+pub fn get_next_layer(next_layer: Vec<[u8; 32]>) -> Vec<[u8; 32]> {
+    let mut layers: Vec<[u8; 32]> = vec![];
+    for (i, val) in next_layer.iter().enumerate() {
+        if i % 2 == 0 {
+            if i == next_layer.len() - 1 {
+                layers.push(val.clone());
+            } else {
+                layers.push(combine_hash(val.clone(), next_layer[i + 1].clone()));
+            }
+        }
+    }
+    return layers;
+}
+
+pub fn combine_hash(first: [u8; 32], second: [u8; 32]) -> [u8; 32] {
+    if first < second {
+        anchor_lang::solana_program::keccak::hashv(&[&first, &second]).to_bytes()
+    } else {
+        anchor_lang::solana_program::keccak::hashv(&[&second, &first]).to_bytes()
     }
 }
 #[derive(Debug)]
 pub struct Snapshot(pub Vec<TokenAllocation>);
 impl Snapshot {
     pub fn build_merkle_tree(&self) -> MerkleTree {
-        let mut tree: HashMap<u64, Vec<[u8; 32]>> = HashMap::new();
+        let mut tree: Vec<Vec<[u8; 32]>> = vec![];
+
         let mut first_branch = vec![];
         for (i, allocation) in self.0.iter().enumerate() {
             let claimant_account = Pubkey::from_str(&allocation.authority).unwrap();
@@ -67,49 +97,38 @@ impl Snapshot {
                 .to_bytes(),
             );
         }
-        tree.insert(0, first_branch.clone());
-        //recursive to get all layers
-        let mut layer_index = self.0.len();
-        let mut index = 1;
-        while layer_index > 0 {
-            let mut child_branch = vec![];
-            for i in 0..(layer_index / 2 + 1) {
-                if 2 * i + 1 < first_branch.len() {
-                    child_branch.push(
-                        anchor_lang::solana_program::keccak::hashv(&[
-                            &first_branch[2 * i],
-                            &first_branch[2 * i + 1],
-                        ])
-                        .to_bytes(),
-                    );
-                } else {
-                    child_branch.push(first_branch[2 * i]);
-                }
-            }
+        // sort
+        first_branch.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
-            tree.insert(index, child_branch.clone());
-            first_branch = child_branch;
-
-            layer_index = layer_index / 2;
-            index += 1;
+        tree.push(first_branch.clone());
+        while tree[tree.len() - 1].len() > 1 {
+            let next_layer = tree[tree.len() - 1].clone();
+            tree.push(get_next_layer(next_layer))
         }
-        return MerkleTree(tree);
+        return MerkleTree { tree, first_branch };
     }
     pub fn get_root(&self) -> [u8; 32] {
         let tree = self.build_merkle_tree();
         return tree.get_root();
     }
-    //let (index, _amount, _proof)
     pub fn get_user_claim_info(&self, user: Pubkey) -> Result<(u64, u64, Vec<[u8; 32]>)> {
         let tree = self.build_merkle_tree();
-        let mut user_index = 0u64;
+        let mut user_index: u64 = 0;
         let mut amount = 0u64;
         let mut is_find = false;
+        let mut hash: [u8; 32] = [0; 32];
         for (i, allocation) in self.0.iter().enumerate() {
             if allocation.authority == user.to_string() {
                 is_find = true;
                 amount = u64::from_str(&allocation.amount).unwrap();
+                let claimant_account = Pubkey::from_str(&allocation.authority).unwrap();
                 user_index = i as u64;
+                hash = anchor_lang::solana_program::keccak::hashv(&[
+                    &user_index.to_le_bytes(),
+                    &claimant_account.to_bytes(),
+                    &amount.to_le_bytes(),
+                ])
+                .to_bytes();
                 break;
             }
         }
@@ -117,7 +136,7 @@ impl Snapshot {
             return Err(Error::msg("Cannot find user"));
         }
 
-        let proof = tree.find_proof(user_index);
+        let proof = tree.find_proof(hash);
 
         return Ok((user_index, amount, proof));
     }
@@ -130,10 +149,18 @@ pub fn read_snapshot(path_to_snapshot: String) -> Snapshot {
 
     let list: Vec<TokenAllocation> =
         serde_json::from_str(&data).expect("JSON was not well-formatted");
+
+    // make sure we dont have duplicate account
+    for (index, item) in list.iter().enumerate() {
+        for j in (index + 1..list.len()) {
+            if item.authority == list[j].authority {
+                panic!("duplicate authority");
+            }
+        }
+    }
     return Snapshot(list);
 }
 
-// let (max_num_nodes, max_total_claim, root) = buildTree(&snapshot);
 pub fn build_tree(snapshot: &Snapshot) -> (u64, u64, [u8; 32]) {
     let max_num_nodes = snapshot.0.len();
     let mut max_total_claim = 0u64;
@@ -153,7 +180,7 @@ mod merkle_tree_test {
         let current_dir = env::current_dir().unwrap();
         let snapshot = read_snapshot(
             format!(
-                "{}/src/test_snapshot.json",
+                "{}/src/snapshot.json",
                 current_dir.into_os_string().into_string().unwrap()
             )
             .to_string(),
@@ -167,7 +194,7 @@ mod merkle_tree_test {
         let current_dir = env::current_dir().unwrap();
         let snapshot = read_snapshot(
             format!(
-                "{}/src/test_snapshot.json",
+                "{}/src/snapshot.json",
                 current_dir.into_os_string().into_string().unwrap()
             )
             .to_string(),

@@ -23,10 +23,9 @@ pub struct ConfigOverride {
     pub wallet_path: String,
 
     /// Base keypair file required to initialize the vault
-    ///
-    /// /path/to/base/keypair.json
-    // #[clap(global = true, short, long, default_value_t = String::from(""))]
-    // pub base: String,
+    // path/to/base/keypair.json
+    #[clap(global = true, short, long)]
+    pub base: Option<String>,
 
     #[clap(
     global = true,
@@ -41,17 +40,17 @@ pub struct ConfigOverride {
 pub enum CliCommand {
     NewDistributor {
         #[clap(long)]
-        locker: Pubkey,
-        #[clap(long)]
         token_mint: Pubkey,
         #[clap(long)]
         path_to_snapshot: String,
     },
     Claim {
         #[clap(long)]
-        distributor: Pubkey,
-        #[clap(long)]
         claimant: Pubkey,
+        #[clap(long)]
+        path_to_snapshot: String,
+    },
+    Fund {
         #[clap(long)]
         path_to_snapshot: String,
     },
