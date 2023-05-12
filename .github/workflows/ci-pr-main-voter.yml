@@ -52,6 +52,8 @@ jobs:
       - run: cargo build --package voter-cli
         shell: bash
       # Testing
+      - run: cargo test --package voter -- --nocapture
+        shell: bash
       - run: npm install
         shell: bash
       - run: anchor test --run ./tests/voter -- --features test-bpf
