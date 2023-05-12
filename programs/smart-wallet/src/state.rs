@@ -215,3 +215,31 @@ pub struct StagedTXInstruction {
     /// The instruction to execute.
     pub ix: TXInstruction,
 }
+
+#[cfg(test)]
+mod state_test {
+    use anchor_lang::{prelude::Pubkey, AnchorSerialize};
+
+    use crate::SmartWallet;
+
+    #[test]
+    fn test_smartwallet_space() {
+        // 1 to 5 owners
+        for i in 1..=5 {
+            let rental_space = SmartWallet::space(i);
+        }
+
+        println!(
+            "{} {} {}",
+            std::mem::size_of::<SmartWallet>(),
+            SmartWallet::space(0),
+            SmartWallet {
+                owners: vec![Pubkey::default(); 0],
+                ..Default::default()
+            }
+            .try_to_vec()
+            .unwrap()
+            .len()
+        )
+    }
+}
