@@ -4,9 +4,24 @@
 use crate::*;
 use num_traits::ToPrimitive;
 
+#[cfg(test)]
+fn get_unix_timestamp() -> Result<i64> {
+    use std::time::SystemTime;
+
+    Ok(SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64)
+}
+
+#[cfg(not(test))]
+fn get_unix_timestamp() -> Result<i64> {
+    Ok(Clock::get()?.unix_timestamp)
+}
+
 impl Locker {
     pub fn get_current_phase(&self) -> Result<Phase> {
-        let now = Clock::get()?.unix_timestamp;
+        let now = get_unix_timestamp()?;
         if self.expiration > now {
             return Ok(Phase::InitialPhase);
         }
