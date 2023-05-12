@@ -91,12 +91,12 @@ describe("Govern", () => {
   });
 
   it("Governor was initialized", async () => {
-    expect(governorState["bump"]).to.equal(bump);
-    expect(governorState["proposalCount"].toString()).to.eq("0");
-    expect(governorState["params"].votingDelay.toString()).eq(
+    expect(governorState.bump).to.equal(bump);
+    expect(governorState.proposalCount.toString()).to.eq("0");
+    expect(governorState.params.votingDelay.toString()).eq(
       DEFAULT_VOTE_DELAY.toString()
     );
-    expect(governorState["params"].votingPeriod.toString()).eq(
+    expect(governorState.params.votingPeriod.toString()).eq(
       DEFAULT_VOTE_PERIOD.toString()
     );
   });
@@ -108,7 +108,7 @@ describe("Govern", () => {
 
     beforeEach("create a proposal", async () => {
       governorState = await program.account.governor.fetch(governor);
-      const index = governorState["proposalCount"];
+      const index = governorState.proposalCount;
       const [proposal, bump] = await anchor.web3.PublicKey.findProgramAddress(
         [
           Buffer.from("MeteoraProposal"),
@@ -146,7 +146,7 @@ describe("Govern", () => {
       expect(proposalData.abstainVotes.toString()).to.equal("0");
       expect(proposalData.againstVotes.toString()).to.equal("0");
       expect(proposalData.quorumVotes.toString()).to.equal(
-        governorState["params"].quorumVotes.toString()
+        governorState.params.quorumVotes.toString()
       );
       expect(proposalData.queuedTransaction.toString()).to.eq(
         anchor.web3.PublicKey.default.toString()
@@ -181,7 +181,7 @@ describe("Govern", () => {
             program.programId
           );
 
-        const createMetaTX = await program.methods
+        const createMetaTX = program.methods
           .createProposalMeta(0, title, descriptionLink)
           .accounts({
             proposal: proposalKey,
