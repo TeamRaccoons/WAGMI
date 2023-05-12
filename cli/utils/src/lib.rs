@@ -6,12 +6,14 @@ use anchor_client::{
     solana_sdk::{signature::Signer, transaction::Transaction},
     Program,
 };
+use anchor_lang::prelude::Pubkey;
 use regex::Regex;
 
 pub fn parse_event_log<
     T: anchor_lang::AnchorDeserialize + anchor_lang::AnchorSerialize + anchor_lang::Discriminator,
 >(
     logs: &Vec<String>,
+    program_id: Pubkey,
 ) -> Option<T> {
     let program_start_pattern = Regex::new(r"Program .* invoke \[\d{1}\]").unwrap();
     let program_end_pattern = Regex::new(r"Program .* success").unwrap();
@@ -23,9 +25,7 @@ pub fn parse_event_log<
         if program_end_pattern.is_match(log) {
             execution_stack.pop();
         }
-        if log.starts_with("Program data:")
-            && *execution_stack.last()? == merkle_distributor::id().to_string()
-        {
+        if log.starts_with("Program data:") && *execution_stack.last()? == program_id.to_string() {
             // Skip the prefix "Program data: "
             // Event logged has been changed to Program data: instead of Program log:
             // https://github.com/project-serum/anchor/pull/1608/files

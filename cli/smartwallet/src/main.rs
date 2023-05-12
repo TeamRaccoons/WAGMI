@@ -1,6 +1,8 @@
 mod args;
 
 use crate::args::*;
+use anchor_lang::Key;
+use anyhow::Ok;
 use anyhow::Result;
 
 use anchor_client::anchor_lang::InstructionData;
@@ -48,50 +50,38 @@ fn main() -> Result<()> {
             create_smart_wallet(&program, base, max_owners, threshold, minimum_delay, owners)?;
         }
 
-        CliCommand::CreateSetOwnersTx {
-            smart_wallet,
-            owners,
-        } => {
-            create_set_owners_tx(&program, smart_wallet, owners)?;
+        CliCommand::CreateSetOwnersTx { base, owners } => {
+            create_set_owners_tx(&program, base, owners)?;
         }
-        CliCommand::CreateChangeThresholdTx {
-            smart_wallet,
-            threshold,
-        } => {
-            create_change_threshold_tx(&program, smart_wallet, threshold)?;
+        CliCommand::CreateChangeThresholdTx { base, threshold } => {
+            create_change_threshold_tx(&program, base, threshold)?;
         }
-        CliCommand::CreateActivateProposalTx {
-            smart_wallet,
-            proposal,
-        } => {
-            create_activate_proposal_tx(&program, smart_wallet, proposal)?;
+        CliCommand::CreateActivateProposalTx { base, proposal } => {
+            create_activate_proposal_tx(&program, base, proposal)?;
         }
-        CliCommand::ApproveTransaction {
-            smart_wallet,
-            transaction,
-        } => {
-            approve_transaction(&program, smart_wallet, transaction)?;
+        CliCommand::ApproveTransaction { base, transaction } => {
+            approve_transaction(&program, base, transaction)?;
         }
-        CliCommand::UnApproveTransaction {
-            smart_wallet,
-            transaction,
-        } => {
-            unapprove_transaction(&program, smart_wallet, transaction)?;
+        CliCommand::UnApproveTransaction { base, transaction } => {
+            unapprove_transaction(&program, base, transaction)?;
         }
-        CliCommand::ExecuteTransaction {
-            smart_wallet,
-            transaction,
-        } => {
-            execute_transaction(&program, smart_wallet, transaction)?;
+        CliCommand::ExecuteTransaction { base, transaction } => {
+            execute_transaction(&program, base, transaction)?;
         }
-        CliCommand::ViewSmartwallet { smart_wallet } => {
-            view_smartwallet(&program, smart_wallet)?;
+        CliCommand::ViewSmartwallet { base } => {
+            view_smartwallet(&program, base)?;
         }
         CliCommand::ViewTransaction { transaction } => {
             view_transaction(&program, transaction)?;
         }
-        CliCommand::CreateDummyTransaction { smart_wallet } => {
-            create_dummy_transaction(&program, smart_wallet)?;
+        CliCommand::CreateDummyTransaction { base } => {
+            create_dummy_transaction(&program, base)?;
+        }
+        CliCommand::CreateAddNewOwnerTx { base, owner } => {
+            create_add_new_owner_tx(&program, base, owner)?;
+        }
+        CliCommand::CreateRemoveOwnerTx { base, owner } => {
+            create_remove_owner_tx(&program, base, owner)?;
         }
     }
 
@@ -142,11 +132,12 @@ fn create_smart_wallet(
     Ok(())
 }
 
-fn create_set_owners_tx(
-    program: &Program,
-    smart_wallet: Pubkey,
-    owners: Vec<Pubkey>,
-) -> Result<()> {
+fn create_set_owners_tx(program: &Program, base: Pubkey, owners: Vec<Pubkey>) -> Result<()> {
+    let (smart_wallet, bump) = Pubkey::find_program_address(
+        &[b"SmartWallet".as_ref(), base.as_ref()],
+        &smart_wallet::id(),
+    );
+
     let data = smart_wallet::instruction::SetOwners { owners }.data();
     let instruction = smart_wallet::TXInstruction {
         program_id: smart_wallet::id(),
@@ -160,11 +151,61 @@ fn create_set_owners_tx(
     create_transaction(program, smart_wallet, vec![instruction])
 }
 
-fn create_change_threshold_tx(
-    program: &Program,
-    smart_wallet: Pubkey,
-    threshold: u64,
-) -> Result<()> {
+fn create_add_new_owner_tx(program: &Program, base: Pubkey, new_owner: Pubkey) -> Result<()> {
+    let (smart_wallet, bump) = Pubkey::find_program_address(
+        &[b"SmartWallet".as_ref(), base.as_ref()],
+        &smart_wallet::id(),
+    );
+    let smart_wallet_state: smart_wallet::SmartWallet = program.account(smart_wallet)?;
+    // check whether owner is exsited
+    for old_owner in smart_wallet_state.owners.iter() {
+        if *old_owner == new_owner {
+            println!("Owner is existed in smartwallet");
+            return Ok(());
+        }
+    }
+
+    let mut owners = smart_wallet_state.owners.clone();
+    owners.push(new_owner);
+
+    if owners.len() > smart_wallet_state.max_owners as usize {
+        println!("Max owners is reached, cannot add more");
+        return Ok(());
+    }
+
+    create_set_owners_tx(program, base, owners)
+}
+
+fn create_remove_owner_tx(program: &Program, base: Pubkey, owner: Pubkey) -> Result<()> {
+    let (smart_wallet, bump) = Pubkey::find_program_address(
+        &[b"SmartWallet".as_ref(), base.as_ref()],
+        &smart_wallet::id(),
+    );
+    let smart_wallet_state: smart_wallet::SmartWallet = program.account(smart_wallet)?;
+
+    if smart_wallet_state.owners.len() <= smart_wallet_state.threshold as usize {
+        println!("threshold is reached, cannot remove");
+        return Ok(());
+    }
+    // check whether the owner is governor
+    let (governor, _bump) =
+        Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
+    if owner == governor {
+        println!("Cannot remove governor");
+        return Ok(());
+    }
+    let mut owners = smart_wallet_state.owners;
+    let index = owners.iter().position(|x| *x == owner).unwrap();
+    owners.remove(index);
+
+    create_set_owners_tx(program, base, owners)
+}
+
+fn create_change_threshold_tx(program: &Program, base: Pubkey, threshold: u64) -> Result<()> {
+    let (smart_wallet, bump) = Pubkey::find_program_address(
+        &[b"SmartWallet".as_ref(), base.as_ref()],
+        &smart_wallet::id(),
+    );
     println!("Change threshold");
     let data = smart_wallet::instruction::ChangeThreshold { threshold }.data();
     let instruction = smart_wallet::TXInstruction {
@@ -180,11 +221,11 @@ fn create_change_threshold_tx(
     create_transaction(program, smart_wallet, vec![instruction])
 }
 
-fn create_activate_proposal_tx(
-    program: &Program,
-    smart_wallet: Pubkey,
-    proposal: Pubkey,
-) -> Result<()> {
+fn create_activate_proposal_tx(program: &Program, base: Pubkey, proposal: Pubkey) -> Result<()> {
+    let (smart_wallet, bump) = Pubkey::find_program_address(
+        &[b"SmartWallet".as_ref(), base.as_ref()],
+        &smart_wallet::id(),
+    );
     let proposal_state: govern::Proposal = program.account(proposal)?;
     let governor_state: govern::Governor = program.account(proposal_state.governor)?;
 
@@ -224,7 +265,12 @@ fn create_activate_proposal_tx(
     create_transaction(program, smart_wallet, vec![instruction])
 }
 
-fn approve_transaction(program: &Program, smart_wallet: Pubkey, transaction: Pubkey) -> Result<()> {
+fn approve_transaction(program: &Program, base: Pubkey, transaction: Pubkey) -> Result<()> {
+    let (smart_wallet, bump) = Pubkey::find_program_address(
+        &[b"SmartWallet".as_ref(), base.as_ref()],
+        &smart_wallet::id(),
+    );
+
     println!("Approve transaction {}", transaction);
     let builder = program
         .request()
@@ -238,11 +284,11 @@ fn approve_transaction(program: &Program, smart_wallet: Pubkey, transaction: Pub
     println!("Signature {:?}", signature);
     Ok(())
 }
-fn unapprove_transaction(
-    program: &Program,
-    smart_wallet: Pubkey,
-    transaction: Pubkey,
-) -> Result<()> {
+fn unapprove_transaction(program: &Program, base: Pubkey, transaction: Pubkey) -> Result<()> {
+    let (smart_wallet, bump) = Pubkey::find_program_address(
+        &[b"SmartWallet".as_ref(), base.as_ref()],
+        &smart_wallet::id(),
+    );
     println!("UnApprove transaction {}", transaction);
     let builder = program
         .request()
@@ -257,7 +303,12 @@ fn unapprove_transaction(
     Ok(())
 }
 
-fn execute_transaction(program: &Program, smart_wallet: Pubkey, transaction: Pubkey) -> Result<()> {
+fn execute_transaction(program: &Program, base: Pubkey, transaction: Pubkey) -> Result<()> {
+    let (smart_wallet, bump) = Pubkey::find_program_address(
+        &[b"SmartWallet".as_ref(), base.as_ref()],
+        &smart_wallet::id(),
+    );
+
     println!("Execute transaction {}", transaction);
     let tx_account: smart_wallet::Transaction = program.account(transaction)?;
     let mut remaining_accounts = vec![];
@@ -285,6 +336,7 @@ fn execute_transaction(program: &Program, smart_wallet: Pubkey, transaction: Pub
         .request()
         .accounts(accounts)
         .args(smart_wallet::instruction::ExecuteTransaction {});
+
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())
@@ -295,21 +347,34 @@ fn view_transaction(program: &Program, transaction: Pubkey) -> Result<()> {
     println!("{:?}", state);
     Ok(())
 }
-fn view_smartwallet(program: &Program, smart_wallet: Pubkey) -> Result<()> {
+fn view_smartwallet(program: &Program, base: Pubkey) -> Result<()> {
+    let (smart_wallet, bump) = Pubkey::find_program_address(
+        &[b"SmartWallet".as_ref(), base.as_ref()],
+        &smart_wallet::id(),
+    );
+
     let state: smart_wallet::SmartWallet = program.account(smart_wallet)?;
     println!("{:?}", state);
     Ok(())
 }
 
-fn create_dummy_transaction(program: &Program, smart_wallet: Pubkey) -> Result<()> {
+fn create_dummy_transaction(program: &Program, base: Pubkey) -> Result<()> {
+    let (smart_wallet, bump) = Pubkey::find_program_address(
+        &[b"SmartWallet".as_ref(), base.as_ref()],
+        &smart_wallet::id(),
+    );
     create_transaction(program, smart_wallet, vec![])
 }
 
 fn create_transaction(
     program: &Program,
-    smart_wallet: Pubkey,
+    base: Pubkey,
     instructions: Vec<smart_wallet::TXInstruction>,
 ) -> Result<()> {
+    let (smart_wallet, bump) = Pubkey::find_program_address(
+        &[b"SmartWallet".as_ref(), base.as_ref()],
+        &smart_wallet::id(),
+    );
     let smart_wallet_state: smart_wallet::SmartWallet = program.account(smart_wallet)?;
     let (transaction, _bump) = Pubkey::find_program_address(
         &[

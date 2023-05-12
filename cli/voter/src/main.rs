@@ -1,8 +1,7 @@
 mod args;
-mod helpers;
 use crate::args::*;
-use crate::helpers::*;
 use anyhow::Result;
+use utils_cli::*;
 
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
 use anchor_client::solana_sdk::pubkey::Pubkey;
@@ -61,39 +60,54 @@ fn main() -> Result<()> {
                 proposal_activation_min_votes,
             )?;
         }
-        CliCommand::NewEscrow { locker } => {
+        CliCommand::NewEscrow { base } => {
+            let (locker, _bump) =
+                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
             new_escrow(&program, locker)?;
         }
-        CliCommand::IncreaseLockedAmount { locker, amount } => {
+        CliCommand::IncreaseLockedAmount { base, amount } => {
+            let (locker, _bump) =
+                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
             increase_locked_amount(&program, locker, amount)?;
         }
-        CliCommand::ExtendLockDuration { locker, duration } => {
+        CliCommand::ExtendLockDuration { base, duration } => {
+            let (locker, _bump) =
+                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
             extend_locked_duration(&program, locker, duration)?;
         }
-        CliCommand::Withdraw { locker } => {
+        CliCommand::Withdraw { base } => {
+            let (locker, _bump) =
+                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
             withdraw(&program, locker)?;
         }
-        CliCommand::ActivateProposal { locker, proposal } => {
+        CliCommand::ActivateProposal { base, proposal } => {
+            let (locker, _bump) =
+                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
             active_proposal(&program, locker, proposal)?;
         }
         CliCommand::CastVote {
-            locker,
+            base,
             proposal,
             side,
         } => {
+            let (locker, _bump) =
+                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
             cast_vote(&program, locker, proposal, side)?;
         }
-        CliCommand::SetVoteDelegate {
-            locker,
-            new_delegate,
-        } => {
+        CliCommand::SetVoteDelegate { base, new_delegate } => {
+            let (locker, _bump) =
+                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
             set_vote_delegate(&program, locker, new_delegate)?;
         }
-        CliCommand::ViewLocker { locker } => {
+        CliCommand::ViewLocker { base } => {
+            let (locker, _bump) =
+                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
             let locker: voter::Locker = program.account(locker)?;
             println!("{:?}", locker);
         }
-        CliCommand::ViewEscrow { locker, owner } => {
+        CliCommand::ViewEscrow { base, owner } => {
+            let (locker, _bump) =
+                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
             let (escrow, _bump) = Pubkey::find_program_address(
                 &[b"Escrow".as_ref(), locker.as_ref(), owner.as_ref()],
                 &voter::id(),

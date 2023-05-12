@@ -87,7 +87,7 @@ pub struct Proposal {
 impl Proposal {
     /// Space that the [Proposal] takes up.
     pub fn space(instructions: Vec<ProposalInstruction>) -> usize {
-        4  // Anchor discriminator.
+        8  // Anchor discriminator.
         + 4 // Vec discriminator
             + std::mem::size_of::<Proposal>()
             + (instructions.iter().map(|ix| ix.space()).sum::<usize>())
