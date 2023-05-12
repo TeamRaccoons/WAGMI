@@ -52,44 +52,56 @@ pub enum CliCommand {
 
     CreateSetOwnersTx {
         #[clap(long)]
-        smart_wallet: Pubkey,
+        base: Pubkey,
         #[clap(long)]
         owners: Vec<Pubkey>,
+    },
+    CreateAddNewOwnerTx {
+        #[clap(long)]
+        base: Pubkey,
+        #[clap(long)]
+        owner: Pubkey,
+    },
+    CreateRemoveOwnerTx {
+        #[clap(long)]
+        base: Pubkey,
+        #[clap(long)]
+        owner: Pubkey,
     },
 
     CreateChangeThresholdTx {
         #[clap(long)]
-        smart_wallet: Pubkey,
+        base: Pubkey,
         #[clap(long)]
         threshold: u64,
     },
     CreateActivateProposalTx {
         #[clap(long)]
-        smart_wallet: Pubkey,
+        base: Pubkey,
         #[clap(long)]
         proposal: Pubkey,
     },
     ApproveTransaction {
         #[clap(long)]
-        smart_wallet: Pubkey,
+        base: Pubkey,
         #[clap(long)]
         transaction: Pubkey,
     },
     UnApproveTransaction {
         #[clap(long)]
-        smart_wallet: Pubkey,
+        base: Pubkey,
         #[clap(long)]
         transaction: Pubkey,
     },
     ExecuteTransaction {
         #[clap(long)]
-        smart_wallet: Pubkey,
+        base: Pubkey,
         #[clap(long)]
         transaction: Pubkey,
     },
     ViewSmartwallet {
         #[clap(long)]
-        smart_wallet: Pubkey,
+        base: Pubkey,
     },
     ViewTransaction {
         #[clap(long)]
@@ -98,7 +110,7 @@ pub enum CliCommand {
     // only for test
     CreateDummyTransaction {
         #[clap(long)]
-        smart_wallet: Pubkey,
+        base: Pubkey,
     },
 }
 

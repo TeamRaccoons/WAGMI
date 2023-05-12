@@ -1,10 +1,9 @@
 mod args;
-mod helpers;
 mod utils;
 use crate::args::*;
-use crate::helpers::*;
 use crate::utils::*;
 use anyhow::Result;
+use utils_cli::*;
 
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
 use anchor_client::solana_sdk::pubkey::Pubkey;
@@ -53,21 +52,32 @@ fn main() -> Result<()> {
             fund(&program, base, path_to_snapshot)?;
         }
         CliCommand::Claim {
+            base,
             claimant,
             path_to_snapshot,
         } => {
             claim(&program, base, claimant, path_to_snapshot)?;
         }
-        CliCommand::ViewDistributor { distributor } => {
+        CliCommand::ViewDistributor { base } => {
+            let (distributor, _bump) = Pubkey::find_program_address(
+                &[b"MerkleDistributor".as_ref(), base.as_ref()],
+                &merkle_distributor::id(),
+            );
+
             let distributor_state: merkle_distributor::MerkleDistributor =
                 program.account(distributor)?;
             println!("{:?}", distributor_state);
         }
         CliCommand::ViewClaimStatus {
-            distributor,
+            base,
             claimant,
             path_to_snapshot,
         } => {
+            let (distributor, _bump) = Pubkey::find_program_address(
+                &[b"MerkleDistributor".as_ref(), base.as_ref()],
+                &merkle_distributor::id(),
+            );
+
             let snapshot = read_snapshot(path_to_snapshot);
             let (index, _amount, _proof) = snapshot.get_user_claim_info(claimant)?;
             let (claim_status, _bump) = Pubkey::find_program_address(
@@ -180,14 +190,13 @@ fn fund(program: &Program, base_keypair: Keypair, path_to_snapshot: String) -> R
 
 fn claim(
     program: &Program,
-    base_keypair: Keypair,
+    base: Pubkey,
     claimant: Pubkey,
     path_to_snapshot: String,
 ) -> Result<()> {
     let snapshot = read_snapshot(path_to_snapshot);
 
     let (index, amount, proof) = snapshot.get_user_claim_info(claimant)?;
-    let base = base_keypair.pubkey();
 
     let (distributor, _bump) = Pubkey::find_program_address(
         &[b"MerkleDistributor".as_ref(), base.as_ref()],

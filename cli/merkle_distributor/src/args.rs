@@ -46,6 +46,8 @@ pub enum CliCommand {
     },
     Claim {
         #[clap(long)]
+        base: Pubkey,
+        #[clap(long)]
         claimant: Pubkey,
         #[clap(long)]
         path_to_snapshot: String,
@@ -56,11 +58,11 @@ pub enum CliCommand {
     },
     ViewDistributor {
         #[clap(long)]
-        distributor: Pubkey,
+        base: Pubkey,
     },
     ViewClaimStatus {
         #[clap(long)]
-        distributor: Pubkey,
+        base: Pubkey,
         #[clap(long)]
         claimant: Pubkey,
         #[clap(long)]

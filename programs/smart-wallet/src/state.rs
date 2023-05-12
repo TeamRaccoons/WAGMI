@@ -21,6 +21,8 @@ pub struct SmartWallet {
     /// Time after the ETA until a [Transaction] expires.
     pub grace_period: i64,
 
+    /// Max owners
+    pub max_owners: u8,
     /// Sequence of the ownership set.
     ///
     /// This may be used to see if the owners on the multisig have changed
@@ -41,7 +43,7 @@ pub struct SmartWallet {
 impl SmartWallet {
     /// Computes the space a [SmartWallet] uses.
     pub fn space(max_owners: u8) -> usize {
-        4 // Anchor discriminator
+        8 // Anchor discriminator
             + std::mem::size_of::<SmartWallet>()
             + 4 // 4 = the Vec discriminator
             + std::mem::size_of::<Pubkey>() * (max_owners as usize)
@@ -93,7 +95,7 @@ pub struct Transaction {
 impl Transaction {
     /// Computes the space a [Transaction] uses.
     pub fn space(instructions: Vec<TXInstruction>) -> usize {
-        4  // Anchor discriminator
+        8  // Anchor discriminator
             + std::mem::size_of::<Transaction>()
             + 4 // Vec discriminator
             + (instructions.iter().map(|ix| ix.space()).sum::<usize>())

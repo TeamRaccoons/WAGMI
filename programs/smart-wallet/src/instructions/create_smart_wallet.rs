@@ -47,6 +47,7 @@ impl<'info> CreateSmartWallet<'info> {
         smart_wallet.base = self.base.key();
         smart_wallet.bump = bump;
 
+        smart_wallet.max_owners = max_owners;
         smart_wallet.threshold = threshold;
         smart_wallet.minimum_delay = minimum_delay;
         smart_wallet.grace_period = DEFAULT_GRACE_PERIOD;
