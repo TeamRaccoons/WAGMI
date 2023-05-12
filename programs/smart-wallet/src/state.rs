@@ -218,28 +218,66 @@ pub struct StagedTXInstruction {
 
 #[cfg(test)]
 mod state_test {
-    use anchor_lang::{prelude::Pubkey, AnchorSerialize};
-
     use crate::SmartWallet;
+    use anchor_lang::{prelude::Pubkey, AnchorSerialize, Discriminator};
+    use std::assert_eq;
 
     #[test]
     fn test_smartwallet_space() {
         // 1 to 5 owners
-        for i in 1..=5 {
-            let rental_space = SmartWallet::space(i);
-        }
+        for owner_count in 1..=5 {
+            // The serialized data shall always LESSER to the rental space as the memory alignment for SmartWallet struct is 8 bytes
+            // Which means, std::mem::size_of::<SmartWallet>() will returns more bytes than the serialized one.
+            // Where does the extra bytes come from ?
+            // Firstly, the memory layout of the SmartWallet is rust default, so rust will change the order of the fields to have better alignment to make it more packed.
+            // Which become:
+            // field `.owners`: 24 bytes
+            // field `.base`: 32 bytes
+            // field `.threshold`: 8 bytes
+            // field `.minimum_delay`: 8 bytes
+            // field `.grace_period`: 8 bytes
+            // field `.num_transactions`: 8 bytes
+            // field `.reserved`: 128 bytes
+            // field `.owner_set_seqno`: 4 bytes
+            // field `.bump`: 1 bytes
+            // field `.max_owners`: 1 bytes
+            // 1. In order to satisfy 8 bytes alignment, 2 bytes padding was added to the end, so that it can be read into memory 1 shot.
+            // owner_set_seqno: 4 bytes + bump 1 bytes + max_owners 1 bytes + padding + 2 bytes = 8 bytes
+            // 2. Vec<Pubkey>
+            // In memory, vec was represented as
+            //struct Vec<T> {
+            // ptr: *mut T, // 8 bytes
+            // len: usize, // 8 bytes in 64-bit machine
+            // cap: usize, // 8 bytes in 64-bit machine
+            // }
+            // Which is 24 bytes
+            // Extra bytes = 24 vector bytes + 2 padding bytes = 26
 
-        println!(
-            "{} {} {}",
-            std::mem::size_of::<SmartWallet>(),
-            SmartWallet::space(0),
-            SmartWallet {
-                owners: vec![Pubkey::default(); 0],
+            let rental_space = SmartWallet::space(owner_count);
+            let mut smart_wallet = SmartWallet {
+                max_owners: owner_count,
                 ..Default::default()
+            };
+
+            // Make sure everytime add a owner, the serialized size increased < rental space
+            for _ in 0..owner_count {
+                smart_wallet.owners.push(Pubkey::default());
+
+                let mut serialized_bytes = smart_wallet.try_to_vec().unwrap();
+                serialized_bytes.append(&mut SmartWallet::DISCRIMINATOR.to_vec());
+
+                let bytes_length = serialized_bytes.len();
+                assert_eq!(bytes_length < rental_space, true);
             }
-            .try_to_vec()
-            .unwrap()
-            .len()
-        )
+
+            let mut serialized_bytes = smart_wallet.try_to_vec().unwrap();
+            serialized_bytes.append(&mut SmartWallet::DISCRIMINATOR.to_vec());
+
+            let bytes_length = serialized_bytes.len();
+
+            // When it's full, there will still be extra space due to space was calculated using std::mem::size_of, which is based on memory layout
+            let extra_bytes = rental_space - bytes_length;
+            assert_eq!(extra_bytes, 26);
+        }
     }
 }
