@@ -7,7 +7,7 @@ on:
 
 env:
   SOLANA_CLI_VERSION: 1.14.12
-  NODE_VERSION: 14.18.1
+  NODE_VERSION: 18.14.2
   ANCHOR_CLI_VERSION: 0.26.0
 
 jobs:
@@ -52,6 +52,8 @@ jobs:
       - run: cargo build --package govern-cli
         shell: bash
       # Testing
+      - run: cargo test --package govern -- --nocapture
+        shell: bash
       - run: npm install
         shell: bash
       - run: anchor test --run ./tests/govern

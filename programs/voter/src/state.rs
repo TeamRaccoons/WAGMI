@@ -161,7 +161,6 @@ mod tests {
     #[test]
     fn test_voting_powers_one_week() {
         let locker = &mut Locker {
-            // phase: Phase::TokenLaunchPhase,
             params: LockerParams {
                 max_stake_duration: MAX_TIME as u64,
                 max_stake_vote_multiplier: DEFAULT_STAKE_MULTIPLIER,
@@ -230,7 +229,6 @@ mod tests {
     #[test]
     fn test_voting_powers_two_users() {
         let locker = &mut Locker {
-            // phase: Phase::TokenLaunchPhase,
             params: LockerParams {
                 max_stake_duration: MAX_TIME as u64,
                 max_stake_vote_multiplier: DEFAULT_STAKE_MULTIPLIER,
@@ -259,11 +257,9 @@ mod tests {
         let expected_amount = alice.amount as f64 / MAX_TIME as f64 * 2.0 * WEEK as f64;
         assert_escrow(&locker, alice, current_ts, expected_amount);
         // Bob deposits and locks for 1 week
-        alice
-            .record_increase_locked_amount_event(locker, DEFAULT_LOCK_AMOUNT)
+        bob.record_increase_locked_amount_event(locker, DEFAULT_LOCK_AMOUNT)
             .unwrap();
-        alice
-            .record_extend_lock_duration_event(current_ts, current_ts + WEEK)
+        bob.record_extend_lock_duration_event(current_ts, current_ts + WEEK)
             .unwrap();
 
         let expected_amount = bob.amount as f64 / MAX_TIME as f64 * WEEK as f64;
