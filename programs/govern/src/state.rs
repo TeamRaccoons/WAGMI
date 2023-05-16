@@ -87,7 +87,7 @@ pub struct Proposal {
 impl Proposal {
     /// Space that the [Proposal] takes up.
     pub fn space(instructions: Vec<ProposalInstruction>) -> usize {
-        4  // Anchor discriminator.
+        8  // Anchor discriminator.
         + 4 // Vec discriminator
             + std::mem::size_of::<Proposal>()
             + (instructions.iter().map(|ix| ix.space()).sum::<usize>())
@@ -138,7 +138,9 @@ impl ProposalInstruction {
     /// Space that a [ProposalInstruction] takes up.
     pub fn space(&self) -> usize {
         std::mem::size_of::<Pubkey>()
+            + 4 // keys vector length
             + (self.keys.len() as usize) * std::mem::size_of::<AccountMeta>()
+            + 4 // data vector length
             + (self.data.len() as usize)
     }
 }
@@ -152,4 +154,98 @@ pub struct ProposalAccountMeta {
     pub is_signer: bool,
     /// True if the `pubkey` can be loaded as a read-write account.
     pub is_writable: bool,
+}
+
+#[cfg(test)]
+mod state_test {
+    use std::assert_eq;
+
+    use crate::{Proposal, ProposalAccountMeta, ProposalInstruction};
+    use anchor_lang::{prelude::Pubkey, AnchorSerialize, Discriminator};
+
+    #[test]
+    fn test_proposal_instruction_space() {
+        let proposal_ix = ProposalInstruction {
+            program_id: Pubkey::default(),
+            data: vec![0u8; 64],
+            keys: vec![
+                ProposalAccountMeta {
+                    is_signer: false,
+                    is_writable: false,
+                    pubkey: Pubkey::default(),
+                };
+                24
+            ],
+        };
+
+        let serialized_bytes = proposal_ix.try_to_vec().unwrap().len();
+        let proposal_ix_rent_space = proposal_ix.space();
+
+        assert_eq!(serialized_bytes, 920);
+        // The serialized data and rental shall always EQUALS because the memory alignment for ProposalInstruction is 1 byte
+        assert_eq!(serialized_bytes, proposal_ix_rent_space);
+    }
+
+    #[test]
+    fn test_proposal_empty_ix_space() {
+        let empty_proposal = Proposal::default();
+        let mut serialized_bytes = empty_proposal.try_to_vec().unwrap();
+        serialized_bytes.append(&mut Proposal::DISCRIMINATOR.to_vec());
+
+        let bytes_length = serialized_bytes.len();
+        let proposal_rental_space = Proposal::space(vec![]);
+
+        // The serialized data shall always LESSER to the rental space as the memory alignment for Proposal struct is 8 bytes
+        // Which means, std::mem::size_of::<Proposal>() will returns more bytes than the serialized one.
+        // Where does the extra bytes come from ?
+        // 1. bump field. To fit the memory alignment, padding automatically added by the compiler.
+        // bump: u8
+        // Become
+        // bump: u8
+        // _padding: [u8; 7]
+        // To fit the 8 bytes alignment
+        //
+        // 2. Vec<ProposalInstruction>
+        // In memory, vec was represented as
+        //struct Vec<T> {
+        // ptr: *mut T, // 8 bytes
+        // len: usize, // 8 bytes in 64-bit machine
+        // cap: usize, // 8 bytes in 64-bit machine
+        // }
+        // Which is 24 bytes
+        // Extra bytes = 24 + 7 = 31
+
+        let extra_bytes = proposal_rental_space - bytes_length;
+        assert_eq!(extra_bytes, 31);
+        assert_eq!(bytes_length <= proposal_rental_space, true);
+    }
+
+    #[test]
+    fn test_proposal_multiple_ix_space() {
+        let proposal_ixs = vec![ProposalInstruction {
+            data: vec![0u8; 24],
+            keys: vec![
+                ProposalAccountMeta {
+                    is_signer: false,
+                    is_writable: false,
+                    pubkey: Pubkey::default(),
+                };
+                32
+            ],
+            program_id: Pubkey::default(),
+        }];
+
+        let mut proposal = Proposal::default();
+        proposal.instructions = proposal_ixs.clone();
+
+        let mut serialized_bytes = proposal.try_to_vec().unwrap();
+        serialized_bytes.append(&mut Proposal::DISCRIMINATOR.to_vec());
+
+        let bytes_length = serialized_bytes.len();
+        let proposal_rental_space = Proposal::space(proposal_ixs);
+
+        let extra_bytes = proposal_rental_space - bytes_length;
+        assert_eq!(extra_bytes, 31);
+        assert_eq!(bytes_length <= proposal_rental_space, true);
+    }
 }

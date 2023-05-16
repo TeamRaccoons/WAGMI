@@ -16,4 +16,4 @@ anyhow = "1.0.57"
 solana-program = "1.14.12"
 govern = { path = "../../programs/govern" }
 smart-wallet = { path = "../../programs/smart-wallet" }
-regex = "1"
+utils-cli = {path ="../utils"}

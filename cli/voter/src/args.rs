@@ -58,33 +58,33 @@ pub enum CliCommand {
     },
     NewEscrow {
         #[clap(long)]
-        locker: Pubkey,
+        base: Pubkey,
     },
     IncreaseLockedAmount {
         #[clap(long)]
-        locker: Pubkey,
+        base: Pubkey,
         #[clap(long)]
         amount: u64,
     },
     ExtendLockDuration {
         #[clap(long)]
-        locker: Pubkey,
+        base: Pubkey,
         #[clap(long)]
         duration: i64,
     },
     Withdraw {
         #[clap(long)]
-        locker: Pubkey,
+        base: Pubkey,
     },
     ActivateProposal {
         #[clap(long)]
-        locker: Pubkey,
+        base: Pubkey,
         #[clap(long)]
         proposal: Pubkey,
     },
     CastVote {
         #[clap(long)]
-        locker: Pubkey,
+        base: Pubkey,
         #[clap(long)]
         proposal: Pubkey,
         #[clap(long)]
@@ -92,17 +92,17 @@ pub enum CliCommand {
     },
     SetVoteDelegate {
         #[clap(long)]
-        locker: Pubkey,
+        base: Pubkey,
         #[clap(long)]
         new_delegate: Pubkey,
     },
     ViewLocker {
         #[clap(long)]
-        locker: Pubkey,
+        base: Pubkey,
     },
     ViewEscrow {
         #[clap(long)]
-        locker: Pubkey,
+        base: Pubkey,
         #[clap(long)]
         owner: Pubkey,
     },
