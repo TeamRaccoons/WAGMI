@@ -16,3 +16,4 @@ anyhow = "1.0.57"
 solana-program = "1.14.12"
 govern = { path = "../../programs/govern" }
 voter = { path = "../../programs/voter" }
+utils-cli = {path="../utils"}

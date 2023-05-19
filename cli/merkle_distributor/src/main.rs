@@ -34,7 +34,7 @@ fn main() -> Result<()> {
         CommitmentConfig::finalized(),
     );
 
-    let base = match opts.config_override.base {
+    let base = match opts.config_override.base_path {
         Some(value) => {
             read_keypair_file(&*shellexpand::tilde(&value)).expect("Requires a keypair file")
         }
