@@ -334,6 +334,199 @@ describe("smartWallet", () => {
       console.log(err["error"]["errorMessage"]);
     }
   });
+
+  it("Add maximum owners", async () => {
+    const oldOwners = smartWalletState.owners;
+    const noOfNewOwners = numOwners - oldOwners.length;
+
+    const newOwners = [];
+    for (let i = 0; i < noOfNewOwners; i++) {
+      newOwners.push(Keypair.generate().publicKey);
+    }
+
+    const newOwnerSets = [...oldOwners, ...newOwners];
+
+    const data = program.coder.instruction.encode("set_owners", {
+      owners: newOwnerSets,
+    });
+    const instruction = {
+      programId: program.programId,
+      keys: [
+        {
+          pubkey: smartWallet,
+          isWritable: true,
+          isSigner: true,
+        },
+      ],
+      data,
+    };
+    const [txKey, txBump] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from("Transaction"),
+        smartWallet.toBuffer(),
+        smartWalletState.numTransactions.toBuffer("le", 8),
+      ],
+      program.programId
+    );
+    await program.methods
+      .createTransaction(txBump, [instruction])
+      .accounts({
+        smartWallet,
+        transaction: txKey,
+        proposer: ownerA.publicKey,
+        payer: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([ownerA])
+      .rpc();
+    const txAccount = await program.account.transaction.fetch(txKey);
+    expect(txAccount.executedAt.toNumber()).to.equal(-1);
+    expect(txAccount.ownerSetSeqno).to.equal(1);
+    expect(txAccount.instructions[0]?.programId, "program id").to.deep.equal(
+      program.programId
+    );
+    expect(txAccount.instructions[0]?.data, "data").to.deep.equal(data);
+    expect(txAccount.instructions[0]?.keys, "keys").to.deep.equal(
+      instruction.keys
+    );
+    expect(txAccount.smartWallet).to.deep.equal(smartWallet);
+
+    // Other owner approves transaction.
+    await program.methods
+      .approve()
+      .accounts({
+        smartWallet,
+        transaction: txKey,
+        owner: ownerB.publicKey,
+      })
+      .signers([ownerB])
+      .rpc();
+
+    // Now that we've reached the threshold, send the transaction.
+    await program.methods
+      .executeTransaction()
+      .accounts({
+        smartWallet,
+        transaction: txKey,
+        owner: ownerA.publicKey,
+      })
+      .remainingAccounts(
+        txAccount.instructions.flatMap((ix) => [
+          {
+            pubkey: ix.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+          ...ix.keys.map((k) => {
+            return {
+              ...k,
+              isSigner: false,
+            };
+          }),
+        ])
+      )
+      .signers([ownerA])
+      .rpc();
+
+    // reload data
+    smartWalletState = await program.account.smartWallet.fetch(smartWallet);
+    expect(smartWalletState.bump).to.be.equal(bump);
+    expect(smartWalletState.ownerSetSeqno).to.equal(2);
+    expect(smartWalletState.threshold.toString()).to.deep.equal("1");
+    expect(smartWalletState.owners).to.deep.equal(newOwnerSets);
+  });
+
+  it("Reduce to 3 owners", async () => {
+    const data = program.coder.instruction.encode("set_owners", {
+      owners,
+    });
+    const instruction = {
+      programId: program.programId,
+      keys: [
+        {
+          pubkey: smartWallet,
+          isWritable: true,
+          isSigner: true,
+        },
+      ],
+      data,
+    };
+    const [txKey, txBump] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from("Transaction"),
+        smartWallet.toBuffer(),
+        smartWalletState.numTransactions.toBuffer("le", 8),
+      ],
+      program.programId
+    );
+    await program.methods
+      .createTransaction(txBump, [instruction])
+      .accounts({
+        smartWallet,
+        transaction: txKey,
+        proposer: ownerA.publicKey,
+        payer: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([ownerA])
+      .rpc();
+    const txAccount = await program.account.transaction.fetch(txKey);
+    expect(txAccount.executedAt.toNumber()).to.equal(-1);
+    expect(txAccount.ownerSetSeqno).to.equal(2);
+    expect(txAccount.instructions[0]?.programId, "program id").to.deep.equal(
+      program.programId
+    );
+    expect(txAccount.instructions[0]?.data, "data").to.deep.equal(data);
+    expect(txAccount.instructions[0]?.keys, "keys").to.deep.equal(
+      instruction.keys
+    );
+    expect(txAccount.smartWallet).to.deep.equal(smartWallet);
+
+    // Other owner approves transaction.
+    await program.methods
+      .approve()
+      .accounts({
+        smartWallet,
+        transaction: txKey,
+        owner: ownerB.publicKey,
+      })
+      .signers([ownerB])
+      .rpc();
+
+    // Now that we've reached the threshold, send the transaction.
+    await program.methods
+      .executeTransaction()
+      .accounts({
+        smartWallet,
+        transaction: txKey,
+        owner: ownerA.publicKey,
+      })
+      .remainingAccounts(
+        txAccount.instructions.flatMap((ix) => [
+          {
+            pubkey: ix.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+          ...ix.keys.map((k) => {
+            return {
+              ...k,
+              isSigner: false,
+            };
+          }),
+        ])
+      )
+      .signers([ownerA])
+      .rpc();
+
+    // reload data
+    smartWalletState = await program.account.smartWallet.fetch(smartWallet);
+    expect(smartWalletState.bump).to.be.equal(bump);
+    expect(smartWalletState.ownerSetSeqno).to.equal(3);
+    expect(smartWalletState.threshold.toString()).to.deep.equal("1");
+    expect(smartWalletState.owners).to.deep.equal(owners);
+    expect(smartWalletState.owners.length).to.equal(3);
+  });
 });
 
 describe("Tests the smartWallet program with timelock", () => {
