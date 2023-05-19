@@ -2,7 +2,7 @@ use crate::*;
 
 /// Accounts for [smart_wallet::create_smart_wallet].
 #[derive(Accounts)]
-#[instruction(bump: u8, max_owners: u8)]
+#[instruction(max_owners: u8)]
 pub struct CreateSmartWallet<'info> {
     /// Base key of the SmartWallet.
     pub base: Signer<'info>,
