@@ -29,7 +29,7 @@ fn main() -> Result<()> {
         CommitmentConfig::finalized(),
     );
 
-    let base = match opts.config_override.base {
+    let base = match opts.config_override.base_path {
         Some(value) => {
             read_keypair_file(&*shellexpand::tilde(&value)).expect("Requires a keypair file")
         }
@@ -53,8 +53,8 @@ fn main() -> Result<()> {
                 timelock_delay_seconds,
             )?;
         }
-        CliCommand::CreateDummyProposal { governor } => {
-            create_dummy_proposal(&program, governor)?;
+        CliCommand::CreateDummyProposal { base } => {
+            create_dummy_proposal(&program, base)?;
         }
         CliCommand::CancelProposal { proposal } => {
             cancel_proposal(&program, proposal)?;
@@ -141,7 +141,10 @@ fn create_governor(
     Ok(())
 }
 
-fn create_dummy_proposal(program: &Program, governor: Pubkey) -> Result<()> {
+fn create_dummy_proposal(program: &Program, base: Pubkey) -> Result<()> {
+    let (governor, bump) =
+        Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
+
     let governor_state: govern::Governor = program.account(governor)?;
 
     let (proposal, bump) = Pubkey::find_program_address(

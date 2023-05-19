@@ -25,7 +25,7 @@ pub struct ConfigOverride {
     /// Base keypair file required to initialize the vault
     // path/to/base/keypair.json
     #[clap(global = true, short, long)]
-    pub base: Option<String>,
+    pub base_path: Option<String>,
 
     #[clap(
     global = true,

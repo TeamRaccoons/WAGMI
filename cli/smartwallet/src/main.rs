@@ -4,6 +4,7 @@ use crate::args::*;
 use anchor_lang::Key;
 use anyhow::Ok;
 use anyhow::Result;
+use utils_cli::*;
 
 use anchor_client::anchor_lang::InstructionData;
 use anchor_client::anchor_lang::ToAccountMetas;
@@ -33,7 +34,7 @@ fn main() -> Result<()> {
         Rc::new(Keypair::from_bytes(&payer.to_bytes())?),
         CommitmentConfig::finalized(),
     );
-    let base = match opts.config_override.base {
+    let base = match opts.config_override.base_path {
         Some(value) => {
             read_keypair_file(&*shellexpand::tilde(&value)).expect("Requires a keypair file")
         }
@@ -110,7 +111,10 @@ fn create_smart_wallet(
     owners.push(governor);
     assert_eq!(max_owners >= owners.len() as u8, true);
 
-    println!("smart_wallet address {}", smart_wallet);
+    println!(
+        "smart_wallet address {}, max owner {}",
+        smart_wallet, max_owners
+    );
 
     let builder = program
         .request()
@@ -133,6 +137,7 @@ fn create_smart_wallet(
 }
 
 fn create_set_owners_tx(program: &Program, base: Pubkey, owners: Vec<Pubkey>) -> Result<()> {
+    println!("new owners {:?}", owners);
     let (smart_wallet, bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
@@ -148,7 +153,7 @@ fn create_set_owners_tx(program: &Program, base: Pubkey, owners: Vec<Pubkey>) ->
         }],
         data,
     };
-    create_transaction(program, smart_wallet, vec![instruction])
+    create_transaction(program, base, vec![instruction])
 }
 
 fn create_add_new_owner_tx(program: &Program, base: Pubkey, new_owner: Pubkey) -> Result<()> {
@@ -218,7 +223,7 @@ fn create_change_threshold_tx(program: &Program, base: Pubkey, threshold: u64) -
         data,
     };
 
-    create_transaction(program, smart_wallet, vec![instruction])
+    create_transaction(program, base, vec![instruction])
 }
 
 fn create_activate_proposal_tx(program: &Program, base: Pubkey, proposal: Pubkey) -> Result<()> {
@@ -262,7 +267,7 @@ fn create_activate_proposal_tx(program: &Program, base: Pubkey, proposal: Pubkey
         data,
     };
 
-    create_transaction(program, smart_wallet, vec![instruction])
+    create_transaction(program, base, vec![instruction])
 }
 
 fn approve_transaction(program: &Program, base: Pubkey, transaction: Pubkey) -> Result<()> {
@@ -337,6 +342,10 @@ fn execute_transaction(program: &Program, base: Pubkey, transaction: Pubkey) -> 
         .accounts(accounts)
         .args(smart_wallet::instruction::ExecuteTransaction {});
 
+    // let result = simulate_transaction(&builder, program, &vec![&default_keypair()]).unwrap();
+    // println!("{:?}", result);
+    // return Ok(());
+
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())
@@ -359,11 +368,7 @@ fn view_smartwallet(program: &Program, base: Pubkey) -> Result<()> {
 }
 
 fn create_dummy_transaction(program: &Program, base: Pubkey) -> Result<()> {
-    let (smart_wallet, bump) = Pubkey::find_program_address(
-        &[b"SmartWallet".as_ref(), base.as_ref()],
-        &smart_wallet::id(),
-    );
-    create_transaction(program, smart_wallet, vec![])
+    create_transaction(program, base, vec![])
 }
 
 fn create_transaction(

@@ -26,7 +26,7 @@ pub struct ConfigOverride {
     ///
     /// /path/to/base/keypair.json
     #[clap(global = true, short, long)]
-    pub base: Option<String>,
+    pub base_path: Option<String>,
 
     #[clap(
     global = true,
@@ -55,7 +55,7 @@ pub enum CliCommand {
     },
     CreateDummyProposal {
         #[clap(long)]
-        governor: Pubkey,
+        base: Pubkey,
     },
     CancelProposal {
         #[clap(long)]
