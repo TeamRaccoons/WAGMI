@@ -151,11 +151,21 @@ fn fund(program: &Program, base_keypair: Keypair, path_to_snapshot: String) -> R
 
     let distributor_state: merkle_distributor::MerkleDistributor = program.account(distributor)?;
     let token_mint = distributor_state.mint;
-    println!("{} {}", token_mint, max_total_claim);
-    // let source_pubkey = get_associated_token_address(&program.payer(), &token_mint);
+
     let destination_pubkey = get_associated_token_address(&distributor, &token_mint);
 
+    println!(
+        "distributor {}, distributor ata {} token mint {} total claim {}",
+        distributor, destination_pubkey, token_mint, max_total_claim
+    );
+
     let instructions = vec![
+        spl_associated_token_account::instruction::create_associated_token_account(
+            &program.payer(),
+            &distributor,
+            &token_mint,
+            &spl_token::id(),
+        ),
         spl_token::instruction::mint_to(
             &spl_token::id(),
             &token_mint,
@@ -164,14 +174,6 @@ fn fund(program: &Program, base_keypair: Keypair, path_to_snapshot: String) -> R
             &[],
             max_total_claim,
         )?,
-        // spl_token::instruction::transfer(
-        //     &spl_token::id(),
-        //     &source_pubkey,
-        //     &destination_pubkey,
-        //     &program.payer(),
-        //     &vec![],
-        //     max_total_claim,
-        // )?,
     ];
 
     let builder = program.request();
@@ -179,9 +181,9 @@ fn fund(program: &Program, base_keypair: Keypair, path_to_snapshot: String) -> R
         .into_iter()
         .fold(builder, |bld, ix| bld.instruction(ix));
 
-    let result = simulate_transaction(&builder, program, &vec![&default_keypair()]).unwrap();
-    println!("{:?}", result);
-    return Ok(());
+    // let result = simulate_transaction(&builder, program, &vec![&default_keypair()]).unwrap();
+    // println!("{:?}", result);
+    // return Ok(());
 
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
@@ -279,9 +281,9 @@ fn claim(
         .into_iter()
         .fold(builder, |bld, ix| bld.instruction(ix));
 
-    let result = simulate_transaction(&builder, program, &vec![&default_keypair()]).unwrap();
-    println!("{:?}", result);
-    return Ok(());
+    // let result = simulate_transaction(&builder, program, &vec![&default_keypair()]).unwrap();
+    // println!("{:?}", result);
+    // return Ok(());
 
     let signature = builder.send()?;
     println!("{}", signature);
