@@ -72,7 +72,7 @@ fn main() -> Result<()> {
         } => {
             create_proposal_meta(&program, proposal, title, description_link)?;
         }
-        CliCommand::ViewGovernor {} => {
+        CliCommand::ViewGovernor { base } => {
             view_governor(&program, base)?;
         }
         CliCommand::ViewProposal { proposal } => {
@@ -275,9 +275,7 @@ fn create_proposal_meta(
     Ok(())
 }
 
-fn view_governor(program: &Program, base_keypair: Keypair) -> Result<()> {
-    let base = base_keypair.pubkey();
-
+fn view_governor(program: &Program, base: Pubkey) -> Result<()> {
     let (governor, bump) =
         Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
     println!("governor address {}", governor);

@@ -81,6 +81,22 @@ pub enum CliCommand {
         #[clap(long)]
         proposal: Pubkey,
     },
+    CreateSetGovernanceParamsTx {
+        #[clap(long)]
+        base: Pubkey,
+        /// The delay before voting on a proposal may take place, once proposed, in seconds
+        #[clap(long)]
+        voting_delay: u64,
+        /// The duration of voting on a proposal, in seconds
+        #[clap(long)]
+        voting_period: u64,
+        /// The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
+        #[clap(long)]
+        quorum_votes: u64,
+        /// The timelock delay of the DAO's created proposals.
+        #[clap(long)]
+        timelock_delay_seconds: i64,
+    },
     ApproveTransaction {
         #[clap(long)]
         base: Pubkey,
