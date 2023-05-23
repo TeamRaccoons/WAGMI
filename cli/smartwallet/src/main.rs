@@ -84,6 +84,22 @@ fn main() -> Result<()> {
         CliCommand::CreateRemoveOwnerTx { base, owner } => {
             create_remove_owner_tx(&program, base, owner)?;
         }
+        CliCommand::CreateSetGovernanceParamsTx {
+            base,
+            voting_delay,
+            voting_period,
+            quorum_votes,
+            timelock_delay_seconds,
+        } => {
+            create_set_governance_params_tx(
+                &program,
+                base,
+                voting_delay,
+                voting_period,
+                quorum_votes,
+                timelock_delay_seconds,
+            )?;
+        }
     }
 
     Ok(())
@@ -220,6 +236,51 @@ fn create_change_threshold_tx(program: &Program, base: Pubkey, threshold: u64) -
             is_signer: true,
             is_writable: true,
         }],
+        data,
+    };
+
+    create_transaction(program, base, vec![instruction])
+}
+
+fn create_set_governance_params_tx(
+    program: &Program,
+    base: Pubkey,
+    voting_delay: u64,
+    voting_period: u64,
+    quorum_votes: u64,
+    timelock_delay_seconds: i64,
+) -> Result<()> {
+    let (smart_wallet, bump) = Pubkey::find_program_address(
+        &[b"SmartWallet".as_ref(), base.as_ref()],
+        &smart_wallet::id(),
+    );
+    let (governor, bump) =
+        Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
+
+    println!("set governance parameters");
+    let data = govern::instruction::SetGovernanceParams {
+        params: govern::GovernanceParameters {
+            voting_delay,
+            voting_period,
+            quorum_votes,
+            timelock_delay_seconds,
+        },
+    }
+    .data();
+    let instruction = smart_wallet::TXInstruction {
+        program_id: govern::ID,
+        keys: vec![
+            smart_wallet::TXAccountMeta {
+                pubkey: governor,
+                is_signer: false,
+                is_writable: true,
+            },
+            smart_wallet::TXAccountMeta {
+                pubkey: smart_wallet,
+                is_signer: true,
+                is_writable: false,
+            },
+        ],
         data,
     };
 

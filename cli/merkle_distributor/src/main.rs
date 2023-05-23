@@ -279,9 +279,9 @@ fn claim(
         .into_iter()
         .fold(builder, |bld, ix| bld.instruction(ix));
 
-    // let result = simulate_transaction(&builder, program, &vec![&default_keypair()]).unwrap();
-    // println!("{:?}", result);
-    // return Ok(());
+    let result = simulate_transaction(&builder, program, &vec![&default_keypair()]).unwrap();
+    println!("{:?}", result);
+    return Ok(());
 
     let signature = builder.send()?;
     println!("{}", signature);

@@ -77,7 +77,10 @@ pub enum CliCommand {
         #[clap(long)]
         description_link: String,
     },
-    ViewGovernor {},
+    ViewGovernor {
+        #[clap(long)]
+        base: Pubkey,
+    },
     ViewProposal {
         #[clap(long)]
         proposal: Pubkey,
