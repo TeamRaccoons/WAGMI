@@ -66,6 +66,9 @@ fn main() -> Result<()> {
         CliCommand::UnApproveTransaction { base, transaction } => {
             unapprove_transaction(&program, base, transaction)?;
         }
+        CliCommand::RemoveTransaction { base, transaction } => {
+            remove_transaction(&program, base, transaction)?;
+        }
         CliCommand::ExecuteTransaction { base, transaction } => {
             execute_transaction(&program, base, transaction)?;
         }
@@ -351,7 +354,7 @@ fn approve_transaction(program: &Program, base: Pubkey, transaction: Pubkey) -> 
     Ok(())
 }
 fn unapprove_transaction(program: &Program, base: Pubkey, transaction: Pubkey) -> Result<()> {
-    let (smart_wallet, bump) = Pubkey::find_program_address(
+    let (smart_wallet, _bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
     );
@@ -364,6 +367,25 @@ fn unapprove_transaction(program: &Program, base: Pubkey, transaction: Pubkey) -
             owner: program.payer(),
         })
         .args(smart_wallet::instruction::Unapprove {});
+    let signature = builder.send()?;
+    println!("Signature {:?}", signature);
+    Ok(())
+}
+
+fn remove_transaction(program: &Program, base: Pubkey, transaction: Pubkey) -> Result<()> {
+    let (smart_wallet, _bump) = Pubkey::find_program_address(
+        &[b"SmartWallet".as_ref(), base.as_ref()],
+        &smart_wallet::id(),
+    );
+    println!("Remove transaction {}", transaction);
+    let builder = program
+        .request()
+        .accounts(smart_wallet::accounts::RemoveTransaction {
+            smart_wallet,
+            transaction,
+            proposer: program.payer(),
+        })
+        .args(smart_wallet::instruction::RemoveTransaction {});
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())

@@ -1162,6 +1162,223 @@ describe("Owner Invoker", () => {
   });
 });
 
+
+describe("Remove transaction", () => {
+  const smartWalletBase = new anchor.web3.Keypair();
+  const numOwners = 3;
+
+  const ownerA = new anchor.web3.Keypair();
+  const ownerB = new anchor.web3.Keypair();
+  const owners = [
+    ownerA.publicKey,
+    ownerB.publicKey,
+    provider.wallet.publicKey,
+  ];
+
+  const threshold = new anchor.BN(1);
+  const delay = new anchor.BN(0);
+
+  let smartWalletState: SmartWalletState;
+  let smartWallet: Pubkey;
+  let bump: Number;
+  before(async () => {
+    const [smartWalletAddr, sBump] =
+      await anchor.web3.PublicKey.findProgramAddress(
+        [Buffer.from("SmartWallet"), smartWalletBase.publicKey.toBuffer()],
+        program.programId
+      );
+    smartWallet = smartWalletAddr;
+    bump = sBump;
+    await program.methods
+      .createSmartWallet(numOwners, owners, threshold, delay)
+      .accounts({
+        base: smartWalletBase.publicKey,
+        smartWallet,
+        payer: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([smartWalletBase])
+      .rpc();
+    smartWalletState = await program.account.smartWallet.fetch(smartWallet);
+  });
+
+  it("Can close transaction", async () => {
+    const newOwners = [ownerA.publicKey, ownerB.publicKey];
+    const data = program.coder.instruction.encode("set_owners", {
+      owners: newOwners,
+    });
+    const instruction = {
+      programId: program.programId,
+      keys: [
+        {
+          pubkey: smartWallet,
+          isWritable: true,
+          isSigner: true,
+        },
+      ],
+      data,
+    };
+    const [txKey, txBump] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from("Transaction"),
+        smartWallet.toBuffer(),
+        smartWalletState.numTransactions.toBuffer("le", 8),
+      ],
+      program.programId
+    );
+    await program.methods
+      .createTransaction(txBump, [instruction])
+      .accounts({
+        smartWallet,
+        transaction: txKey,
+        proposer: provider.wallet.publicKey,
+        payer: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+
+
+    // unaprove firstly before close
+    await program.methods
+      .unapprove()
+      .accounts({
+        smartWallet,
+        transaction: txKey,
+        owner: provider.wallet.publicKey,
+      })
+      .rpc();
+
+    // remove transaction 
+    await program.methods
+      .removeTransaction()
+      .accounts({
+        smartWallet,
+        transaction: txKey,
+        proposer: provider.wallet.publicKey,
+      })
+      .rpc();
+    smartWalletState = await program.account.smartWallet.fetch(smartWallet);
+  });
+
+  it("Cannot close transaction by other owner", async () => {
+    const newOwners = [ownerA.publicKey, ownerB.publicKey];
+    const data = program.coder.instruction.encode("set_owners", {
+      owners: newOwners,
+    });
+    const instruction = {
+      programId: program.programId,
+      keys: [
+        {
+          pubkey: smartWallet,
+          isWritable: true,
+          isSigner: true,
+        },
+      ],
+      data,
+    };
+    const [txKey, txBump] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from("Transaction"),
+        smartWallet.toBuffer(),
+        smartWalletState.numTransactions.toBuffer("le", 8),
+      ],
+      program.programId
+    );
+    await program.methods
+      .createTransaction(txBump, [instruction])
+      .accounts({
+        smartWallet,
+        transaction: txKey,
+        proposer: provider.wallet.publicKey,
+        payer: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+
+
+    // unaprove firstly before close
+    await program.methods
+      .unapprove()
+      .accounts({
+        smartWallet,
+        transaction: txKey,
+        owner: provider.wallet.publicKey,
+      })
+      .rpc();
+
+    // remove transaction by other owner
+    try {
+      await program.methods
+        .removeTransaction()
+        .accounts({
+          smartWallet,
+          transaction: txKey,
+          proposer: ownerA.publicKey,
+        })
+        .signers([ownerA])
+        .rpc();
+      console.log("Can remove transaction")
+    } catch (e) {
+      const err = e as Error;
+      console.log(err["error"]["errorMessage"]);
+    }
+    smartWalletState = await program.account.smartWallet.fetch(smartWallet);
+  });
+
+  it("Cannot close transaction if number of signers is not zero", async () => {
+    const newOwners = [ownerA.publicKey, ownerB.publicKey];
+    const data = program.coder.instruction.encode("set_owners", {
+      owners: newOwners,
+    });
+    const instruction = {
+      programId: program.programId,
+      keys: [
+        {
+          pubkey: smartWallet,
+          isWritable: true,
+          isSigner: true,
+        },
+      ],
+      data,
+    };
+    const [txKey, txBump] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from("Transaction"),
+        smartWallet.toBuffer(),
+        smartWalletState.numTransactions.toBuffer("le", 8),
+      ],
+      program.programId
+    );
+    await program.methods
+      .createTransaction(txBump, [instruction])
+      .accounts({
+        smartWallet,
+        transaction: txKey,
+        proposer: provider.wallet.publicKey,
+        payer: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+
+    // remove transaction
+    try {
+      await program.methods
+        .removeTransaction()
+        .accounts({
+          smartWallet,
+          transaction: txKey,
+          proposer: provider.wallet.publicKey,
+        })
+        .rpc();
+      console.log("Can remove transaction")
+    } catch (e) {
+      const err = e as Error;
+      console.log(err["error"]["errorMessage"]);
+    }
+    smartWalletState = await program.account.smartWallet.fetch(smartWallet);
+  });
+});
+
 function sleep(ms: number) {
   return new Promise((res) => {
     setTimeout(res, ms);
