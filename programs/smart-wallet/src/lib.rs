@@ -96,6 +96,13 @@ pub mod smart_wallet {
             .create_transaction(unwrap_bump!(ctx, "transaction"), instructions)
     }
 
+    /// Remove a [Transaction] account, automatically signed by the creator,
+    /// which must be one of the owners of the smart_wallet.
+    #[access_control(ctx.accounts.validate())]
+    pub fn remove_transaction(ctx: Context<RemoveTransaction>) -> Result<()> {
+        ctx.accounts.remove_transaction()
+    }
+
     /// Creates a new [Transaction] account with time delay.
     #[access_control(ctx.accounts.validate())]
     pub fn create_transaction_with_timelock(
@@ -231,4 +238,6 @@ pub enum ErrorCode {
     OwnerSetChanged,
     #[msg("Subaccount does not belong to smart wallet.")]
     SubaccountOwnerMismatch,
+    #[msg("Number of signers is not zero.")]
+    NumSignerIsNotZero,
 }

@@ -3369,6 +3369,7 @@ dependencies = [
  "shellexpand",
  "smart-wallet",
  "solana-program",
+ "utils-cli",
  "voter",
 ]
 

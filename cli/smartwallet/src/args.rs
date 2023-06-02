@@ -115,6 +115,12 @@ pub enum CliCommand {
         #[clap(long)]
         transaction: Pubkey,
     },
+    RemoveTransaction {
+        #[clap(long)]
+        base: Pubkey,
+        #[clap(long)]
+        transaction: Pubkey,
+    },
     ViewSmartwallet {
         #[clap(long)]
         base: Pubkey,
