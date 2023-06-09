@@ -1,7 +1,21 @@
 [workspace]
 members = [
-    "programs/*",
-     "cli/*",
+    "programs/merkle-distributor",
+    "programs/govern",
+    "programs/smart-wallet",
+    "programs/voter",
+    "programs/gauge",
+    "programs/quarry",
+    "programs/minter",
+    "programs/moc-amm",
+    "cli/gauge",
+    "cli/govern",
+    "cli/merkle_distributor",
+    "cli/minter",
+    "cli/quarry",
+    "cli/smartwallet",
+    "cli/voter",
+    "cli/moc_amm",
 ]
 
 [profile.release]
