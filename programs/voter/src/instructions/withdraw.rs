@@ -1,7 +1,7 @@
 use crate::*;
 use anchor_spl::token;
 
-/// Accounts for [voter::exit].
+/// Accounts for [voter::withdraw].
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
     /// The [Locker] being exited from.
@@ -88,7 +88,7 @@ impl<'info> Validate<'info> for Withdraw<'info> {
 }
 
 #[event]
-/// Event called in [voter::exit].
+/// Event called in [voter::withdraw].
 pub struct ExitEscrowEvent {
     /// The owner of the [Escrow].
     #[index]
