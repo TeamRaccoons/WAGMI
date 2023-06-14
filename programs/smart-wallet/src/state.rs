@@ -90,6 +90,8 @@ pub struct Transaction {
     pub executor: Pubkey,
     /// When the transaction was executed. -1 if not executed.
     pub executed_at: i64,
+    /// Time when transaction is created
+    pub created_at: i64,
 }
 
 impl Transaction {

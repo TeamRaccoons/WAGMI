@@ -81,6 +81,7 @@ impl<'info> CreateTransaction<'info> {
 
         tx.executor = Pubkey::default();
         tx.executed_at = -1;
+        tx.created_at = current_ts;
 
         emit!(TransactionCreateEvent {
             smart_wallet: self.smart_wallet.key(),
