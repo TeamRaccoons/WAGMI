@@ -132,6 +132,8 @@ pub enum ErrorCode {
     RefreshCannotShorten,
     #[msg("Escrow has not ended")]
     EscrowNotEnded,
+    #[msg("Maxlock is set")]
+    MaxLockIsSet,
     #[msg("Cannot set expiration less than the current time")]
     ExpirationIsLessThanCurrentTime,
     #[msg("Locker is expired")]
