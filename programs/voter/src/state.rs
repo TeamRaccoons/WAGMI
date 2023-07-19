@@ -73,6 +73,9 @@ pub struct Escrow {
     /// Account that is authorized to vote on behalf of this [Escrow].
     /// Defaults to the [Escrow::owner].
     pub vote_delegate: Pubkey,
+
+    /// Max lock
+    pub is_max_lock: bool,
 }
 
 impl Escrow {

@@ -1,7 +1,10 @@
 [workspace]
 members = [
     "programs/*",
-    "cli/*"
+    "cli/govern",
+    "cli/merkle_distributor",
+    "cli/voter",
+    "cli/smartwallet",
 ]
 
 [profile.release]

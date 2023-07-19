@@ -5,7 +5,6 @@ use num_traits::ToPrimitive;
 #[derive(Accounts)]
 pub struct ExtendLockDuration<'info> {
     /// [Locker].
-    #[account(mut)]
     pub locker: Account<'info, Locker>,
 
     /// [Escrow].
@@ -45,7 +44,7 @@ impl<'info> ExtendLockDuration<'info> {
 
         // update the escrow and locker
 
-        let locker = &mut self.locker;
+        let locker = &self.locker;
         let escrow = &mut self.escrow;
         escrow.record_extend_lock_duration_event(next_escrow_started_at, next_escrow_ends_at)?;
 

@@ -73,6 +73,15 @@ pub mod voter {
         ctx.accounts.extend_lock_duration(duration)
     }
 
+    /// toogle max lock [Escrow].
+    #[access_control(ctx.accounts.validate())]
+    pub fn toggle_max_lock<'info>(
+        ctx: Context<'_, '_, '_, 'info, ToggleMaxLock<'info>>,
+        is_max_lock: bool,
+    ) -> Result<()> {
+        ctx.accounts.toggle_max_lock(is_max_lock)
+    }
+
     /// Exits the DAO; i.e., withdraws all staked tokens in an [Escrow] if the [Escrow] is unlocked.
     #[access_control(ctx.accounts.validate())]
     pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {

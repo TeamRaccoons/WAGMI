@@ -715,6 +715,28 @@ describe("Locked voter", () => {
     );
   });
 
+  it("phase 1 cannot toggle max lock", async () => {
+    const wallet = new Wallet(nonClaimerKeypair);
+
+    const voterProgram = createVoterProgram(wallet, VOTER_PROGRAM_ID);
+    const [escrow, _bump] = deriveEscrow(locker, wallet.publicKey);
+
+    invokeAndAssertError(
+      () => {
+        return voterProgram.methods
+          .toggleMaxLock(true)
+          .accounts({
+            escrow,
+            escrowOwner: wallet.publicKey,
+            locker,
+          })
+          .rpc();
+      },
+      "Invariant failed: must be token launch phase",
+      false
+    );
+  });
+
   it("user cannot activate proposal in phase 1", async () => {
     const wallet = new Wallet(nonClaimerKeypair);
     const voterProgram = createVoterProgram(wallet, VOTER_PROGRAM_ID);
@@ -1016,8 +1038,7 @@ describe("Locked voter", () => {
 
         if (lockerState.expiration.toNumber() > onchainTimestamp) {
           console.log(
-            `${
-              lockerState.expiration.toNumber() - onchainTimestamp
+            `${lockerState.expiration.toNumber() - onchainTimestamp
             } seconds until phase 1 expire`
           );
           await sleep(1000);
