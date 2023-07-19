@@ -72,6 +72,8 @@ impl<'info> Validate<'info> for ExtendLockDuration<'info> {
             phase == Phase::TokenLaunchPhase,
             "must be token launch phase"
         );
+        // Only allow is is_max_lock is false
+        invariant!(!self.escrow.is_max_lock, MaxLockIsSet);
 
         assert_keys_eq!(self.locker, self.escrow.locker);
         assert_keys_eq!(self.escrow.owner, self.escrow_owner);
