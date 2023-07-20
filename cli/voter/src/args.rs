@@ -72,6 +72,12 @@ pub enum CliCommand {
         #[clap(long)]
         duration: i64,
     },
+    ToggleMaxLock {
+        #[clap(long)]
+        base: Pubkey,
+        #[clap(long)]
+        is_max_lock: i64,
+    },
     Withdraw {
         #[clap(long)]
         base: Pubkey,

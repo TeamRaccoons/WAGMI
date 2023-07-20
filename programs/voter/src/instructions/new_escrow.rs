@@ -48,6 +48,7 @@ impl<'info> NewEscrow<'info> {
         escrow.escrow_started_at = 0;
         escrow.escrow_ends_at = 0;
         escrow.vote_delegate = self.escrow_owner.key();
+        escrow.is_max_lock = false;
 
         emit!(NewEscrowEvent {
             escrow: escrow.key(),

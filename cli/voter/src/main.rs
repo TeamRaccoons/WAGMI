@@ -75,6 +75,11 @@ fn main() -> Result<()> {
                 Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
             extend_locked_duration(&program, locker, duration)?;
         }
+        CliCommand::ToggleMaxLock { base, is_max_lock } => {
+            let (locker, _bump) =
+                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
+            toggle_max_lock(&program, locker, is_max_lock)?;
+        }
         CliCommand::Withdraw { base } => {
             let (locker, _bump) =
                 Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
@@ -236,6 +241,30 @@ fn extend_locked_duration(program: &Program, locker: Pubkey, duration: i64) -> R
             escrow_owner: program.payer(),
         })
         .args(voter::instruction::ExtendLockDuration { duration });
+    let signature = builder.send()?;
+    println!("Signature {:?}", signature);
+    Ok(())
+}
+
+fn toggle_max_lock(program: &Program, locker: Pubkey, is_max_lock: i64) -> Result<()> {
+    let (escrow, _bump) = Pubkey::find_program_address(
+        &[
+            b"Escrow".as_ref(),
+            locker.as_ref(),
+            program.payer().as_ref(),
+        ],
+        &voter::id(),
+    );
+
+    let is_max_lock = if is_max_lock == 0 { false } else { true };
+    let builder = program
+        .request()
+        .accounts(voter::accounts::ToggleMaxLock {
+            locker,
+            escrow,
+            escrow_owner: program.payer(),
+        })
+        .args(voter::instruction::ToggleMaxLock { is_max_lock });
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())

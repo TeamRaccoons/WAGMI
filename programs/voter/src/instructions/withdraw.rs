@@ -77,6 +77,7 @@ impl<'info> Validate<'info> for Withdraw<'info> {
         let expiration = if phase == Phase::InitialPhase {
             self.locker.expiration
         } else {
+            invariant!(!self.escrow.is_max_lock, MaxLockIsSet);
             self.escrow.escrow_ends_at
         };
         let now = Clock::get()?.unix_timestamp;

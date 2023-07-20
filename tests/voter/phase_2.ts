@@ -133,8 +133,7 @@ describe("Locked voter", () => {
 
       if (lockerState.expiration.toNumber() > onchainTimestamp) {
         console.log(
-          `${
-            lockerState.expiration.toNumber() - onchainTimestamp
+          `${lockerState.expiration.toNumber() - onchainTimestamp
           } seconds until phase 1 expire`
         );
         await sleep(1000);
@@ -338,6 +337,7 @@ describe("Locked voter", () => {
       true
     );
   });
+
 
   it("able to withdraw if doesn't extend lock duration", async () => {
     const newWallet = await createAndFundWallet(provider.connection);
@@ -692,8 +692,7 @@ describe("Locked voter", () => {
 
         if (escrowState.escrowEndsAt.toNumber() > onchainTimestamp) {
           console.log(
-            `${
-              escrowState.escrowEndsAt.toNumber() - onchainTimestamp
+            `${escrowState.escrowEndsAt.toNumber() - onchainTimestamp
             } seconds until escrow expire`
           );
           await sleep(1000);
@@ -734,4 +733,117 @@ describe("Locked voter", () => {
       // Escrow account closed
     }
   });
+
+  it("can toggle max lock", async () => {
+    const keypair = userKeypairs[0];
+    const userWallet = new Wallet(keypair);
+    const voterProgram = createVoterProgram(userWallet, VOTER_PROGRAM_ID);
+    const [escrow, _bump] = deriveEscrow(locker, userWallet.publicKey);
+
+    await voterProgram.methods
+      .newEscrow()
+      .accounts({
+        escrow,
+        escrowOwner: userWallet.publicKey,
+        locker,
+        payer: userWallet.publicKey,
+        systemProgram: web3.SystemProgram.programId,
+      })
+      .rpc();
+
+    await voterProgram.methods
+      .toggleMaxLock(true)
+      .accounts({
+        escrow,
+        locker,
+        escrowOwner: userWallet.publicKey,
+      })
+      .rpc();
+
+    let escrowState = await voterProgram.account.escrow.fetch(escrow);
+    expect(escrowState.isMaxLock).to.be.equal(true);
+
+
+    const userATA = await getOrCreateATA(
+      rewardMint,
+      userWallet.publicKey,
+      keypair,
+      provider.connection
+    );
+
+    const escrowATA = await getOrCreateATA(
+      rewardMint,
+      escrow,
+      keypair,
+      provider.connection
+    );
+
+    // cannot withdraw
+    invokeAndAssertError(
+      () => {
+        return voterProgram.methods
+          .withdraw()
+          .accounts({
+            destinationTokens: userATA,
+            escrow,
+            escrowOwner: voterProgram.provider.publicKey,
+            escrowTokens: escrowATA,
+            locker,
+            payer: voterProgram.provider.publicKey,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .rpc();
+      },
+      "Invariant failed: must need to set max lock to false",
+      false
+    );
+
+    await voterProgram.methods
+      .toggleMaxLock(false)
+      .accounts({
+        escrow,
+        locker,
+        escrowOwner: userWallet.publicKey,
+      })
+      .rpc();
+
+    escrowState = await voterProgram.account.escrow.fetch(escrow);
+    expect(escrowState.isMaxLock).to.be.equal(false);
+
+    const lockerState = await voterProgram.account.locker.fetch(locker);
+    expect(escrowState.escrowEndsAt.toNumber() - escrowState.escrowStartedAt.toNumber()).to.be.equal(lockerState.params.maxStakeDuration.toNumber());
+
+    while (true) {
+      const [escrowState, onchainTimestamp] = await Promise.all([
+        voterProgram.account.escrow.fetch(escrow),
+        getOnChainTime(provider.connection),
+      ]);
+
+      if (escrowState.escrowEndsAt.toNumber() > onchainTimestamp) {
+        console.log(
+          `${escrowState.escrowEndsAt.toNumber() - onchainTimestamp
+          } seconds until escrow expire`
+        );
+        await sleep(1000);
+      } else {
+        break;
+      }
+    }
+    await sleep(1000);
+    // can withdraw
+    await voterProgram.methods
+      .withdraw()
+      .accounts({
+        destinationTokens: userATA,
+        escrow,
+        escrowOwner: voterProgram.provider.publicKey,
+        escrowTokens: escrowATA,
+        locker,
+        payer: voterProgram.provider.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .rpc();
+
+  });
+
 });
