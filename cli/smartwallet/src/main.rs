@@ -150,6 +150,11 @@ fn create_smart_wallet(
             minimum_delay,
         })
         .signer(&base_keypair);
+
+    // let result =
+    //     simulate_transaction(&builder, program, &vec![&base_keypair, &default_keypair()]).unwrap();
+    // println!("{:?}", result);
+
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())
