@@ -1,8 +1,11 @@
 
 .anchor
 .DS_Store
-target
+
 **/*.rs.bk
 node_modules
 test-ledger
 deployment
+
+target/*
+!target/types
