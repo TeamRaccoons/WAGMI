@@ -9,3 +9,6 @@ deployment
 
 target/*
 !target/types
+
+cli/incentive_setup/
+cli/phase_1_setup

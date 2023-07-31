@@ -1,5 +1,5 @@
 export type MerkleDistributor = {
-  "version": "0.3.5",
+  "version": "0.1.0",
   "name": "merkle_distributor",
   "docs": [
     "The [merkle_distributor] program."
@@ -379,7 +379,7 @@ export type MerkleDistributor = {
 };
 
 export const IDL: MerkleDistributor = {
-  "version": "0.3.5",
+  "version": "0.1.0",
   "name": "merkle_distributor",
   "docs": [
     "The [merkle_distributor] program."
