@@ -29,7 +29,7 @@ Smart wallet:
 anchor test --skip-build --run ./tests/smartwallet -- --features test-bpf
 
 Voter:
-anchor test --run ./tests/voter -- --features test-bpf
+anchor test --run ./tests/voter -- --features test-bpf 
 
 Gauge:
 anchor test --skip-build --run ./tests/gauge
