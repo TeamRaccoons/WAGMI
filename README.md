@@ -1,5 +1,14 @@
 Meteora DAO
 
+Pre-requisites
+- Anchor 0.26.0 (avm use 0.26.0)
+- yarn v1 (yarn set version 1.22.18)
+- node 18 (nvm use 18)
+
+Getting Started
+- yarn install
+- anchor test
+
 The repository consists of 7 programs:
 
 1. Govern program
