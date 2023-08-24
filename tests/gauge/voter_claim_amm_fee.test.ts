@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import * as anchor from "@project-serum/anchor";
 import { Program, web3 } from "@project-serum/anchor";
 import { TOKEN_PROGRAM_ID, createMint } from "@solana/spl-token";
@@ -21,6 +22,7 @@ import {
     simulateSwapAtoB,
     simulateSwapBtoA,
     createMocAmm,
+    getOnChainTime,
 
 } from "../utils";
 
@@ -38,6 +40,7 @@ import {
     getOrCreateVoterGauge
 } from "./utils";
 import { MocAmm } from "../../target/types/moc_amm";
+import { bs58 } from '@project-serum/anchor/dist/cjs/utils/bytes';
 
 const BN = anchor.BN;
 type BN = anchor.BN;
@@ -52,17 +55,19 @@ const programSmartWallet = anchor.workspace.SmartWallet as Program<SmartWallet>;
 const programGovern = anchor.workspace.Govern as Program<Govern>;
 const programMocAmm = anchor.workspace.MocAmm as Program<MocAmm>;
 
+const PERSONAL_KEYPAIR = (process.env as any).PERSONAL_KEYPAIR as string;
+
 const TEST_EPOCH_SECONDS = 3;
 export const DEFAULT_DECIMALS = 9;
 export const DEFAULT_HARD_CAP = 1_000_000_000_000_000;
 
 const AMM_FEE = 10; // 10 bps
 
-describe("Claim fee Gauge", () => {
+describe.only("Claim fee Gauge", () => {
     // should be smart wallet
     const adminKP = Keypair.generate();
 
-    const voterKP = Keypair.generate();
+    const voterKP = PERSONAL_KEYPAIR ? Keypair.fromSecretKey(bs58.decode(PERSONAL_KEYPAIR)) : Keypair.generate();
 
     let voterEscrow: PublicKey;
 
@@ -364,7 +369,7 @@ describe("Claim fee Gauge", () => {
         expect(gaugeFactoryState.currentVotingEpoch).equal(3);
 
         // claim some fee in epoch 2
-        await claimAFeeInVotingEpoch(gauge, voterKP, 2, programGauge, programVoter, programMocAmm);
+        await claimAFeeInVotingEpoch(gauge, voterKP, 2, programGauge, programVoter, programMocAmm);        
 
         var tokenAFeeBalance = await provider.connection
             .getTokenAccountBalance(tokenAFee);
@@ -412,7 +417,6 @@ describe("Claim fee Gauge", () => {
         await getOrCreateEpochGaugeVoterForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter)
         // commit votes            
         await getOrCreateEpochGaugeVoteByCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter);
-
 
         // // wait for next epoch
         await sleep(TEST_EPOCH_SECONDS * 1_000 + 500);
@@ -595,6 +599,22 @@ describe("Claim fee Gauge", () => {
             .rpc();
         gaugeFactoryState = await programGauge.account.gaugeFactory.fetch(gaugeFactory);
         expect(gaugeFactoryState.currentVotingEpoch).equal(3);
+
+        const now = await getOnChainTime(provider.connection)
+        const expiry = now + 10000;
+        
+        while (true) {
+          const onchainTimestamp = await getOnChainTime(provider.connection)
+          if (expiry > onchainTimestamp) {
+            console.log(
+              `${expiry - onchainTimestamp
+              } seconds until expiry`
+            );
+            await sleep(1000);
+          } else {
+            break;
+          }
+        }
 
         // voter 1 claim some fee in epoch 2
         await claimAFeeInVotingEpoch(gauge, voterKP, 2, programGauge, programVoter, programMocAmm);
