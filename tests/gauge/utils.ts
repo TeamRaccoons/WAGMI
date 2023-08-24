@@ -77,6 +77,7 @@ export async function setVote(gauge: PublicKey,
             .rpc();
     }
 
+    console.log(`Voter: ${owner.publicKey} has voted ${weight} for gauge ${gauge.toBase58()}`)
     await programGauge.methods
         .gaugeSetVote(weight)
         .accounts({
