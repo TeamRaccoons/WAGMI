@@ -5,7 +5,7 @@ use crate::*;
 /// Accounts for [gauge::claim_fee].
 #[derive(Accounts)]
 #[instruction(voting_epoch: u32)]
-pub struct ClaimFee<'info> {
+pub struct ClaimFeeGaugeEpoch<'info> {
     #[account(mut, has_one = gauge_voter, constraint = epoch_gauge_voter.voting_epoch == voting_epoch)]
     pub epoch_gauge_voter: Box<Account<'info, EpochGaugeVoter>>,
 
@@ -44,7 +44,7 @@ pub struct ClaimFee<'info> {
     pub vote_delegate: Signer<'info>,
 }
 
-pub fn handler(ctx: Context<ClaimFee>, voting_epoch: u32) -> Result<()> {
+pub fn handler(ctx: Context<ClaimFeeGaugeEpoch>, voting_epoch: u32) -> Result<()> {
     let current_voting_epoch = ctx.accounts.gauge_factory.current_voting_epoch;
     invariant!(voting_epoch < current_voting_epoch, CloseEpochNotElapsed);
 
@@ -92,7 +92,7 @@ pub fn handler(ctx: Context<ClaimFee>, voting_epoch: u32) -> Result<()> {
         fee_amount,
     )?;
 
-    emit!(FeeClaimEvent {
+    emit!(ClaimFeeGaugeEpochEvent {
         gauge: ctx.accounts.gauge.key(),
         amm_pool: ctx.accounts.amm_pool.key(),
         voting_epoch,
@@ -104,7 +104,7 @@ pub fn handler(ctx: Context<ClaimFee>, voting_epoch: u32) -> Result<()> {
     Ok(())
 }
 
-impl<'info> Validate<'info> for ClaimFee<'info> {
+impl<'info> Validate<'info> for ClaimFeeGaugeEpoch<'info> {
     fn validate(&self) -> Result<()> {
         invariant!(
             self.gauge.token_a_fee_key == self.token_account.key()
@@ -123,9 +123,9 @@ impl<'info> Validate<'info> for ClaimFee<'info> {
     }
 }
 
-/// Event called in [gauge::claim_fee].
+/// Event called in [gauge::claim_fee_gauge_epoch].
 #[event]
-pub struct FeeClaimEvent {
+pub struct ClaimFeeGaugeEpochEvent {
     #[index]
     /// The [Gauge].
     pub gauge: Pubkey,

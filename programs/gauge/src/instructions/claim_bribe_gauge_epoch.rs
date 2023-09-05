@@ -2,10 +2,10 @@
 use crate::ErrorCode::MathOverflow;
 use crate::*;
 
-/// Accounts for [gauge::claim_bribe].
+/// Accounts for [gauge::claim_bribe_gauge_epoch].
 #[derive(Accounts)]
 #[instruction(voting_epoch: u32)]
-pub struct ClaimBribe<'info> {
+pub struct ClaimBribeGaugeEpoch<'info> {
     /// The [Bribe]
     #[account(mut, has_one = gauge, has_one = token_account_vault)]
     pub bribe: Account<'info, Bribe>,
@@ -58,7 +58,7 @@ pub struct ClaimBribe<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<ClaimBribe>, voting_epoch: u32) -> Result<()> {
+pub fn handler(ctx: Context<ClaimBribeGaugeEpoch>, voting_epoch: u32) -> Result<()> {
     let bribe = &mut ctx.accounts.bribe;
     let epoch_bribe_voter = &mut ctx.accounts.epoch_bribe_voter;
     invariant!(
@@ -105,7 +105,7 @@ pub fn handler(ctx: Context<ClaimBribe>, voting_epoch: u32) -> Result<()> {
     epoch_bribe_voter.gauge_voter = ctx.accounts.gauge_voter.key();
     epoch_bribe_voter.voting_epoch = voting_epoch;
 
-    emit!(BribeClaimEvent {
+    emit!(BribeGaugeEpochClaimEvent {
         gauge: ctx.accounts.gauge.key(),
         bribe: ctx.accounts.bribe.key(),
         voting_epoch,
@@ -117,15 +117,15 @@ pub fn handler(ctx: Context<ClaimBribe>, voting_epoch: u32) -> Result<()> {
     Ok(())
 }
 
-impl<'info> Validate<'info> for ClaimBribe<'info> {
+impl<'info> Validate<'info> for ClaimBribeGaugeEpoch<'info> {
     fn validate(&self) -> Result<()> {
         Ok(())
     }
 }
 
-/// Event called in [gauge::create_bribe].
+/// Event called in [gauge::claim_bribe_epoch].
 #[event]
-pub struct BribeClaimEvent {
+pub struct BribeGaugeEpochClaimEvent {
     #[index]
     /// The [Gauge].
     pub gauge: Pubkey,

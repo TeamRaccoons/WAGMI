@@ -2,9 +2,9 @@
 
 use crate::*;
 
-/// Accounts for [gauge::gauge_revert_vote].
+/// Accounts for [gauge::gauge_epoch_revert_vote].
 #[derive(Accounts)]
-pub struct GaugeRevertVote<'info> {
+pub struct GaugeEpochRevertVote<'info> {
     pub gauge_factory: Box<Account<'info, GaugeFactory>>,
     pub gauge: Box<Account<'info, Gauge>>,
     pub gauge_voter: Box<Account<'info, GaugeVoter>>,
@@ -32,7 +32,7 @@ pub struct GaugeRevertVote<'info> {
     pub payer: Signer<'info>,
 }
 
-pub fn handler(ctx: Context<GaugeRevertVote>) -> Result<()> {
+pub fn handler(ctx: Context<GaugeEpochRevertVote>) -> Result<()> {
     let epoch_gauge = &mut ctx.accounts.epoch_gauge;
     let epoch_voter = &mut ctx.accounts.epoch_gauge_voter;
     let epoch_vote = &mut ctx.accounts.epoch_gauge_vote;
@@ -42,7 +42,7 @@ pub fn handler(ctx: Context<GaugeRevertVote>) -> Result<()> {
         unwrap_int!(epoch_voter.allocated_power.checked_sub(power_subtract));
     epoch_gauge.total_power = unwrap_int!(epoch_gauge.total_power.checked_sub(power_subtract));
 
-    emit!(RevertGaugeVoteEvent {
+    emit!(GaugeEpochRevertVoteEvent {
         gauge_factory: ctx.accounts.gauge_factory.key(),
         gauge: ctx.accounts.gauge.key(),
         quarry: ctx.accounts.gauge.quarry,
@@ -56,7 +56,7 @@ pub fn handler(ctx: Context<GaugeRevertVote>) -> Result<()> {
     Ok(())
 }
 
-impl<'info> Validate<'info> for GaugeRevertVote<'info> {
+impl<'info> Validate<'info> for GaugeEpochRevertVote<'info> {
     fn validate(&self) -> Result<()> {
         // assert_keys_eq!(self.gauge_factory, self.gauge.gauge_factory);
         let voting_epoch = self.gauge_factory.current_voting_epoch;
@@ -86,9 +86,9 @@ impl<'info> Validate<'info> for GaugeRevertVote<'info> {
     }
 }
 
-/// Event called in [gauge::gauge_revert_vote].
+/// Event called in [gauge::gauge_epoch_revert_vote].
 #[event]
-pub struct RevertGaugeVoteEvent {
+pub struct GaugeEpochRevertVoteEvent {
     #[index]
     /// The [GaugeFactory].
     pub gauge_factory: Pubkey,

@@ -662,7 +662,7 @@ describe("Gauge", () => {
 
             // revert votes
             await programGauge.methods
-                .gaugeRevertVote()
+                .gaugeEpochRevertVote()
                 .accounts({
                     gaugeFactory,
                     gauge,

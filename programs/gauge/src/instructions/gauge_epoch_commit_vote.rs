@@ -2,9 +2,9 @@
 
 use crate::*;
 
-/// Accounts for [gauge::gauge_commit_vote].
+/// Accounts for [gauge::gauge_epoch_commit_vote].
 #[derive(Accounts)]
-pub struct GaugeCommitVote<'info> {
+pub struct GaugeEpochCommitVote<'info> {
     /// The [GaugeFactory].
     pub gauge_factory: Account<'info, GaugeFactory>,
     /// The [Gauge].
@@ -48,7 +48,7 @@ fn mul_div_u64(x: u64, y: u64, z: u64) -> Option<u64> {
     let z: u128 = z.into();
     u64::try_from(x.checked_mul(y)?.checked_div(z)?).ok()
 }
-impl<'info> GaugeCommitVote<'info> {
+impl<'info> GaugeEpochCommitVote<'info> {
     fn vote_shares_for_next_epoch(&self) -> Option<u64> {
         if self.gauge_vote.weight == 0 {
             return Some(0);
@@ -64,7 +64,7 @@ impl<'info> GaugeCommitVote<'info> {
     }
 }
 
-pub fn handler(ctx: Context<GaugeCommitVote>) -> Result<()> {
+pub fn handler(ctx: Context<GaugeEpochCommitVote>) -> Result<()> {
     let next_vote_shares = unwrap_int!(ctx.accounts.vote_shares_for_next_epoch());
     // if zero vote shares, don't do anything
     if next_vote_shares == 0 {
@@ -82,7 +82,7 @@ pub fn handler(ctx: Context<GaugeCommitVote>) -> Result<()> {
 
     epoch_gauge.total_power = unwrap_int!(epoch_gauge.total_power.checked_add(next_vote_shares));
 
-    emit!(CommitGaugeVoteEvent {
+    emit!(GaugeEpochCommitVoteEvent {
         gauge_factory: ctx.accounts.gauge.gauge_factory,
         gauge: ctx.accounts.gauge.key(),
         quarry: ctx.accounts.gauge.quarry,
@@ -96,7 +96,7 @@ pub fn handler(ctx: Context<GaugeCommitVote>) -> Result<()> {
     Ok(())
 }
 
-impl<'info> Validate<'info> for GaugeCommitVote<'info> {
+impl<'info> Validate<'info> for GaugeEpochCommitVote<'info> {
     fn validate(&self) -> Result<()> {
         assert_keys_eq!(self.gauge_factory, self.gauge.gauge_factory);
         assert_keys_eq!(self.gauge, self.gauge_vote.gauge);
@@ -121,9 +121,9 @@ impl<'info> Validate<'info> for GaugeCommitVote<'info> {
     }
 }
 
-/// Event called in [gauge::gauge_commit_vote].
+/// Event called in [gauge::gauge_epoch_commit_vote].
 #[event]
-pub struct CommitGaugeVoteEvent {
+pub struct GaugeEpochCommitVoteEvent {
     #[index]
     /// The [GaugeFactory].
     pub gauge_factory: Pubkey,

@@ -4,7 +4,7 @@ use crate::*;
 /// Accounts for [gauge::claim_bribe].
 #[derive(Accounts)]
 #[instruction(voting_epoch: u32)]
-pub struct ClawbackBribe<'info> {
+pub struct ClawbackBribeGaugeEpoch<'info> {
     /// The [Bribe]
     #[account(has_one = gauge, has_one = token_account_vault, has_one = briber)]
     pub bribe: Account<'info, Bribe>,
@@ -39,7 +39,7 @@ pub struct ClawbackBribe<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler(ctx: Context<ClawbackBribe>, voting_epoch: u32) -> Result<()> {
+pub fn handler(ctx: Context<ClawbackBribeGaugeEpoch>, voting_epoch: u32) -> Result<()> {
     let bribe = &ctx.accounts.bribe;
     // cannot clawback voting_epoch that is not finished
     invariant!(
@@ -82,7 +82,7 @@ pub fn handler(ctx: Context<ClawbackBribe>, voting_epoch: u32) -> Result<()> {
         bribe.reward_each_epoch,
     )?;
 
-    emit!(ClawbackBribeEvent {
+    emit!(ClawbackBribeGaugeEpochEvent {
         bribe: ctx.accounts.bribe.key(),
         gauge: ctx.accounts.gauge.key(),
         voting_epoch,
@@ -91,15 +91,15 @@ pub fn handler(ctx: Context<ClawbackBribe>, voting_epoch: u32) -> Result<()> {
     Ok(())
 }
 
-impl<'info> Validate<'info> for ClawbackBribe<'info> {
+impl<'info> Validate<'info> for ClawbackBribeGaugeEpoch<'info> {
     fn validate(&self) -> Result<()> {
         Ok(())
     }
 }
 
-/// Event called in [gauge::clawback_bribe].
+/// Event called in [gauge::clawback_bribe_gauge_epoch].
 #[event]
-pub struct ClawbackBribeEvent {
+pub struct ClawbackBribeGaugeEpochEvent {
     #[index]
     /// The [Gauge].
     pub gauge: Pubkey,

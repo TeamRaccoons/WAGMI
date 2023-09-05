@@ -462,7 +462,7 @@ export type Gauge = {
       ]
     },
     {
-      "name": "gaugeCommitVote",
+      "name": "gaugeEpochCommitVote",
       "docs": [
         "Commits the vote of a [Gauge].",
         "Anyone can call this on any voter's gauge votes."
@@ -544,7 +544,7 @@ export type Gauge = {
       "args": []
     },
     {
-      "name": "gaugeRevertVote",
+      "name": "gaugeEpochRevertVote",
       "docs": [
         "Reverts a vote commitment of a [Gauge].",
         "Only the voter can call this."
@@ -802,7 +802,7 @@ export type Gauge = {
       "args": []
     },
     {
-      "name": "claimFee",
+      "name": "claimFeeGaugeEpoch",
       "docs": [
         "Holder claim fee from amm",
         "",
@@ -1057,7 +1057,7 @@ export type Gauge = {
       ]
     },
     {
-      "name": "claimBribe",
+      "name": "claimBribeGaugeEpoch",
       "docs": [
         "Claim an [Bribe] for voting epoch",
         "",
@@ -1159,7 +1159,7 @@ export type Gauge = {
       ]
     },
     {
-      "name": "clawbackBribe",
+      "name": "clawbackBribeGaugeEpoch",
       "docs": [
         "Rescue an [Bribe] for voting epoch",
         "",
@@ -1715,7 +1715,7 @@ export type Gauge = {
   ],
   "events": [
     {
-      "name": "BribeClaimEvent",
+      "name": "BribeGaugeEpochClaimEvent",
       "fields": [
         {
           "name": "gauge",
@@ -1750,7 +1750,7 @@ export type Gauge = {
       ]
     },
     {
-      "name": "FeeClaimEvent",
+      "name": "ClaimFeeGaugeEpochEvent",
       "fields": [
         {
           "name": "gauge",
@@ -1785,7 +1785,7 @@ export type Gauge = {
       ]
     },
     {
-      "name": "ClawbackBribeEvent",
+      "name": "ClawbackBribeGaugeEpochEvent",
       "fields": [
         {
           "name": "gauge",
@@ -1820,7 +1820,7 @@ export type Gauge = {
       ]
     },
     {
-      "name": "BribeCreateEvent",
+      "name": "BribeGaugeCreateEvent",
       "fields": [
         {
           "name": "gauge",
@@ -1975,7 +1975,47 @@ export type Gauge = {
       ]
     },
     {
-      "name": "CommitGaugeVoteEvent",
+      "name": "GaugeDisableEvent",
+      "fields": [
+        {
+          "name": "gauge",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "gaugeFactory",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "foreman",
+          "type": "publicKey",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "GaugeEnableEvent",
+      "fields": [
+        {
+          "name": "gauge",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "gaugeFactory",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "foreman",
+          "type": "publicKey",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "GaugeEpochCommitVoteEvent",
       "fields": [
         {
           "name": "gaugeFactory",
@@ -2020,47 +2060,7 @@ export type Gauge = {
       ]
     },
     {
-      "name": "GaugeDisableEvent",
-      "fields": [
-        {
-          "name": "gauge",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "gaugeFactory",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "foreman",
-          "type": "publicKey",
-          "index": false
-        }
-      ]
-    },
-    {
-      "name": "GaugeEnableEvent",
-      "fields": [
-        {
-          "name": "gauge",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "gaugeFactory",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "foreman",
-          "type": "publicKey",
-          "index": false
-        }
-      ]
-    },
-    {
-      "name": "RevertGaugeVoteEvent",
+      "name": "GaugeEpochRevertVoteEvent",
       "fields": [
         {
           "name": "gaugeFactory",
@@ -2858,7 +2858,7 @@ export const IDL: Gauge = {
       ]
     },
     {
-      "name": "gaugeCommitVote",
+      "name": "gaugeEpochCommitVote",
       "docs": [
         "Commits the vote of a [Gauge].",
         "Anyone can call this on any voter's gauge votes."
@@ -2940,7 +2940,7 @@ export const IDL: Gauge = {
       "args": []
     },
     {
-      "name": "gaugeRevertVote",
+      "name": "gaugeEpochRevertVote",
       "docs": [
         "Reverts a vote commitment of a [Gauge].",
         "Only the voter can call this."
@@ -3198,7 +3198,7 @@ export const IDL: Gauge = {
       "args": []
     },
     {
-      "name": "claimFee",
+      "name": "claimFeeGaugeEpoch",
       "docs": [
         "Holder claim fee from amm",
         "",
@@ -3453,7 +3453,7 @@ export const IDL: Gauge = {
       ]
     },
     {
-      "name": "claimBribe",
+      "name": "claimBribeGaugeEpoch",
       "docs": [
         "Claim an [Bribe] for voting epoch",
         "",
@@ -3555,7 +3555,7 @@ export const IDL: Gauge = {
       ]
     },
     {
-      "name": "clawbackBribe",
+      "name": "clawbackBribeGaugeEpoch",
       "docs": [
         "Rescue an [Bribe] for voting epoch",
         "",
@@ -4111,7 +4111,7 @@ export const IDL: Gauge = {
   ],
   "events": [
     {
-      "name": "BribeClaimEvent",
+      "name": "BribeGaugeEpochClaimEvent",
       "fields": [
         {
           "name": "gauge",
@@ -4146,7 +4146,7 @@ export const IDL: Gauge = {
       ]
     },
     {
-      "name": "FeeClaimEvent",
+      "name": "ClaimFeeGaugeEpochEvent",
       "fields": [
         {
           "name": "gauge",
@@ -4181,7 +4181,7 @@ export const IDL: Gauge = {
       ]
     },
     {
-      "name": "ClawbackBribeEvent",
+      "name": "ClawbackBribeGaugeEpochEvent",
       "fields": [
         {
           "name": "gauge",
@@ -4216,7 +4216,7 @@ export const IDL: Gauge = {
       ]
     },
     {
-      "name": "BribeCreateEvent",
+      "name": "BribeGaugeCreateEvent",
       "fields": [
         {
           "name": "gauge",
@@ -4371,7 +4371,47 @@ export const IDL: Gauge = {
       ]
     },
     {
-      "name": "CommitGaugeVoteEvent",
+      "name": "GaugeDisableEvent",
+      "fields": [
+        {
+          "name": "gauge",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "gaugeFactory",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "foreman",
+          "type": "publicKey",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "GaugeEnableEvent",
+      "fields": [
+        {
+          "name": "gauge",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "gaugeFactory",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "foreman",
+          "type": "publicKey",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "GaugeEpochCommitVoteEvent",
       "fields": [
         {
           "name": "gaugeFactory",
@@ -4416,47 +4456,7 @@ export const IDL: Gauge = {
       ]
     },
     {
-      "name": "GaugeDisableEvent",
-      "fields": [
-        {
-          "name": "gauge",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "gaugeFactory",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "foreman",
-          "type": "publicKey",
-          "index": false
-        }
-      ]
-    },
-    {
-      "name": "GaugeEnableEvent",
-      "fields": [
-        {
-          "name": "gauge",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "gaugeFactory",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "foreman",
-          "type": "publicKey",
-          "index": false
-        }
-      ]
-    },
-    {
-      "name": "RevertGaugeVoteEvent",
+      "name": "GaugeEpochRevertVoteEvent",
       "fields": [
         {
           "name": "gaugeFactory",

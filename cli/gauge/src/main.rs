@@ -700,7 +700,7 @@ fn gauge_commit_vote<C: Deref<Target = impl Signer> + Clone>(
     );
 
     instructions.push(Instruction {
-        accounts: gauge::accounts::GaugeCommitVote {
+        accounts: gauge::accounts::GaugeEpochCommitVote {
             gauge_factory,
             gauge,
             gauge_voter,
@@ -712,7 +712,7 @@ fn gauge_commit_vote<C: Deref<Target = impl Signer> + Clone>(
             system_program: system_program::id(),
         }
         .to_account_metas(None),
-        data: gauge::instruction::GaugeCommitVote {}.data(),
+        data: gauge::instruction::GaugeEpochCommitVote {}.data(),
         program_id: gauge::id(),
     });
 
@@ -814,7 +814,7 @@ fn gauge_revert_vote<C: Deref<Target = impl Signer> + Clone>(
 
     let builder = program
         .request()
-        .accounts(gauge::accounts::GaugeRevertVote {
+        .accounts(gauge::accounts::GaugeEpochRevertVote {
             escrow,
             gauge_factory,
             gauge,
@@ -826,7 +826,7 @@ fn gauge_revert_vote<C: Deref<Target = impl Signer> + Clone>(
             vote_delegate: program.payer(),
             epoch_gauge_vote,
         })
-        .args(gauge::instruction::GaugeRevertVote {});
+        .args(gauge::instruction::GaugeEpochRevertVote {});
 
     let signature = builder.send()?;
     println!("Signature {:?}", signature);

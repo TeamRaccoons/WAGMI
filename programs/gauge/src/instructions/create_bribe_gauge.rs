@@ -3,9 +3,9 @@
 use crate::*;
 use crate::ErrorCode::MathOverflow;
 
-/// Accounts for [gauge::create_bribe].
+/// Accounts for [gauge::create_bribe_gauge].
 #[derive(Accounts)]
-pub struct CreateBribe<'info> {
+pub struct CreateBribeGauge<'info> {
     /// The [Bribe] to be created.
     #[account(
             init,            
@@ -53,7 +53,7 @@ pub fn get_total_bribe_rewards(reward_each_epoch: u64, bribe_epoch_end: u32, bri
     reward_each_epoch.checked_mul(u64::from(bribe_epoch_end.checked_add(1)?.checked_sub(bribe_epoch_start)?))
 }
 
-pub fn handler(ctx: Context<CreateBribe>, reward_each_epoch: u64, bribe_rewards_epoch_end: u32) -> Result<()> {
+pub fn handler(ctx: Context<CreateBribeGauge>, reward_each_epoch: u64, bribe_rewards_epoch_end: u32) -> Result<()> {
     // check bribe end is after voting epoch timestamp
     let gauge_factory = &ctx.accounts.gauge_factory;
     let current_voting_epoch = gauge_factory.current_voting_epoch;
@@ -90,7 +90,7 @@ pub fn handler(ctx: Context<CreateBribe>, reward_each_epoch: u64, bribe_rewards_
     bribe.bribe_rewards_epoch_start = current_voting_epoch;
     bribe.bribe_rewards_epoch_end = bribe_rewards_epoch_end;
 
-    emit!(BribeCreateEvent {
+    emit!(BribeGaugeCreateEvent {
         gauge: ctx.accounts.gauge.key(),
         bribe: ctx.accounts.bribe.key(),
         bribe_rewards_epoch_start: current_voting_epoch,
@@ -101,16 +101,16 @@ pub fn handler(ctx: Context<CreateBribe>, reward_each_epoch: u64, bribe_rewards_
     Ok(())
 }
 
-impl<'info> Validate<'info> for CreateBribe<'info> {
+impl<'info> Validate<'info> for CreateBribeGauge<'info> {
     fn validate(&self) -> Result<()> {
         Ok(())
     }
 }
 
 
-/// Event called in [gauge::create_bribe].
+/// Event called in [gauge::create_bribe_gauge].
 #[event]
-pub struct BribeCreateEvent {
+pub struct BribeGaugeCreateEvent {
     #[index]
     /// The [Gauge].
     pub gauge: Pubkey,
