@@ -9,11 +9,11 @@ edition = "2021"
 clap = { version = "3.1.8", features = ["derive"] }
 voter = { path = "../../programs/voter" }
 shellexpand = "2.1.0"
-anchor-lang = "0.26.0"
-anchor-spl = "0.26.0"
-anchor-client = "0.26.0"
+anchor-lang = "0.28.0"
+anchor-spl = "0.28.0"
+anchor-client = "0.28.0"
 anyhow = "1.0.57"
-solana-program = "1.14.12"
+solana-program = "1.16.1"
 govern = { path = "../../programs/govern" }
 smart-wallet = { path = "../../programs/smart-wallet" }
 utils-cli = {path ="../utils"}

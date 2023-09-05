@@ -13,10 +13,10 @@ minter = { path = "../../programs/minter" }
 voter = { path = "../../programs/voter" }
 moc-amm = { path = "../../programs/moc-amm" }
 shellexpand = "2.1.0"
-anchor-lang = "0.26.0"
-anchor-spl = "0.26.0"
-anchor-client = "0.26.0"
+anchor-lang = "0.28.0"
+anchor-spl = "0.28.0"
+anchor-client = "0.28.0"
 anyhow = "1.0.57"
-solana-program = "1.14.12"
+solana-program = "1.16.1"
 utils-cli = {path="../utils"}
 spl-token = "3.5.0"

@@ -11,7 +11,7 @@ no-idl = []
 default = []
 
 [dependencies]
-anchor-lang = "0.26.0"
-anchor-spl = "0.26.0"
+anchor-lang = "0.28.0"
+anchor-spl = "0.28.0"
 vipers = {path = "../../libs/vipers"}
 moc-amm = {path = "../../programs/moc-amm", features=["no-entrypoint", "cpi"]}

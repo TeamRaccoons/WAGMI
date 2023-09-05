@@ -14,11 +14,11 @@ use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signer::keypair::*;
 use anchor_client::solana_sdk::signer::Signer;
 use anchor_client::{Client, Program};
+use clap::*;
 use solana_program::instruction::Instruction;
+use std::ops::Deref;
 use std::rc::Rc;
 use std::str::FromStr;
-
-use clap::*;
 
 fn main() -> Result<()> {
     let opts = Opts::parse();
@@ -41,7 +41,7 @@ fn main() -> Result<()> {
         }
         None => Keypair::new(),
     };
-    let program = client.program(program_id);
+    let program = client.program(program_id)?;
     match opts.command {
         CliCommand::NewRewarder { rewards_token_mint } => {
             new_rewarder(&program, rewards_token_mint, base)?;
@@ -106,7 +106,11 @@ fn main() -> Result<()> {
 
     Ok(())
 }
-fn new_rewarder(program: &Program, rewards_token_mint: Pubkey, base_kp: Keypair) -> Result<()> {
+fn new_rewarder<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    rewards_token_mint: Pubkey,
+    base_kp: Keypair,
+) -> Result<()> {
     let base = base_kp.pubkey();
     let (rewarder, bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
@@ -131,7 +135,10 @@ fn new_rewarder(program: &Program, rewards_token_mint: Pubkey, base_kp: Keypair)
     Ok(())
 }
 
-fn set_gauge_factory_mint_authority(program: &Program, base: Pubkey) -> Result<()> {
+fn set_gauge_factory_mint_authority<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, _bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
     let (gauge_factory, _bump) =
@@ -150,7 +157,11 @@ fn set_gauge_factory_mint_authority(program: &Program, base: Pubkey) -> Result<(
     Ok(())
 }
 
-fn set_pause_authority(program: &Program, new_pause_authority: Pubkey, base: Pubkey) -> Result<()> {
+fn set_pause_authority<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    new_pause_authority: Pubkey,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
     let builder = program
@@ -168,7 +179,7 @@ fn set_pause_authority(program: &Program, new_pause_authority: Pubkey, base: Pub
     Ok(())
 }
 
-fn pause(program: &Program, base: Pubkey) -> Result<()> {
+fn pause<C: Deref<Target = impl Signer> + Clone>(program: &Program<C>, base: Pubkey) -> Result<()> {
     let (rewarder, bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
     let builder = program
@@ -183,7 +194,10 @@ fn pause(program: &Program, base: Pubkey) -> Result<()> {
     Ok(())
 }
 
-fn unpause(program: &Program, base: Pubkey) -> Result<()> {
+fn unpause<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
     let builder = program
@@ -198,7 +212,11 @@ fn unpause(program: &Program, base: Pubkey) -> Result<()> {
     Ok(())
 }
 
-fn transfer_admin(program: &Program, new_admin: Pubkey, base: Pubkey) -> Result<()> {
+fn transfer_admin<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    new_admin: Pubkey,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
     let builder = program
@@ -213,7 +231,10 @@ fn transfer_admin(program: &Program, new_admin: Pubkey, base: Pubkey) -> Result<
     Ok(())
 }
 
-fn accept_admin(program: &Program, base: Pubkey) -> Result<()> {
+fn accept_admin<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
     let builder = program
@@ -228,7 +249,11 @@ fn accept_admin(program: &Program, base: Pubkey) -> Result<()> {
     Ok(())
 }
 
-fn set_annual_rewards(program: &Program, new_rate: u64, base: Pubkey) -> Result<()> {
+fn set_annual_rewards<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    new_rate: u64,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
     let builder = program
@@ -244,7 +269,11 @@ fn set_annual_rewards(program: &Program, new_rate: u64, base: Pubkey) -> Result<
     println!("Signature {:?}", signature);
     Ok(())
 }
-fn create_quarry(program: &Program, system_base: String, base: Pubkey) -> Result<()> {
+fn create_quarry<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    system_base: String,
+    base: Pubkey,
+) -> Result<()> {
     let system_base =
         read_keypair_file(&*shellexpand::tilde(&system_base)).expect("Requires a keypair file");
 
@@ -276,8 +305,8 @@ fn create_quarry(program: &Program, system_base: String, base: Pubkey) -> Result
     Ok(())
 }
 
-fn set_rewards_share(
-    program: &Program,
+fn set_rewards_share<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
     new_share: u64,
     token_mint: Pubkey,
     base: Pubkey,
@@ -301,8 +330,8 @@ fn set_rewards_share(
     Ok(())
 }
 
-fn set_famine_ts(
-    program: &Program,
+fn set_famine_ts<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
     famine_ts: i64,
     system_base: String,
     base: Pubkey,
@@ -336,7 +365,11 @@ fn set_famine_ts(
     Ok(())
 }
 
-fn update_quarry_rewards(program: &Program, token_mint: Pubkey, base: Pubkey) -> Result<()> {
+fn update_quarry_rewards<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    token_mint: Pubkey,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, _bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
     let (quarry, _bump) = Pubkey::find_program_address(
@@ -352,7 +385,11 @@ fn update_quarry_rewards(program: &Program, token_mint: Pubkey, base: Pubkey) ->
     Ok(())
 }
 
-fn create_miner(program: &Program, token_mint: Pubkey, base: Pubkey) -> Result<()> {
+fn create_miner<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    token_mint: Pubkey,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, _bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
     let (quarry, _bump) = Pubkey::find_program_address(
@@ -384,7 +421,11 @@ fn create_miner(program: &Program, token_mint: Pubkey, base: Pubkey) -> Result<(
     Ok(())
 }
 
-fn claim_rewards(program: &Program, token_mint: Pubkey, base: Pubkey) -> Result<()> {
+fn claim_rewards<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    token_mint: Pubkey,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, _bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
     let rewarder_state: quarry::Rewarder = program.account(rewarder)?;
@@ -453,7 +494,12 @@ fn claim_rewards(program: &Program, token_mint: Pubkey, base: Pubkey) -> Result<
     Ok(())
 }
 
-fn unstake_token(program: &Program, amount: u64, token_mint: Pubkey, base: Pubkey) -> Result<()> {
+fn unstake_token<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    amount: u64,
+    token_mint: Pubkey,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, _bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
 
@@ -486,7 +532,12 @@ fn unstake_token(program: &Program, amount: u64, token_mint: Pubkey, base: Pubke
     Ok(())
 }
 
-fn stake_token(program: &Program, amount: u64, token_mint: Pubkey, base: Pubkey) -> Result<()> {
+fn stake_token<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    amount: u64,
+    token_mint: Pubkey,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, _bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
 
@@ -553,7 +604,11 @@ fn stake_token(program: &Program, amount: u64, token_mint: Pubkey, base: Pubkey)
     Ok(())
 }
 
-fn view_miner(program: &Program, token_mint: Pubkey, base: Pubkey) -> Result<()> {
+fn view_miner<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    token_mint: Pubkey,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, _bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
     let (quarry, _bump) = Pubkey::find_program_address(

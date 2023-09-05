@@ -1,11 +1,6 @@
 mod args;
 
 use crate::args::*;
-use anyhow::Ok;
-use anyhow::Result;
-use solana_program::system_program;
-use utils_cli::*;
-
 use anchor_client::anchor_lang::InstructionData;
 use anchor_client::anchor_lang::ToAccountMetas;
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
@@ -13,10 +8,15 @@ use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signer::keypair::*;
 use anchor_client::solana_sdk::signer::Signer;
 use anchor_client::{Client, Program};
+use anyhow::Ok;
+use anyhow::Result;
 use clap::*;
 use solana_program::instruction::Instruction;
+use solana_program::system_program;
+use std::ops::Deref;
 use std::rc::Rc;
 use std::str::FromStr;
+use utils_cli::*;
 
 fn main() -> Result<()> {
     let opts = Opts::parse();
@@ -39,7 +39,7 @@ fn main() -> Result<()> {
         }
         None => Keypair::new(),
     };
-    let program = client.program(program_id);
+    let program = client.program(program_id)?;
     match opts.command {
         CliCommand::CreateGaugeFactory {
             epoch_duration_seconds,
@@ -108,8 +108,8 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn create_gauge_factory(
-    program: &Program,
+fn create_gauge_factory<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
     epoch_duration_seconds: u32,
     first_epoch_starts_at: u64,
     base_kp: Keypair,
@@ -145,7 +145,11 @@ fn create_gauge_factory(
     Ok(())
 }
 
-fn create_gauge(program: &Program, quarry_base: String, base: Pubkey) -> Result<()> {
+fn create_gauge<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    quarry_base: String,
+    base: Pubkey,
+) -> Result<()> {
     let quarry_base =
         read_keypair_file(&*shellexpand::tilde(&quarry_base)).expect("Requires a keypair file");
 
@@ -188,7 +192,10 @@ fn create_gauge(program: &Program, quarry_base: String, base: Pubkey) -> Result<
     Ok(())
 }
 
-fn create_gauge_voter(program: &Program, base: Pubkey) -> Result<()> {
+fn create_gauge_voter<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+) -> Result<()> {
     let (gauge_factory, _bump) =
         Pubkey::find_program_address(&[b"GaugeFactory".as_ref(), base.as_ref()], &gauge::id());
 
@@ -251,7 +258,11 @@ fn create_gauge_voter(program: &Program, base: Pubkey) -> Result<()> {
     Ok(())
 }
 
-fn create_gauge_vote(program: &Program, token_mint: Pubkey, base: Pubkey) -> Result<()> {
+fn create_gauge_vote<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    token_mint: Pubkey,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, _bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
     let (quarry, _bump) = Pubkey::find_program_address(
@@ -304,8 +315,8 @@ fn create_gauge_vote(program: &Program, token_mint: Pubkey, base: Pubkey) -> Res
     Ok(())
 }
 
-fn create_epoch_gauge(
-    program: &Program,
+fn create_epoch_gauge<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
     voting_epoch: u32,
     token_mint: Pubkey,
     base: Pubkey,
@@ -353,7 +364,10 @@ fn create_epoch_gauge(
     Ok(())
 }
 
-fn prepare_epoch_gauge_voter(program: &Program, base: Pubkey) -> Result<()> {
+fn prepare_epoch_gauge_voter<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+) -> Result<()> {
     let (gauge_factory, _bump) =
         Pubkey::find_program_address(&[b"GaugeFactory".as_ref(), base.as_ref()], &gauge::id());
 
@@ -417,7 +431,10 @@ fn prepare_epoch_gauge_voter(program: &Program, base: Pubkey) -> Result<()> {
     Ok(())
 }
 
-fn reset_epoch_gauge_voter(program: &Program, base: Pubkey) -> Result<()> {
+fn reset_epoch_gauge_voter<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+) -> Result<()> {
     let (gauge_factory, _bump) =
         Pubkey::find_program_address(&[b"GaugeFactory".as_ref(), base.as_ref()], &gauge::id());
 
@@ -479,7 +496,12 @@ fn reset_epoch_gauge_voter(program: &Program, base: Pubkey) -> Result<()> {
     Ok(())
 }
 
-fn gauge_set_vote(program: &Program, weight: u32, token_mint: Pubkey, base: Pubkey) -> Result<()> {
+fn gauge_set_vote<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    weight: u32,
+    token_mint: Pubkey,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, _bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
     let (quarry, _bump) = Pubkey::find_program_address(
@@ -573,7 +595,11 @@ fn gauge_set_vote(program: &Program, weight: u32, token_mint: Pubkey, base: Pubk
     Ok(())
 }
 
-fn gauge_commit_vote(program: &Program, token_mint: Pubkey, base: Pubkey) -> Result<()> {
+fn gauge_commit_vote<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    token_mint: Pubkey,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, _bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
     let (quarry, _bump) = Pubkey::find_program_address(
@@ -704,7 +730,11 @@ fn gauge_commit_vote(program: &Program, token_mint: Pubkey, base: Pubkey) -> Res
     Ok(())
 }
 
-fn gauge_revert_vote(program: &Program, token_mint: Pubkey, base: Pubkey) -> Result<()> {
+fn gauge_revert_vote<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    token_mint: Pubkey,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, _bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
     let (quarry, _bump) = Pubkey::find_program_address(
@@ -803,7 +833,11 @@ fn gauge_revert_vote(program: &Program, token_mint: Pubkey, base: Pubkey) -> Res
     Ok(())
 }
 
-fn gauge_enable(program: &Program, quarry_base: String, base: Pubkey) -> Result<()> {
+fn gauge_enable<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    quarry_base: String,
+    base: Pubkey,
+) -> Result<()> {
     let quarry_base =
         read_keypair_file(&*shellexpand::tilde(&quarry_base)).expect("Requires a keypair file");
 
@@ -840,7 +874,11 @@ fn gauge_enable(program: &Program, quarry_base: String, base: Pubkey) -> Result<
     Ok(())
 }
 
-fn gauge_disable(program: &Program, token_mint: Pubkey, base: Pubkey) -> Result<()> {
+fn gauge_disable<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    token_mint: Pubkey,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, _bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
     let (quarry, _bump) = Pubkey::find_program_address(
@@ -869,7 +907,10 @@ fn gauge_disable(program: &Program, token_mint: Pubkey, base: Pubkey) -> Result<
     Ok(())
 }
 
-fn trigger_next_epoch(program: &Program, base: Pubkey) -> Result<()> {
+fn trigger_next_epoch<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+) -> Result<()> {
     let (gauge_factory, _bump) =
         Pubkey::find_program_address(&[b"GaugeFactory".as_ref(), base.as_ref()], &gauge::id());
 
@@ -887,7 +928,11 @@ fn trigger_next_epoch(program: &Program, base: Pubkey) -> Result<()> {
     Ok(())
 }
 
-fn sync_gauge(program: &Program, token_mint: Pubkey, base: Pubkey) -> Result<()> {
+fn sync_gauge<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    token_mint: Pubkey,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, _bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
     let (quarry, _bump) = Pubkey::find_program_address(
@@ -934,7 +979,11 @@ fn sync_gauge(program: &Program, token_mint: Pubkey, base: Pubkey) -> Result<()>
     Ok(())
 }
 
-fn sync_disable_gauge(program: &Program, token_mint: Pubkey, base: Pubkey) -> Result<()> {
+fn sync_disable_gauge<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    token_mint: Pubkey,
+    base: Pubkey,
+) -> Result<()> {
     let (rewarder, _bump) =
         Pubkey::find_program_address(&[b"Rewarder".as_ref(), base.as_ref()], &quarry::id());
     let (quarry, _bump) = Pubkey::find_program_address(
@@ -965,8 +1014,8 @@ fn sync_disable_gauge(program: &Program, token_mint: Pubkey, base: Pubkey) -> Re
     Ok(())
 }
 
-fn close_epoch_gauge(
-    program: &Program,
+fn close_epoch_gauge<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
     voting_epoch: u32,
     token_mint: Pubkey,
     base: Pubkey,

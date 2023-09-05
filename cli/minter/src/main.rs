@@ -11,10 +11,10 @@ use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signer::keypair::*;
 use anchor_client::solana_sdk::signer::Signer;
 use anchor_client::{Client, Program};
+use clap::*;
+use std::ops::Deref;
 use std::rc::Rc;
 use std::str::FromStr;
-
-use clap::*;
 
 fn main() -> Result<()> {
     let opts = Opts::parse();
@@ -37,7 +37,7 @@ fn main() -> Result<()> {
         }
         None => Keypair::new(),
     };
-    let program = client.program(program_id);
+    let program = client.program(program_id)?;
     match opts.command {
         CliCommand::SetMintAuthority { token_mint } => {
             set_mint_authority(&program, token_mint, base.pubkey())?;
@@ -85,7 +85,11 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn set_mint_authority(program: &Program, token_mint: Pubkey, base: Pubkey) -> Result<()> {
+fn set_mint_authority<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    token_mint: Pubkey,
+    base: Pubkey,
+) -> Result<()> {
     let (mint_wrapper, bump) =
         Pubkey::find_program_address(&[b"MintWrapper".as_ref(), base.as_ref()], &minter::id());
 
@@ -112,8 +116,8 @@ fn set_mint_authority(program: &Program, token_mint: Pubkey, base: Pubkey) -> Re
     Ok(())
 }
 
-fn new_mint_wrapper(
-    program: &Program,
+fn new_mint_wrapper<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
     hard_cap: u64,
     token_mint: Pubkey,
     base_kp: Keypair,
@@ -150,7 +154,10 @@ fn new_mint_wrapper(
     Ok(())
 }
 
-fn view_mint_wrapper(program: &Program, base: Pubkey) -> Result<()> {
+fn view_mint_wrapper<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+) -> Result<()> {
     let (mint_wrapper, bump) =
         Pubkey::find_program_address(&[b"MintWrapper".as_ref(), base.as_ref()], &minter::id());
     let mint_wrapper_state: minter::MintWrapper = program.account(mint_wrapper)?;
@@ -159,7 +166,11 @@ fn view_mint_wrapper(program: &Program, base: Pubkey) -> Result<()> {
     return Ok(());
 }
 
-fn new_minter(program: &Program, minter_authority: Pubkey, base: Pubkey) -> Result<()> {
+fn new_minter<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    minter_authority: Pubkey,
+    base: Pubkey,
+) -> Result<()> {
     let (mint_wrapper, bump) =
         Pubkey::find_program_address(&[b"MintWrapper".as_ref(), base.as_ref()], &minter::id());
     let (minter, _bump) = Pubkey::find_program_address(
@@ -188,7 +199,11 @@ fn new_minter(program: &Program, minter_authority: Pubkey, base: Pubkey) -> Resu
     Ok(())
 }
 
-fn transfer_admin(program: &Program, next_admin: Pubkey, base: Pubkey) -> Result<()> {
+fn transfer_admin<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    next_admin: Pubkey,
+    base: Pubkey,
+) -> Result<()> {
     let (mint_wrapper, bump) =
         Pubkey::find_program_address(&[b"MintWrapper".as_ref(), base.as_ref()], &minter::id());
 
@@ -205,7 +220,10 @@ fn transfer_admin(program: &Program, next_admin: Pubkey, base: Pubkey) -> Result
     Ok(())
 }
 
-fn accept_admin(program: &Program, base: Pubkey) -> Result<()> {
+fn accept_admin<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+) -> Result<()> {
     let (mint_wrapper, bump) =
         Pubkey::find_program_address(&[b"MintWrapper".as_ref(), base.as_ref()], &minter::id());
 
@@ -221,8 +239,8 @@ fn accept_admin(program: &Program, base: Pubkey) -> Result<()> {
     Ok(())
 }
 
-fn set_allowance(
-    program: &Program,
+fn set_allowance<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
     allowance: u64,
     minter_authority: Pubkey,
     base: Pubkey,

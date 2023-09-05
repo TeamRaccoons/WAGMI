@@ -5,9 +5,10 @@ use anchor_client::solana_sdk::system_instruction;
 use anchor_lang::prelude::Pubkey;
 use anchor_lang::prelude::Rent;
 use anyhow::Result;
+use std::ops::Deref;
 
-pub fn get_or_create_ata(
-    program_client: &anchor_client::Program,
+pub fn get_or_create_ata<C: Deref<Target = impl Signer> + Clone>(
+    program_client: &anchor_client::Program<C>,
     token_mint: Pubkey,
     user: Pubkey,
 ) -> Result<Pubkey> {
@@ -31,7 +32,10 @@ pub fn get_or_create_ata(
     Ok(user_token_account)
 }
 
-pub fn create_token_mint(program: &anchor_client::Program, token_mint_kp: &Keypair) -> Result<()> {
+pub fn create_token_mint<C: Deref<Target = impl Signer> + Clone>(
+    program: &anchor_client::Program<C>,
+    token_mint_kp: &Keypair,
+) -> Result<()> {
     let instructions = vec![
         system_instruction::create_account(
             &program.payer(),

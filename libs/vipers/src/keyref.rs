@@ -68,48 +68,48 @@ impl<'info> AsKeyRef for UncheckedAccount<'info> {
     }
 }
 
-#[allow(deprecated)]
-mod deprecated {
-    use super::*;
-    use anchor_lang::accounts::{
-        cpi_account::CpiAccount, cpi_state::CpiState, loader::Loader,
-        program_account::ProgramAccount, state::ProgramState,
-    };
+// #[allow(deprecated)]
+// mod deprecated {
+//     use super::*;
+//     use anchor_lang::accounts::{
+//         cpi_account::CpiAccount, cpi_state::CpiState, loader::Loader,
+//         program_account::ProgramAccount, state::ProgramState,
+//     };
 
-    #[allow(deprecated)]
-    impl<'info, T: AccountDeserialize + Clone> AsKeyRef for CpiAccount<'info, T> {
-        fn as_key_ref(&self) -> &Pubkey {
-            self.as_ref().key
-        }
-    }
+//     #[allow(deprecated)]
+//     impl<'info, T: AccountDeserialize + Clone> AsKeyRef for CpiAccount<'info, T> {
+//         fn as_key_ref(&self) -> &Pubkey {
+//             self.as_ref().key
+//         }
+//     }
 
-    #[allow(deprecated)]
-    impl<'info, T: AccountSerialize + AccountDeserialize + Clone> AsKeyRef for CpiState<'info, T> {
-        fn as_key_ref(&self) -> &Pubkey {
-            self.as_ref().key
-        }
-    }
+//     #[allow(deprecated)]
+//     impl<'info, T: AccountSerialize + AccountDeserialize + Clone> AsKeyRef for CpiState<'info, T> {
+//         fn as_key_ref(&self) -> &Pubkey {
+//             self.as_ref().key
+//         }
+//     }
 
-    #[allow(deprecated)]
-    impl<'info, T: ZeroCopy> AsKeyRef for Loader<'info, T> {
-        fn as_key_ref(&self) -> &Pubkey {
-            self.as_ref().key
-        }
-    }
+//     #[allow(deprecated)]
+//     impl<'info, T: ZeroCopy> AsKeyRef for Loader<'info, T> {
+//         fn as_key_ref(&self) -> &Pubkey {
+//             self.as_ref().key
+//         }
+//     }
 
-    #[allow(deprecated)]
-    impl<'info, T: AccountSerialize + AccountDeserialize + Clone> AsKeyRef
-        for ProgramAccount<'info, T>
-    {
-        fn as_key_ref(&self) -> &Pubkey {
-            self.as_ref().key
-        }
-    }
+//     #[allow(deprecated)]
+//     impl<'info, T: AccountSerialize + AccountDeserialize + Clone> AsKeyRef
+//         for ProgramAccount<'info, T>
+//     {
+//         fn as_key_ref(&self) -> &Pubkey {
+//             self.as_ref().key
+//         }
+//     }
 
-    #[allow(deprecated)]
-    impl<'info, T: AccountSerialize + AccountDeserialize + Clone> AsKeyRef for ProgramState<'info, T> {
-        fn as_key_ref(&self) -> &Pubkey {
-            self.as_ref().key
-        }
-    }
-}
+//     #[allow(deprecated)]
+//     impl<'info, T: AccountSerialize + AccountDeserialize + Clone> AsKeyRef for ProgramState<'info, T> {
+//         fn as_key_ref(&self) -> &Pubkey {
+//             self.as_ref().key
+//         }
+//     }
+// }

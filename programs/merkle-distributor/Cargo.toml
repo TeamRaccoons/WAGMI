@@ -17,8 +17,7 @@ default = []
 test-bpf = []
 
 [dependencies]
-anchor-lang = "0.26.0"
-anchor-spl = "0.26.0"
+anchor-lang = "0.28.0"
+anchor-spl = "0.28.0"
 vipers = {path = "../../libs/vipers"}
 voter = { path = "../voter", features = ["cpi"] }
-# vipers = { version = "^2", features = ["spl-associated-token-account"] }

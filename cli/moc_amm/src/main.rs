@@ -10,9 +10,9 @@ use anchor_client::solana_sdk::signer::Signer;
 use anchor_client::{Client, Program};
 use anchor_lang::solana_program::sysvar;
 use clap::*;
+use std::ops::Deref;
 use std::rc::Rc;
 use std::str::FromStr;
-
 fn main() -> Result<()> {
     let opts = Opts::parse();
     let payer =
@@ -36,7 +36,7 @@ fn main() -> Result<()> {
         None => Keypair::new(),
     };
 
-    let program = client.program(program_id);
+    let program = client.program(program_id)?;
     match opts.command {
         CliCommand::NewAmm { lp_mint } => {
             new_amm(&program, base, lp_mint)?;
@@ -46,7 +46,11 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn new_amm(program: &Program, base_keypair: Keypair, lp_mint: Pubkey) -> Result<()> {
+fn new_amm<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base_keypair: Keypair,
+    lp_mint: Pubkey,
+) -> Result<()> {
     let base = base_keypair.pubkey();
     let (moc_amm, bump) =
         Pubkey::find_program_address(&[b"moc_amm".as_ref(), base.as_ref()], &moc_amm::id());

@@ -54,7 +54,7 @@ describe("Mine Rewards", () => {
       null,
       DEFAULT_DECIMALS
     );
-    ammPool = await createMocAmm(stakeTokenMint);
+    ammPool = await createMocAmm(10, stakeTokenMint, adminKP);
   });
 
   let rewardsMint: PublicKey;
