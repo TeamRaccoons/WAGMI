@@ -92,6 +92,15 @@ pub fn handler(ctx: Context<ClaimFee>, voting_epoch: u32) -> Result<()> {
         fee_amount,
     )?;
 
+    emit!(FeeClaimEvent {
+        gauge: ctx.accounts.gauge.key(),
+        amm_pool: ctx.accounts.amm_pool.key(),
+        voting_epoch,
+        fee_amount,
+        fee_mint: ctx.accounts.token_account.mint,
+        escrow: ctx.accounts.escrow.key(),
+    });
+
     Ok(())
 }
 
@@ -112,4 +121,23 @@ impl<'info> Validate<'info> for ClaimFee<'info> {
 
         Ok(())
     }
+}
+
+/// Event called in [gauge::claim_fee].
+#[event]
+pub struct FeeClaimEvent {
+    #[index]
+    /// The [Gauge].
+    pub gauge: Pubkey,
+    #[index]
+    /// The Bribe.
+    pub amm_pool: Pubkey,
+    /// The voting epoch
+    pub voting_epoch: u32,
+    /// Fee amount.
+    pub fee_amount: u64,
+    /// Fee mint.
+    pub fee_mint: Pubkey,
+    /// The escrow.
+    pub escrow: Pubkey,
 }

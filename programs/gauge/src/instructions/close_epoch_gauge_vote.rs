@@ -54,6 +54,11 @@ pub fn handler(ctx: Context<CloseEpochGaugeVote>, voting_epoch: u32) -> Result<(
     let (epoch_gauge_vote_key, _) =
         EpochGaugeVote::find_program_address(ctx.accounts.gauge_vote.as_key_ref(), voting_epoch);
     assert_keys_eq!(epoch_gauge_vote_key, ctx.accounts.epoch_gauge_vote);
+
+    emit!(CloseEpochGaugeVoteEvent {
+        gauge: ctx.accounts.gauge.key(),
+        voting_epoch,
+    });
     Ok(())
 }
 
@@ -61,4 +66,15 @@ impl<'info> Validate<'info> for CloseEpochGaugeVote<'info> {
     fn validate(&self) -> Result<()> {
         Ok(())
     }
+}
+
+/// Event called in [gauge::close_epoch_gauge_vote].
+#[event]
+pub struct CloseEpochGaugeVoteEvent {
+    #[index]
+    /// The [Gauge].
+    pub gauge: Pubkey,
+    #[index]
+    /// The distribute rewards epoch.
+    pub voting_epoch: u32,
 }

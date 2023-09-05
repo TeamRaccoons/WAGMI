@@ -38,6 +38,8 @@ export async function setupTokenMintAndMinter(baseKP: Keypair, adminKP: Keypair,
         AuthorityType.MintTokens,
         mintWrapper,
     );
+
+    console.log(programMinter.programId)
     await programMinter.methods
         .newWrapper(new BN(hardCap))
         .accounts({

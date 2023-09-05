@@ -29,6 +29,11 @@ pub fn handler(ctx: Context<TriggerNextEpoch>) -> Result<()> {
     gauge_factory.current_voting_epoch = gauge_factory.distribute_rewards_epoch()?;
     gauge_factory.next_epoch_starts_at =
         unwrap_int!(now.checked_add(unwrap_int!(gauge_factory.epoch_duration_seconds.to_u64())));
+
+    emit!(TriggerNextEpochEvent {
+        gauge_factory: gauge_factory.key(),
+        voting_epoch: gauge_factory.current_voting_epoch,
+    });
     Ok(())
 }
 
@@ -36,4 +41,15 @@ impl<'info> Validate<'info> for TriggerNextEpoch<'info> {
     fn validate(&self) -> Result<()> {
         Ok(())
     }
+}
+
+/// Event called in [gauge::trigger_next_epoch].
+#[event]
+pub struct TriggerNextEpochEvent {
+    #[index]
+    /// The [GaugeFactory].
+    pub gauge_factory: Pubkey,
+    #[index]
+    /// The distribute rewards epoch.
+    pub voting_epoch: u32,
 }

@@ -36,6 +36,7 @@ describe("MintWrapper", () => {
   beforeEach("Initialize mint", async () => {
     minterBase = new anchor.web3.Keypair();
     const result = await createAndFundWallet(provider.connection);
+
     adminKP = result.keypair;
     wallet = result.wallet;
 

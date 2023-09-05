@@ -82,6 +82,12 @@ pub fn handler(ctx: Context<ClawbackBribe>, voting_epoch: u32) -> Result<()> {
         bribe.reward_each_epoch,
     )?;
 
+    emit!(ClawbackBribeEvent {
+        bribe: ctx.accounts.bribe.key(),
+        gauge: ctx.accounts.gauge.key(),
+        voting_epoch,
+    });
+
     Ok(())
 }
 
@@ -89,4 +95,18 @@ impl<'info> Validate<'info> for ClawbackBribe<'info> {
     fn validate(&self) -> Result<()> {
         Ok(())
     }
+}
+
+/// Event called in [gauge::clawback_bribe].
+#[event]
+pub struct ClawbackBribeEvent {
+    #[index]
+    /// The [Gauge].
+    pub gauge: Pubkey,
+    #[index]
+    /// The Bribe.
+    pub bribe: Pubkey,
+    #[index]
+    /// The distribute rewards epoch.
+    pub voting_epoch: u32,
 }

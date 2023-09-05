@@ -1750,6 +1750,76 @@ export type Gauge = {
       ]
     },
     {
+      "name": "FeeClaimEvent",
+      "fields": [
+        {
+          "name": "gauge",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "ammPool",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "votingEpoch",
+          "type": "u32",
+          "index": false
+        },
+        {
+          "name": "feeAmount",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "feeMint",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "escrow",
+          "type": "publicKey",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "ClawbackBribeEvent",
+      "fields": [
+        {
+          "name": "gauge",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "bribe",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "votingEpoch",
+          "type": "u32",
+          "index": true
+        }
+      ]
+    },
+    {
+      "name": "CloseEpochGaugeVoteEvent",
+      "fields": [
+        {
+          "name": "gauge",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "votingEpoch",
+          "type": "u32",
+          "index": true
+        }
+      ]
+    },
+    {
       "name": "BribeCreateEvent",
       "fields": [
         {
@@ -2181,6 +2251,21 @@ export type Gauge = {
           "name": "newShare",
           "type": "u64",
           "index": false
+        }
+      ]
+    },
+    {
+      "name": "TriggerNextEpochEvent",
+      "fields": [
+        {
+          "name": "gaugeFactory",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "votingEpoch",
+          "type": "u32",
+          "index": true
         }
       ]
     }
@@ -4061,6 +4146,76 @@ export const IDL: Gauge = {
       ]
     },
     {
+      "name": "FeeClaimEvent",
+      "fields": [
+        {
+          "name": "gauge",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "ammPool",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "votingEpoch",
+          "type": "u32",
+          "index": false
+        },
+        {
+          "name": "feeAmount",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "feeMint",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "escrow",
+          "type": "publicKey",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "ClawbackBribeEvent",
+      "fields": [
+        {
+          "name": "gauge",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "bribe",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "votingEpoch",
+          "type": "u32",
+          "index": true
+        }
+      ]
+    },
+    {
+      "name": "CloseEpochGaugeVoteEvent",
+      "fields": [
+        {
+          "name": "gauge",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "votingEpoch",
+          "type": "u32",
+          "index": true
+        }
+      ]
+    },
+    {
       "name": "BribeCreateEvent",
       "fields": [
         {
@@ -4492,6 +4647,21 @@ export const IDL: Gauge = {
           "name": "newShare",
           "type": "u64",
           "index": false
+        }
+      ]
+    },
+    {
+      "name": "TriggerNextEpochEvent",
+      "fields": [
+        {
+          "name": "gaugeFactory",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "votingEpoch",
+          "type": "u32",
+          "index": true
         }
       ]
     }
