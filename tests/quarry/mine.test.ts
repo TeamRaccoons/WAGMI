@@ -1,5 +1,5 @@
 import * as anchor from "@project-serum/anchor";
-import { Program, web3, Wallet, } from "@project-serum/anchor";
+import { Program, web3, Wallet } from "@project-serum/anchor";
 import { TOKEN_PROGRAM_ID, createMint, setAuthority, AuthorityType, getMint, mintTo } from "@solana/spl-token";
 
 import {
@@ -18,7 +18,6 @@ import {
 
 import { Quarry } from "../../target/types/quarry";
 import { Minter } from "../../target/types/minter";
-// import { MocAmm } from "../../target/types/moc_amm";
 
 
 const provider = anchor.AnchorProvider.env();
@@ -198,7 +197,7 @@ describe("Mine", () => {
             program.programId
           );
 
-        await program.methods.createQuarry().accounts({
+        await program.methods.createQuarry(new BN(0)).accounts({
           quarry,
           auth: {
             admin: adminKP.publicKey,
@@ -285,7 +284,7 @@ describe("Mine", () => {
           );
 
         try {
-          await program.methods.createQuarry().accounts({
+          await program.methods.createQuarry(new BN(0)).accounts({
             quarry,
             auth: {
               admin: fakeAuthority.publicKey,
@@ -310,7 +309,7 @@ describe("Mine", () => {
           );
 
         try {
-          await program.methods.createQuarry().accounts({
+          await program.methods.createQuarry(new BN(0)).accounts({
             quarry,
             auth: {
               admin: adminKP.publicKey,
@@ -353,7 +352,7 @@ describe("Mine", () => {
               program.programId
             );
 
-          await program.methods.createQuarry().accounts({
+          await program.methods.createQuarry(new BN(0)).accounts({
             quarry,
             auth: {
               admin: adminKP.publicKey,
@@ -536,7 +535,7 @@ describe("Mine", () => {
           program.programId
         );
 
-      await program.methods.createQuarry().accounts({
+      await program.methods.createQuarry(new BN(0)).accounts({
         quarry,
         auth: {
           admin: adminKP.publicKey,

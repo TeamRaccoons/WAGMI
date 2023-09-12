@@ -30,6 +30,7 @@ mod instructions;
 pub use instructions::*;
 
 use crate::quarry_state::StakeAction;
+use amm::AmmType;
 
 declare_id!("quaJeeoTrxSszHnpzNQrtFoF1kcnfMiSWuYpk8ddobB");
 
@@ -103,8 +104,8 @@ pub mod quarry {
     /// Creates a new [Quarry].
     /// This may only be called by the [Rewarder]::admin.    
     #[access_control(ctx.accounts.validate())]
-    pub fn create_quarry(ctx: Context<CreateQuarry>) -> Result<()> {
-        create_quarry::handler(ctx)
+    pub fn create_quarry(ctx: Context<CreateQuarry>, amm_type: u64) -> Result<()> {
+        create_quarry::handler(ctx, amm_type)
     }
 
     /// Sets the rewards share of a quarry.
@@ -124,6 +125,14 @@ pub mod quarry {
     #[access_control(ctx.accounts.validate())]
     pub fn update_quarry_rewards(ctx: Context<UpdateQuarryRewards>) -> Result<()> {
         update_quarry_rewards::handler(ctx)
+    }
+
+    /// Synchronizes quarry rewards with the rewarder.
+    /// Anyone can call this.
+    /// For LbClmm
+    #[access_control(ctx.accounts.validate())]
+    pub fn update_quarry_lb_clmm_rewards(ctx: Context<UpdateQuarryLbClmmRewards>) -> Result<()> {
+        update_quarry_lb_clmm_rewards::handler(ctx)
     }
 
     /// --------------------------------
@@ -182,4 +191,6 @@ pub enum ErrorCode {
     Paused,
     #[msg("Rewards earned exceeded quarry's upper bound.")]
     UpperboundExceeded,
+    #[msg("type cast faled")]
+    TypeCastFailed,
 }

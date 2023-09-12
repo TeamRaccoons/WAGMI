@@ -130,6 +130,7 @@ impl<'info> ClaimRewards<'info> {
 impl<'info> Validate<'info> for ClaimRewards<'info> {
     /// Validates a [ClaimRewards] accounts struct.
     fn validate(&self) -> Result<()> {
+        invariant!(self.claim.quarry.is_lp_pool());
         self.claim.validate()?;
         self.claim.rewarder.assert_not_paused()?;
 

@@ -56,9 +56,32 @@ pub enum AmmType {
     MocAmm,
     /// Meteora Amm
     MeteoraAmm,
+    /// LbClmm
+    LbClmm,
+}
+
+impl Default for AmmType {
+    fn default() -> Self {
+        AmmType::MocAmm
+    }
 }
 
 impl AmmType {
+    pub fn decode(&self) -> u64 {
+        match self {
+            AmmType::MocAmm => 0,
+            AmmType::MeteoraAmm => 1,
+            AmmType::LbClmm => 2,
+        }
+    }
+    pub fn get_amm_type(amm_type: u64) -> Option<Self> {
+        match amm_type {
+            0 => Some(AmmType::MocAmm),
+            1 => Some(AmmType::MeteoraAmm),
+            2 => Some(AmmType::LbClmm),
+            _ => None,
+        }
+    }
     /// get strategy handler
     pub fn get_amm<'info>(&self, pool_account: AccountInfo<'info>) -> Result<Box<dyn AmmPool>> {
         match self {
@@ -67,6 +90,7 @@ impl AmmType {
                 Ok(Box::new(MocAmm::try_deserialize(&mut &*data)?))
             }
             AmmType::MeteoraAmm => panic!("implement me"),
+            AmmType::LbClmm => panic!("implement me"),
         }
     }
 }

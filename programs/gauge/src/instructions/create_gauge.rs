@@ -1,5 +1,8 @@
 //! Creates a [Gauge].
 
+use crate::ErrorCode::TypeCastFailed;
+use amm::AmmType;
+
 use crate::*;
 
 /// Accounts for [gauge::create_gauge].
@@ -40,29 +43,29 @@ pub struct CreateGauge<'info> {
 
 pub fn handler(ctx: Context<CreateGauge>) -> Result<()> {
     let gauge = &mut ctx.accounts.gauge;
+    let quarry = &ctx.accounts.quarry;
     gauge.gauge_factory = ctx.accounts.gauge_factory.key();
     gauge.quarry = ctx.accounts.quarry.key();
 
     // Since this is permissionless, gauges are disabled when they are created.
     gauge.is_disabled = true;
 
-    gauge.amm_pool = ctx.accounts.quarry.amm_pool;
-    // TODO handle the case when apmm update token a fee and token b fee account
-    // Probably nothing we can do
-    #[cfg(feature = "mainnet")]
-    let amm_pool = { amm::AmmType::MeteoraAmm.get_amm(ctx.accounts.amm_pool.to_account_info())? };
+    gauge.amm_pool = quarry.amm_pool;
 
-    #[cfg(not(feature = "mainnet"))]
-    let amm_pool = { amm::AmmType::MocAmm.get_amm(ctx.accounts.amm_pool.to_account_info())? };
+    let amm_type = AmmType::get_amm_type(quarry.amm_type).ok_or(TypeCastFailed)?;
+    let amm_pool = amm_type.get_amm(ctx.accounts.amm_pool.to_account_info())?;
 
     let (token_a_fee, token_b_fee) = amm_pool.get_fee_accounts();
     gauge.token_a_fee_key = token_a_fee;
     gauge.token_b_fee_key = token_b_fee;
 
+    gauge.amm_type = quarry.amm_type;
+
     emit!(GaugeCreateEvent {
-        gauge_factory: ctx.accounts.gauge.gauge_factory,
-        quarry: ctx.accounts.gauge.quarry,
+        gauge_factory: gauge.gauge_factory,
+        quarry: gauge.quarry,
         amm_pool: ctx.accounts.amm_pool.key(),
+        amm_type: gauge.amm_type,
     });
 
     Ok(())
@@ -70,6 +73,7 @@ pub fn handler(ctx: Context<CreateGauge>) -> Result<()> {
 
 impl<'info> Validate<'info> for CreateGauge<'info> {
     fn validate(&self) -> Result<()> {
+        assert_keys_eq!(self.quarry.amm_pool, self.amm_pool);
         assert_keys_eq!(self.gauge_factory.rewarder, self.quarry.rewarder);
         Ok(())
     }
@@ -87,4 +91,6 @@ pub struct GaugeCreateEvent {
     #[index]
     /// The [quarry::Quarry] being voted on.
     pub quarry: Pubkey,
+    /// The Amm type.
+    pub amm_type: u64,
 }

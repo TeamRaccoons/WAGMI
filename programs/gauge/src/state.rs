@@ -56,6 +56,7 @@ pub struct Gauge {
     /// The [quarry::Quarry] being voted on.
     pub quarry: Pubkey,
     /// The [amm::Amm] being voted on.
+    /// Can be meteora pool or Lbclmm
     pub amm_pool: Pubkey,
     /// token_a_fee_key of amm pool
     pub token_a_fee_key: Pubkey,
@@ -74,6 +75,8 @@ pub struct Gauge {
     pub cummulative_claimed_token_a_fee: u128,
     /// Total claimed fee of token b in all epochs so far
     pub cummulative_claimed_token_b_fee: u128,
+    /// Gauge type
+    pub amm_type: u64,
 }
 
 /// A [GaugeVoter] represents an [voter::Escrow] that can vote on gauges.

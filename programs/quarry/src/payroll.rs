@@ -90,6 +90,26 @@ impl Payroll {
         ))
     }
 
+    /// Calculates the amount of rewards emission
+    fn calculate_reward_emission_unsafe(&self, current_ts: i64) -> Option<u128> {
+        let time_worked = self.compute_time_worked(current_ts)?;
+
+        let reward = U192::from(time_worked)
+            .checked_mul(self.annual_rewards_rate.into())?
+            .checked_div(SECONDS_PER_YEAR.into())?;
+
+        let precise_reward: u128 = reward.try_into().ok()?;
+        Some(precise_reward)
+    }
+
+    /// Calculates the amount of rewards emission, performing safety checks.
+    pub fn calculate_reward_emission(&self, current_ts: i64) -> Result<u128> {
+        invariant!(current_ts >= self.last_checkpoint_ts, InvalidTimestamp);
+        Ok(unwrap_int!(
+            self.calculate_reward_emission_unsafe(current_ts)
+        ))
+    }
+
     /// Calculates the amount of rewards earned for the given number of staked tokens.
     /// https://github.com/Synthetixio/synthetix/blob/4b9b2ee09b38638de6fe1c38dbe4255a11ebed86/contracts/StakingRewards.sol#L72
     fn calculate_rewards_earned_unsafe(

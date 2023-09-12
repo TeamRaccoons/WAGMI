@@ -18,6 +18,8 @@ mod state;
 pub use instructions::*;
 pub use state::*;
 
+pub use amm::*;
+
 declare_id!("gauKNF863wSNX1arJ1bAzc8Q2twYd99AaiDd2cpMoE3");
 
 #[program]
@@ -231,4 +233,6 @@ pub enum ErrorCode {
     BribeRewardsIsZero,
     #[msg("Math overflow.")]
     MathOverflow,
+    #[msg("type cast faled")]
+    TypeCastFailed,
 }

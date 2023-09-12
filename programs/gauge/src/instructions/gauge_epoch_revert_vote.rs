@@ -45,7 +45,6 @@ pub fn handler(ctx: Context<GaugeEpochRevertVote>) -> Result<()> {
     emit!(GaugeEpochRevertVoteEvent {
         gauge_factory: ctx.accounts.gauge_factory.key(),
         gauge: ctx.accounts.gauge.key(),
-        quarry: ctx.accounts.gauge.quarry,
         gauge_voter_owner: ctx.accounts.gauge_voter.owner,
         subtracted_power: power_subtract,
         voting_epoch: epoch_voter.voting_epoch,
@@ -95,9 +94,6 @@ pub struct GaugeEpochRevertVoteEvent {
     #[index]
     /// The [Gauge].
     pub gauge: Pubkey,
-    #[index]
-    /// The [quarry::Quarry] being voted on.
-    pub quarry: Pubkey,
     #[index]
     /// Owner of the Escrow of the [GaugeVoter].
     pub gauge_voter_owner: Pubkey,

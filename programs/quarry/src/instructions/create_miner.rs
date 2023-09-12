@@ -81,6 +81,7 @@ pub fn handler(ctx: Context<CreateMiner>) -> Result<()> {
 
 impl<'info> Validate<'info> for CreateMiner<'info> {
     fn validate(&self) -> Result<()> {
+        invariant!(self.quarry.is_lp_pool());
         invariant!(!self.rewarder.is_paused, Paused);
         // assert_keys_eq!(self.miner_vault.owner, self.miner);
         // assert_keys_eq!(self.miner_vault.mint, self.token_mint);

@@ -85,7 +85,6 @@ pub fn handler(ctx: Context<GaugeEpochCommitVote>) -> Result<()> {
     emit!(GaugeEpochCommitVoteEvent {
         gauge_factory: ctx.accounts.gauge.gauge_factory,
         gauge: ctx.accounts.gauge.key(),
-        quarry: ctx.accounts.gauge.quarry,
         gauge_voter_owner: ctx.accounts.gauge_voter.owner,
         vote_shares_for_next_epoch: next_vote_shares,
         voting_epoch: epoch_gauge_voter.voting_epoch,
@@ -130,9 +129,6 @@ pub struct GaugeEpochCommitVoteEvent {
     #[index]
     /// The [Gauge].
     pub gauge: Pubkey,
-    #[index]
-    /// The [quarry::Quarry] being voted on.
-    pub quarry: Pubkey,
     #[index]
     /// Owner of the Escrow of the [GaugeVoter].
     pub gauge_voter_owner: Pubkey,

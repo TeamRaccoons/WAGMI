@@ -111,7 +111,7 @@ export async function createQuarry(rewarder: PublicKey, adminKP: Keypair, progra
             [Buffer.from("Quarry"), rewarder.toBuffer(), ammPool.toBuffer()],
             programQuarry.programId
         );
-    await programQuarry.methods.createQuarry().accounts({
+    await programQuarry.methods.createQuarry(new BN(0)).accounts({
         quarry,
         auth: {
             admin: adminKP.publicKey,
@@ -133,7 +133,7 @@ export async function createQuarryFromAmm(ammPool: PublicKey, rewarder: PublicKe
             [Buffer.from("Quarry"), rewarder.toBuffer(), ammPool.toBuffer()],
             programQuarry.programId
         );
-    await programQuarry.methods.createQuarry().accounts({
+    await programQuarry.methods.createQuarry(new BN(0)).accounts({
         quarry,
         auth: {
             admin: adminKP.publicKey,

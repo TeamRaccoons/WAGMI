@@ -45,7 +45,6 @@ pub fn handler(ctx: Context<CreateGaugeVote>) -> Result<()> {
     emit!(GaugeVoteCreateEvent {
         gauge_factory: ctx.accounts.gauge.gauge_factory,
         gauge: gauge_vote.gauge,
-        quarry: ctx.accounts.gauge.quarry,
         gauge_voter_owner: ctx.accounts.gauge_voter.owner,
     });
 
@@ -68,9 +67,6 @@ pub struct GaugeVoteCreateEvent {
     #[index]
     /// The [Gauge].
     pub gauge: Pubkey,
-    #[index]
-    /// The [quarry::Quarry] being voted on.
-    pub quarry: Pubkey,
     #[index]
     /// Owner of the Escrow of the [GaugeVoter].
     pub gauge_voter_owner: Pubkey,
