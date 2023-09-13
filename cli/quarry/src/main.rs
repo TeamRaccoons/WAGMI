@@ -299,7 +299,7 @@ fn create_quarry<C: Deref<Target = impl Signer> + Clone>(
             payer: program.payer(),
             system_program: system_program::id(),
         })
-        .args(quarry::instruction::CreateQuarry {});
+        .args(quarry::instruction::CreateQuarry { amm_type: 0 });
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())

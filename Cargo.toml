@@ -8,14 +8,14 @@ members = [
     "programs/quarry",
     "programs/minter",
     "programs/moc-amm",
-    # "cli/gauge",
-    # "cli/govern",
-    # "cli/merkle_distributor",
-    # "cli/minter",
-    # "cli/quarry",
-    # "cli/smartwallet",
-    # "cli/voter",
-    # "cli/moc_amm",
+    "cli/gauge",
+    "cli/govern",
+    "cli/merkle_distributor",
+    "cli/minter",
+    "cli/quarry",
+    "cli/smartwallet",
+    "cli/voter",
+    "cli/moc_amm",
 ]
 
 [profile.release]
