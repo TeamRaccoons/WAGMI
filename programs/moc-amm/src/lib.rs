@@ -13,7 +13,6 @@ mod state;
 use instructions::*;
 pub use state::*;
 use vipers::prelude::*;
-
 declare_id!("mocJyKP7XPfSHs9q55ycWDfuWzQiqPAkoNXdabiW2Dc");
 
 #[program]

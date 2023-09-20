@@ -79,7 +79,6 @@ pub fn handler(ctx: Context<CreateEpochGauge>) -> Result<()> {
 
     emit!(EpochGaugeCreateEvent {
         gauge_factory: ctx.accounts.gauge.gauge_factory,
-        quarry: ctx.accounts.gauge.quarry,
         token_a_fee: epoch_gauge.token_a_fee,
         token_b_fee: epoch_gauge.token_b_fee,
         voting_epoch,
@@ -104,8 +103,6 @@ pub struct EpochGaugeCreateEvent {
     /// The [GaugeFactory].
     pub gauge_factory: Pubkey,
     #[index]
-    /// The [quarry::Quarry] being voted on.
-    pub quarry: Pubkey,
     /// The epoch associated with this [EpochGauge].
     pub voting_epoch: u32,
     /// Token a fee for this epoch

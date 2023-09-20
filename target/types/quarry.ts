@@ -336,7 +336,12 @@ export type Quarry = {
           ]
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "ammType",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "setRewardsShare",
@@ -424,6 +429,33 @@ export type Quarry = {
       "docs": [
         "Synchronizes quarry rewards with the rewarder.",
         "Anyone can call this."
+      ],
+      "accounts": [
+        {
+          "name": "quarry",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "[Quarry]."
+          ]
+        },
+        {
+          "name": "rewarder",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "[Rewarder]."
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "updateQuarryLbClmmRewards",
+      "docs": [
+        "Synchronizes quarry rewards with the rewarder.",
+        "Anyone can call this.",
+        "For LbClmm"
       ],
       "accounts": [
         {
@@ -885,6 +917,13 @@ export type Quarry = {
             "type": "publicKey"
           },
           {
+            "name": "ammType",
+            "docs": [
+              "Amm type, can be Meteora or LbClmm"
+            ],
+            "type": "u64"
+          },
+          {
             "name": "tokenMintKey",
             "docs": [
               "LP token this quarry is designated to"
@@ -1109,7 +1148,7 @@ export type Quarry = {
       "name": "QuarryCreateEvent",
       "fields": [
         {
-          "name": "tokenMint",
+          "name": "ammPool",
           "type": "publicKey",
           "index": false
         },
@@ -1156,10 +1195,40 @@ export type Quarry = {
       ]
     },
     {
+      "name": "QuarryLbClmmRewardsUpdateEvent",
+      "fields": [
+        {
+          "name": "ammPool",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "emission",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "annualRewardsRate",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "rewardsShare",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
       "name": "QuarryRewardsUpdateEvent",
       "fields": [
         {
-          "name": "tokenMint",
+          "name": "ammPool",
           "type": "publicKey",
           "index": false
         },
@@ -1286,6 +1355,11 @@ export type Quarry = {
       "code": 6010,
       "name": "UpperboundExceeded",
       "msg": "Rewards earned exceeded quarry's upper bound."
+    },
+    {
+      "code": 6011,
+      "name": "TypeCastFailed",
+      "msg": "type cast faled"
     }
   ]
 };
@@ -1628,7 +1702,12 @@ export const IDL: Quarry = {
           ]
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "ammType",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "setRewardsShare",
@@ -1716,6 +1795,33 @@ export const IDL: Quarry = {
       "docs": [
         "Synchronizes quarry rewards with the rewarder.",
         "Anyone can call this."
+      ],
+      "accounts": [
+        {
+          "name": "quarry",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "[Quarry]."
+          ]
+        },
+        {
+          "name": "rewarder",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "[Rewarder]."
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "updateQuarryLbClmmRewards",
+      "docs": [
+        "Synchronizes quarry rewards with the rewarder.",
+        "Anyone can call this.",
+        "For LbClmm"
       ],
       "accounts": [
         {
@@ -2177,6 +2283,13 @@ export const IDL: Quarry = {
             "type": "publicKey"
           },
           {
+            "name": "ammType",
+            "docs": [
+              "Amm type, can be Meteora or LbClmm"
+            ],
+            "type": "u64"
+          },
+          {
             "name": "tokenMintKey",
             "docs": [
               "LP token this quarry is designated to"
@@ -2401,7 +2514,7 @@ export const IDL: Quarry = {
       "name": "QuarryCreateEvent",
       "fields": [
         {
-          "name": "tokenMint",
+          "name": "ammPool",
           "type": "publicKey",
           "index": false
         },
@@ -2448,10 +2561,40 @@ export const IDL: Quarry = {
       ]
     },
     {
+      "name": "QuarryLbClmmRewardsUpdateEvent",
+      "fields": [
+        {
+          "name": "ammPool",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "emission",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "annualRewardsRate",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "rewardsShare",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
       "name": "QuarryRewardsUpdateEvent",
       "fields": [
         {
-          "name": "tokenMint",
+          "name": "ammPool",
           "type": "publicKey",
           "index": false
         },
@@ -2578,6 +2721,11 @@ export const IDL: Quarry = {
       "code": 6010,
       "name": "UpperboundExceeded",
       "msg": "Rewards earned exceeded quarry's upper bound."
+    },
+    {
+      "code": 6011,
+      "name": "TypeCastFailed",
+      "msg": "type cast faled"
     }
   ]
 };

@@ -1,6 +1,7 @@
 //! State structs.
 
 use crate::*;
+use amm::AmmType;
 
 /// Controls token rewards distribution to all [Quarry]s.
 /// The [Rewarder] is also the [minter::Minter] registered to the [minter::MintWrapper].
@@ -55,6 +56,8 @@ pub struct Quarry {
     pub rewarder: Pubkey,
     /// Amm pool this quarry is designated to
     pub amm_pool: Pubkey,
+    /// Amm type, can be Meteora or LbClmm
+    pub amm_type: u64,
     /// LP token this quarry is designated to
     pub token_mint_key: Pubkey,
     /// Bump.
@@ -80,6 +83,8 @@ pub struct Quarry {
     /// Number of [Miner]s.
     pub num_miners: u64,
 }
+
+impl Quarry {}
 
 /// An account that has staked tokens into a [Quarry].
 #[account]

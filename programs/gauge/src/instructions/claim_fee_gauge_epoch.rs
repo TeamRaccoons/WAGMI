@@ -1,5 +1,6 @@
 //! ClaimFee
 
+use crate::ErrorCode::TypeCastFailed;
 use crate::*;
 
 /// Accounts for [gauge::claim_fee].
@@ -77,11 +78,8 @@ pub fn handler(ctx: Context<ClaimFeeGaugeEpoch>, voting_epoch: u32) -> Result<()
         (false, fee_amount)
     };
 
-    #[cfg(feature = "mainnet")]
-    let amm_pool = { amm::AmmType::MeteoraAmm.get_amm(ctx.accounts.amm_pool.to_account_info())? };
-
-    #[cfg(not(feature = "mainnet"))]
-    let amm_pool = { amm::AmmType::MocAmm.get_amm(ctx.accounts.amm_pool.to_account_info())? };
+    let amm_type = AmmType::get_amm_type(gauge.amm_type).ok_or(TypeCastFailed)?;
+    let amm_pool = amm_type.get_amm(ctx.accounts.amm_pool.to_account_info())?;
 
     amm_pool.claim_fee(
         &ctx.accounts.token_account,

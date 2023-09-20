@@ -10,6 +10,7 @@ pub mod set_famine;
 pub mod set_pause_authority;
 pub mod set_rewards_share;
 pub mod transfer_admin;
+pub mod update_quarry_lb_clmm_rewards;
 pub mod update_quarry_rewards;
 pub mod user_stake;
 
@@ -25,5 +26,6 @@ pub use set_famine::*;
 pub use set_pause_authority::*;
 pub use set_rewards_share::*;
 pub use transfer_admin::*;
+pub use update_quarry_lb_clmm_rewards::*;
 pub use update_quarry_rewards::*;
 pub use user_stake::*;

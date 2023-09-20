@@ -122,6 +122,7 @@ pub fn handler_unstake_tokens(ctx: Context<UserStake>, amount: u64) -> Result<()
 impl<'info> Validate<'info> for UserStake<'info> {
     /// Validates the UserStake.
     fn validate(&self) -> Result<()> {
+        invariant!(self.quarry.is_lp_pool());
         self.rewarder.assert_not_paused()?;
 
         // authority

@@ -24,7 +24,7 @@ pub struct CreateGaugeFactory<'info> {
     /// Base.
     pub base: Signer<'info>,
 
-    /// The Quarry [minter::Rewarder].
+    /// The [minter::Rewarder].
     /// CHECK: rewarder of token
     pub rewarder: UncheckedAccount<'info>,
 

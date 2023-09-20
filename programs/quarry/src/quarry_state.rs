@@ -3,9 +3,10 @@
 use anchor_lang::prelude::*;
 use vipers::prelude::*;
 
+use crate::ErrorCode::TypeCastFailed;
 use crate::{payroll::Payroll, Miner, Quarry, Rewarder};
+use amm::AmmType;
 use num_traits::cast::ToPrimitive;
-
 /// An action for a user to take on the staking pool.
 pub enum StakeAction {
     /// Stake into a [Quarry].
@@ -15,6 +16,15 @@ pub enum StakeAction {
 }
 
 impl Quarry {
+    /// Check whether the quarry is for lp_stake pool or lbclmm
+    pub fn is_lp_pool(&self) -> bool {
+        self.amm_type != AmmType::LbClmm.decode()
+    }
+
+    pub fn is_lb_clmm_pool(&self) -> bool {
+        self.amm_type == AmmType::LbClmm.decode()
+    }
+
     /// Updates the quarry by synchronizing its rewards rate with the rewarder.
     pub fn update_rewards_internal(
         &mut self,
@@ -30,6 +40,21 @@ impl Quarry {
         self.last_update_ts = payroll.last_time_reward_applicable(current_ts);
 
         Ok(())
+    }
+
+    /// Updates the quarry by synchronizing its rewards rate with the rewarder.
+    pub fn get_and_update_lb_clmm_rewards_internal(
+        &mut self,
+        current_ts: i64,
+        rewarder: &Rewarder,
+        payroll: &Payroll,
+    ) -> Result<u64> {
+        let reward_emission = payroll.calculate_reward_emission(current_ts)?;
+        self.annual_rewards_rate =
+            rewarder.compute_quarry_annual_rewards_rate(self.rewards_share)?;
+        self.last_update_ts = payroll.last_time_reward_applicable(current_ts);
+
+        Ok(reward_emission.try_into().map_err(|_| TypeCastFailed)?)
     }
 
     /// Updates the quarry and miner with the latest info.

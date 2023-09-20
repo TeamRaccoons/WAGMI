@@ -65,7 +65,6 @@ impl<'info> GaugeSetVote<'info> {
         emit!(SetGaugeVoteEvent {
             gauge_factory: self.gauge_factory.key(),
             gauge: self.gauge.key(),
-            quarry: self.gauge.quarry,
             gauge_voter_owner: gauge_voter.owner,
             vote_delegate: self.vote_delegate.key(),
             prev_total_weight,
@@ -102,9 +101,6 @@ pub struct SetGaugeVoteEvent {
     #[index]
     /// The [Gauge].
     pub gauge: Pubkey,
-    #[index]
-    /// The [quarry_mine::Quarry] being voted on.
-    pub quarry: Pubkey,
     #[index]
     /// Owner of the Escrow of the [GaugeVoter].
     pub gauge_voter_owner: Pubkey,

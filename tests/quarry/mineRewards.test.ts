@@ -142,7 +142,7 @@ describe("Mine Rewards", () => {
         program.programId
       );
     quarryKey = quarry;
-    await program.methods.createQuarry().accounts({
+    await program.methods.createQuarry(new BN(0)).accounts({
       quarry,
       auth: {
         admin: adminKP.publicKey,

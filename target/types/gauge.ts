@@ -32,7 +32,7 @@ export type Gauge = {
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The Quarry [minter::Rewarder]."
+            "The [minter::Rewarder]."
           ]
         },
         {
@@ -1320,7 +1320,8 @@ export type Gauge = {
           {
             "name": "ammPool",
             "docs": [
-              "The [amm::Amm] being voted on."
+              "The [amm::Amm] being voted on.",
+              "Can be meteora pool or Lbclmm"
             ],
             "type": "publicKey"
           },
@@ -1374,6 +1375,13 @@ export type Gauge = {
               "Total claimed fee of token b in all epochs so far"
             ],
             "type": "u128"
+          },
+          {
+            "name": "ammType",
+            "docs": [
+              "Gauge type"
+            ],
+            "type": "u64"
           }
         ]
       }
@@ -1858,14 +1866,9 @@ export type Gauge = {
           "index": true
         },
         {
-          "name": "quarry",
-          "type": "publicKey",
-          "index": true
-        },
-        {
           "name": "votingEpoch",
           "type": "u32",
-          "index": false
+          "index": true
         },
         {
           "name": "tokenAFee",
@@ -1923,11 +1926,6 @@ export type Gauge = {
           "index": true
         },
         {
-          "name": "quarry",
-          "type": "publicKey",
-          "index": true
-        },
-        {
           "name": "gaugeVoterOwner",
           "type": "publicKey",
           "index": true
@@ -1971,6 +1969,11 @@ export type Gauge = {
           "name": "quarry",
           "type": "publicKey",
           "index": true
+        },
+        {
+          "name": "ammType",
+          "type": "u64",
+          "index": false
         }
       ]
     },
@@ -2028,11 +2031,6 @@ export type Gauge = {
           "index": true
         },
         {
-          "name": "quarry",
-          "type": "publicKey",
-          "index": true
-        },
-        {
           "name": "gaugeVoterOwner",
           "type": "publicKey",
           "index": true
@@ -2073,11 +2071,6 @@ export type Gauge = {
           "index": true
         },
         {
-          "name": "quarry",
-          "type": "publicKey",
-          "index": true
-        },
-        {
           "name": "gaugeVoterOwner",
           "type": "publicKey",
           "index": true
@@ -2114,11 +2107,6 @@ export type Gauge = {
         },
         {
           "name": "gauge",
-          "type": "publicKey",
-          "index": true
-        },
-        {
-          "name": "quarry",
           "type": "publicKey",
           "index": true
         },
@@ -2390,6 +2378,11 @@ export type Gauge = {
       "code": 6023,
       "name": "MathOverflow",
       "msg": "Math overflow."
+    },
+    {
+      "code": 6024,
+      "name": "TypeCastFailed",
+      "msg": "type cast faled"
     }
   ]
 };
@@ -2428,7 +2421,7 @@ export const IDL: Gauge = {
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The Quarry [minter::Rewarder]."
+            "The [minter::Rewarder]."
           ]
         },
         {
@@ -3716,7 +3709,8 @@ export const IDL: Gauge = {
           {
             "name": "ammPool",
             "docs": [
-              "The [amm::Amm] being voted on."
+              "The [amm::Amm] being voted on.",
+              "Can be meteora pool or Lbclmm"
             ],
             "type": "publicKey"
           },
@@ -3770,6 +3764,13 @@ export const IDL: Gauge = {
               "Total claimed fee of token b in all epochs so far"
             ],
             "type": "u128"
+          },
+          {
+            "name": "ammType",
+            "docs": [
+              "Gauge type"
+            ],
+            "type": "u64"
           }
         ]
       }
@@ -4254,14 +4255,9 @@ export const IDL: Gauge = {
           "index": true
         },
         {
-          "name": "quarry",
-          "type": "publicKey",
-          "index": true
-        },
-        {
           "name": "votingEpoch",
           "type": "u32",
-          "index": false
+          "index": true
         },
         {
           "name": "tokenAFee",
@@ -4319,11 +4315,6 @@ export const IDL: Gauge = {
           "index": true
         },
         {
-          "name": "quarry",
-          "type": "publicKey",
-          "index": true
-        },
-        {
           "name": "gaugeVoterOwner",
           "type": "publicKey",
           "index": true
@@ -4367,6 +4358,11 @@ export const IDL: Gauge = {
           "name": "quarry",
           "type": "publicKey",
           "index": true
+        },
+        {
+          "name": "ammType",
+          "type": "u64",
+          "index": false
         }
       ]
     },
@@ -4424,11 +4420,6 @@ export const IDL: Gauge = {
           "index": true
         },
         {
-          "name": "quarry",
-          "type": "publicKey",
-          "index": true
-        },
-        {
           "name": "gaugeVoterOwner",
           "type": "publicKey",
           "index": true
@@ -4469,11 +4460,6 @@ export const IDL: Gauge = {
           "index": true
         },
         {
-          "name": "quarry",
-          "type": "publicKey",
-          "index": true
-        },
-        {
           "name": "gaugeVoterOwner",
           "type": "publicKey",
           "index": true
@@ -4510,11 +4496,6 @@ export const IDL: Gauge = {
         },
         {
           "name": "gauge",
-          "type": "publicKey",
-          "index": true
-        },
-        {
-          "name": "quarry",
           "type": "publicKey",
           "index": true
         },
@@ -4786,6 +4767,11 @@ export const IDL: Gauge = {
       "code": 6023,
       "name": "MathOverflow",
       "msg": "Math overflow."
+    },
+    {
+      "code": 6024,
+      "name": "TypeCastFailed",
+      "msg": "type cast faled"
     }
   ]
 };
