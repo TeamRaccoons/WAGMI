@@ -99,6 +99,16 @@ pub enum CliCommand {
         #[clap(long)]
         voting_epoch: u32,
     },
+    CreateBribe {
+        #[clap(long)]
+        token_mint: Pubkey,
+        #[clap(long)]
+        quarry_base: Pubkey,
+        #[clap(long)]
+        reward_each_epoch: u64,
+        #[clap(long)]
+        reward_end: u32,
+    },
 }
 
 #[derive(Parser, Debug)]
