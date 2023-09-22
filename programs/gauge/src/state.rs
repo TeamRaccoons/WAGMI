@@ -31,6 +31,8 @@ pub struct GaugeFactory {
     pub current_voting_epoch: u32,
     /// When the next epoch starts.
     pub next_epoch_starts_at: u64,
+    /// bribe index
+    pub bribe_index: u32,
 }
 
 impl GaugeFactory {
@@ -44,6 +46,11 @@ impl GaugeFactory {
     pub fn distribute_rewards_epoch(&self) -> Result<u32> {
         let distribute_rewards_epoch = unwrap_int!(self.current_voting_epoch.checked_add(1));
         Ok(distribute_rewards_epoch)
+    }
+
+    pub fn inc_bribe_index(&mut self) -> Result<()> {
+        self.bribe_index = unwrap_int!(self.bribe_index.checked_add(1));
+        Ok(())
     }
 }
 

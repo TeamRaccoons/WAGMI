@@ -731,9 +731,13 @@ export async function createBribe(
     let gaugeState = await programGauge.account.gauge.fetch(gauge);
     let gaugeFactoryState = await programGauge.account.gaugeFactory.fetch(gaugeState.gaugeFactory);
 
-    let bribeKP = Keypair.generate();
+    let [bribe, bBump] = web3.PublicKey.findProgramAddressSync(
+        [Buffer.from("Bribe"), gaugeState.gaugeFactory.toBytes(), encodeU32(gaugeState.bribeIndex)],
+        programGauge.programId
+    );
+
     let [tokenAccountVault, eBump] = web3.PublicKey.findProgramAddressSync(
-        [Buffer.from("BribeVault"), bribeKP.publicKey.toBytes()],
+        [Buffer.from("BribeVault"), bribe.toBytes()],
         programGauge.programId
     );
 
@@ -763,14 +767,14 @@ export async function createBribe(
         tokenMint,
         tokenAccountVault,
         tokenAccount,
-        bribe: bribeKP.publicKey,
+        bribe,
         payer: briberKP.publicKey,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
-    }).signers([briberKP, bribeKP]).rpc();
+    }).signers([briberKP]).rpc();
 
     return {
-        bribe: bribeKP.publicKey,
+        bribe,
         tokenMint
     };
 }

@@ -984,7 +984,7 @@ export type Gauge = {
         {
           "name": "bribe",
           "isMut": true,
-          "isSigner": true,
+          "isSigner": false,
           "docs": [
             "The [Bribe] to be created."
           ]
@@ -1007,7 +1007,7 @@ export type Gauge = {
         },
         {
           "name": "gaugeFactory",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "The [GaugeFactory]."
@@ -1291,6 +1291,13 @@ export type Gauge = {
               "When the next epoch starts."
             ],
             "type": "u64"
+          },
+          {
+            "name": "bribeIndex",
+            "docs": [
+              "bribe index"
+            ],
+            "type": "u32"
           }
         ]
       }
@@ -3373,7 +3380,7 @@ export const IDL: Gauge = {
         {
           "name": "bribe",
           "isMut": true,
-          "isSigner": true,
+          "isSigner": false,
           "docs": [
             "The [Bribe] to be created."
           ]
@@ -3396,7 +3403,7 @@ export const IDL: Gauge = {
         },
         {
           "name": "gaugeFactory",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "The [GaugeFactory]."
@@ -3680,6 +3687,13 @@ export const IDL: Gauge = {
               "When the next epoch starts."
             ],
             "type": "u64"
+          },
+          {
+            "name": "bribeIndex",
+            "docs": [
+              "bribe index"
+            ],
+            "type": "u32"
           }
         ]
       }

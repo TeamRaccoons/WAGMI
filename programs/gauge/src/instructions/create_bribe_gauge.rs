@@ -1,14 +1,20 @@
 //! CreateBribe
 
-use crate::*;
 use crate::ErrorCode::MathOverflow;
+use crate::*;
 
 /// Accounts for [gauge::create_bribe_gauge].
 #[derive(Accounts)]
 pub struct CreateBribeGauge<'info> {
     /// The [Bribe] to be created.
     #[account(
-            init,            
+            init,
+            seeds = [
+                b"Bribe".as_ref(),
+                gauge_factory.key().as_ref(),
+                gauge_factory.bribe_index.to_le_bytes().as_ref(),
+            ],
+            bump,
             space = 8 + std::mem::size_of::<Bribe>(),
             payer = payer
         )]
@@ -22,12 +28,13 @@ pub struct CreateBribeGauge<'info> {
     pub payer: Signer<'info>,
 
     /// The [GaugeFactory].
+    #[account(mut)]
     pub gauge_factory: Box<Account<'info, GaugeFactory>>,
 
     /// The [Gauge].
     #[account(mut, has_one = gauge_factory)]
     pub gauge: Box<Account<'info, Gauge>>,
-    
+
     /// [TokenAccount] holding the token [Mint].
     #[account(
         init,
@@ -44,30 +51,42 @@ pub struct CreateBribeGauge<'info> {
 
     pub token_mint: Box<Account<'info, Mint>>,
 
-
     pub token_program: Program<'info, Token>,
 }
 
-
-pub fn get_total_bribe_rewards(reward_each_epoch: u64, bribe_epoch_end: u32, bribe_epoch_start: u32) -> Option<u64> {
-    reward_each_epoch.checked_mul(u64::from(bribe_epoch_end.checked_add(1)?.checked_sub(bribe_epoch_start)?))
+pub fn get_total_bribe_rewards(
+    reward_each_epoch: u64,
+    bribe_epoch_end: u32,
+    bribe_epoch_start: u32,
+) -> Option<u64> {
+    reward_each_epoch.checked_mul(u64::from(
+        bribe_epoch_end
+            .checked_add(1)?
+            .checked_sub(bribe_epoch_start)?,
+    ))
 }
 
-pub fn handler(ctx: Context<CreateBribeGauge>, reward_each_epoch: u64, bribe_rewards_epoch_end: u32) -> Result<()> {
+pub fn handler(
+    ctx: Context<CreateBribeGauge>,
+    reward_each_epoch: u64,
+    bribe_rewards_epoch_end: u32,
+) -> Result<()> {
     // check bribe end is after voting epoch timestamp
-    let gauge_factory = &ctx.accounts.gauge_factory;
+    let gauge_factory = &mut ctx.accounts.gauge_factory;
     let current_voting_epoch = gauge_factory.current_voting_epoch;
     invariant!(
         bribe_rewards_epoch_end >= gauge_factory.current_voting_epoch,
         BribeEpochEndError
     );
-    invariant!(
-        reward_each_epoch > 0,
-        BribeRewardsIsZero
-    );
+    invariant!(reward_each_epoch > 0, BribeRewardsIsZero);
 
     // get total bribe rewards
-    let total_bribe_rewards = get_total_bribe_rewards(reward_each_epoch, bribe_rewards_epoch_end, current_voting_epoch).ok_or(MathOverflow)?;
+    let total_bribe_rewards = get_total_bribe_rewards(
+        reward_each_epoch,
+        bribe_rewards_epoch_end,
+        current_voting_epoch,
+    )
+    .ok_or(MathOverflow)?;
     // send to vault
     token::transfer(
         CpiContext::new(
@@ -90,6 +109,8 @@ pub fn handler(ctx: Context<CreateBribeGauge>, reward_each_epoch: u64, bribe_rew
     bribe.bribe_rewards_epoch_start = current_voting_epoch;
     bribe.bribe_rewards_epoch_end = bribe_rewards_epoch_end;
 
+    gauge_factory.inc_bribe_index()?;
+
     emit!(BribeGaugeCreateEvent {
         gauge: ctx.accounts.gauge.key(),
         bribe: ctx.accounts.bribe.key(),
@@ -106,7 +127,6 @@ impl<'info> Validate<'info> for CreateBribeGauge<'info> {
         Ok(())
     }
 }
-
 
 /// Event called in [gauge::create_bribe_gauge].
 #[event]
