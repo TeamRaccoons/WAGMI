@@ -251,6 +251,8 @@ pub struct Bribe {
     pub bribe_rewards_epoch_end: u32,
     /// Claimed amount, just for display
     pub claimed_amount: u64,
+    /// bribe index
+    pub bribe_index: u32,
 }
 
 impl Bribe {

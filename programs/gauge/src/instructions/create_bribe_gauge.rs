@@ -108,6 +108,7 @@ pub fn handler(
     bribe.token_account_vault = ctx.accounts.token_account_vault.key();
     bribe.bribe_rewards_epoch_start = current_voting_epoch;
     bribe.bribe_rewards_epoch_end = bribe_rewards_epoch_end;
+    bribe.bribe_index = gauge_factory.bribe_index;
 
     gauge_factory.inc_bribe_index()?;
 

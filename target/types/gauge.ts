@@ -1691,6 +1691,13 @@ export type Gauge = {
               "Claimed amount, just for display"
             ],
             "type": "u64"
+          },
+          {
+            "name": "bribeIndex",
+            "docs": [
+              "bribe index"
+            ],
+            "type": "u32"
           }
         ]
       }
@@ -4087,6 +4094,13 @@ export const IDL: Gauge = {
               "Claimed amount, just for display"
             ],
             "type": "u64"
+          },
+          {
+            "name": "bribeIndex",
+            "docs": [
+              "bribe index"
+            ],
+            "type": "u32"
           }
         ]
       }
