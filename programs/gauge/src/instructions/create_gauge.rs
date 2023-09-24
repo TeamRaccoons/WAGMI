@@ -55,9 +55,12 @@ pub fn handler(ctx: Context<CreateGauge>) -> Result<()> {
     let amm_type = AmmType::get_amm_type(quarry.amm_type).ok_or(TypeCastFailed)?;
     let amm_pool = amm_type.get_amm(ctx.accounts.amm_pool.to_account_info())?;
 
-    let (token_a_fee, token_b_fee) = amm_pool.get_fee_accounts();
+    let (token_a_mint, token_b_mint, token_a_fee, token_b_fee) =
+        amm_pool.get_mint_and_fee_account_pubkeyss();
     gauge.token_a_fee_key = token_a_fee;
     gauge.token_b_fee_key = token_b_fee;
+    gauge.token_a_mint = token_a_mint;
+    gauge.token_b_mint = token_b_mint;
 
     gauge.amm_type = quarry.amm_type;
 

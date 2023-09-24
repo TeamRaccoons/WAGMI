@@ -6,7 +6,8 @@ use moc_amm::MocAmm;
 use vipers::assert_keys_eq;
 
 pub trait AmmPool {
-    fn get_fee_accounts(&self) -> (Pubkey, Pubkey);
+    // return token_a_mint, token_b_mint, token_a_fee, token_b_fee
+    fn get_mint_and_fee_account_pubkeyss(&self) -> (Pubkey, Pubkey, Pubkey, Pubkey);
     fn get_lp_token_account(&self) -> Pubkey;
     fn claim_fee<'a, 'b, 'c, 'info>(
         &self,
@@ -20,8 +21,13 @@ pub trait AmmPool {
 }
 
 impl AmmPool for MocAmm {
-    fn get_fee_accounts(&self) -> (Pubkey, Pubkey) {
-        return (self.token_a_fee, self.token_b_fee);
+    fn get_mint_and_fee_account_pubkeyss(&self) -> (Pubkey, Pubkey, Pubkey, Pubkey) {
+        return (
+            self.token_a_mint,
+            self.token_b_mint,
+            self.token_a_fee,
+            self.token_b_fee,
+        );
     }
     fn get_lp_token_account(&self) -> Pubkey {
         return self.lp_mint;

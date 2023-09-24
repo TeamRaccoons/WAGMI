@@ -1389,6 +1389,20 @@ export type Gauge = {
               "Gauge type"
             ],
             "type": "u64"
+          },
+          {
+            "name": "tokenAMint",
+            "docs": [
+              "token_a_mint of amm pool, only used for tracking"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "tokenBMint",
+            "docs": [
+              "token_b_fee_mint of amm pool, only used for tracking"
+            ],
+            "type": "publicKey"
           }
         ]
       }
@@ -3792,6 +3806,20 @@ export const IDL: Gauge = {
               "Gauge type"
             ],
             "type": "u64"
+          },
+          {
+            "name": "tokenAMint",
+            "docs": [
+              "token_a_mint of amm pool, only used for tracking"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "tokenBMint",
+            "docs": [
+              "token_b_fee_mint of amm pool, only used for tracking"
+            ],
+            "type": "publicKey"
           }
         ]
       }

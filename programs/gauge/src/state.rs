@@ -84,6 +84,10 @@ pub struct Gauge {
     pub cummulative_claimed_token_b_fee: u128,
     /// Gauge type
     pub amm_type: u64,
+    /// token_a_mint of amm pool, only used for tracking
+    pub token_a_mint: Pubkey,
+    /// token_b_fee_mint of amm pool, only used for tracking
+    pub token_b_mint: Pubkey,
 }
 
 /// A [GaugeVoter] represents an [voter::Escrow] that can vote on gauges.
