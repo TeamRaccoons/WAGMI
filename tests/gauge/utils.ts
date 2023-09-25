@@ -234,6 +234,17 @@ export async function getOrCreateEpochGaugeVoterByVotingEpoch(
             })
             .rpc();
     }
+    // alway reset vote when prepare
+    await programGauge.methods
+        .resetEpochGaugeVoter()
+        .accounts({
+            gaugeFactory: gaugeState.gaugeFactory,
+            locker: gaugeFactoryState.locker,
+            gaugeVoter,
+            epochGaugeVoter,
+            escrow,
+        })
+        .rpc();
 
     return epochGaugeVoter;
 }

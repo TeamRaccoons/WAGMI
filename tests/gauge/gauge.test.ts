@@ -680,7 +680,6 @@ describe("Gauge", () => {
             // vote weight allocation should remain after revert
             gaugeVoterState = await programGauge.account.gaugeVoter.fetch(gaugeVoter);
             expect(gaugeVoterState.totalWeight).to.equal(50);
-
             // zero power after revert
             epochGaugeVoterState = await programGauge.account.epochGaugeVoter.fetch(epochGaugeVoter);
             expect(epochGaugeVoterState.allocatedPower.toNumber()).to.equal(0);
@@ -688,6 +687,15 @@ describe("Gauge", () => {
             // epoch gauge vote should be deleted
             epochGaugeVoteState = await programGauge.account.epochGaugeVote.fetchNullable(epochGaugeVote);
             expect(epochGaugeVoteState).to.be.null;
+
+            // vote again
+            await setVote(gauge, 100, voterKP, programGauge, programVoter);
+            // prepare
+            await getOrCreateEpochGaugeVoterForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter)
+            // commit votes
+            await getOrCreateEpochGaugeVoteByCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter);
+            gaugeVoterState = await programGauge.account.gaugeVoter.fetch(gaugeVoter);
+            expect(gaugeVoterState.totalWeight).to.equal(100);
         });
     });
 });
