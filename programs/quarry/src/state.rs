@@ -1,7 +1,10 @@
 //! State structs.
 
+use crate::math::safe_math::SafeMath;
+use crate::math::u128x128_math::{Rounding, SCALE_OFFSET};
+use crate::math::utils_math::{safe_mul_div_cast, safe_mul_shr_cast, safe_shl_div_cast};
 use crate::*;
-use amm::AmmType;
+pub const MAX_REWARD: usize = 3;
 
 /// Controls token rewards distribution to all [Quarry]s.
 /// The [Rewarder] is also the [minter::Minter] registered to the [minter::MintWrapper].
@@ -77,14 +80,131 @@ pub struct Quarry {
     pub annual_rewards_rate: u64,
     /// Rewards shared allocated to this quarry
     pub rewards_share: u64,
-
     /// Total number of tokens deposited into the quarry.
     pub total_tokens_deposited: u64,
     /// Number of [Miner]s.
     pub num_miners: u64,
+    /// Other reward info, possibly from partners
+    pub reward_infos: [RewardInfo; 3],
 }
 
-impl Quarry {}
+/// Other rewards beside main token
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default)]
+pub struct RewardInfo {
+    /// Reward token mint.
+    pub mint: Pubkey,
+    /// Reward vault token account.
+    pub vault: Pubkey,
+    /// Authority account that allows to fund rewards
+    pub funder: Pubkey,
+    /// Reward duration
+    pub reward_duration: u64, // 8
+    /// Reward duration end
+    pub reward_duration_end: u64, // 8
+    /// Reward rate
+    pub reward_rate: u128, // 8
+    /// The last time reward states were updated.
+    pub last_update_time: u64, // 8
+    /// reward per token stored
+    pub reward_per_token_stored: u128,
+}
+
+impl RewardInfo {
+    /// Returns true if this reward is initialized.
+    /// Once initialized, a reward cannot transition back to uninitialized.
+    pub fn initialized(&self) -> bool {
+        self.mint.ne(&Pubkey::default())
+    }
+
+    pub fn init_reward(
+        &mut self,
+        mint: Pubkey,
+        vault: Pubkey,
+        funder: Pubkey,
+        reward_duration: u64,
+    ) {
+        self.mint = mint;
+        self.vault = vault;
+        self.funder = funder;
+        self.reward_duration = reward_duration;
+    }
+
+    /// Farming rate after funding
+    pub fn update_rate_after_funding(
+        &mut self,
+        current_time: u64,
+        funding_amount: u64,
+    ) -> Result<()> {
+        let reward_duration_end = self.reward_duration_end;
+        let total_amount: u64;
+
+        if current_time >= reward_duration_end {
+            total_amount = funding_amount
+        } else {
+            let remaining_seconds = reward_duration_end.safe_sub(current_time)?;
+            let leftover: u64 = safe_mul_shr_cast(
+                self.reward_rate,
+                remaining_seconds.into(),
+                SCALE_OFFSET,
+                Rounding::Down,
+            )?;
+
+            total_amount = leftover.safe_add(funding_amount)?;
+        }
+
+        self.reward_rate = safe_shl_div_cast(
+            total_amount.into(),
+            self.reward_duration.into(),
+            SCALE_OFFSET,
+            Rounding::Down,
+        )?;
+        self.last_update_time = current_time;
+        self.reward_duration_end = current_time.safe_add(self.reward_duration)?;
+
+        Ok(())
+    }
+
+    // pub fn update_last_update_time(&mut self, current_time: u64) {
+    //     self.last_update_time = std::cmp::min(current_time, self.reward_duration_end);
+    // }
+
+    fn calculate_reward_per_token_stored_since_last_update(
+        &self,
+        current_time: u64,
+        liquidity_supply: u64,
+    ) -> Result<u128> {
+        if liquidity_supply == 0 {
+            return Ok(0);
+        }
+        let last_time_reward_applicable = std::cmp::min(current_time, self.reward_duration_end);
+        let time_period = last_time_reward_applicable
+            .safe_sub(self.last_update_time.into())?
+            .into();
+
+        safe_mul_div_cast(
+            time_period,
+            self.reward_rate,
+            liquidity_supply.into(),
+            Rounding::Down,
+        )
+    }
+
+    pub fn updated_rewards_per_token_stored(
+        &mut self,
+        current_time: u64,
+        liquidity_supply: u64,
+    ) -> Result<()> {
+        let reward_per_token_stored_delta = self
+            .calculate_reward_per_token_stored_since_last_update(current_time, liquidity_supply)?;
+
+        self.reward_per_token_stored = self
+            .reward_per_token_stored
+            .safe_add(reward_per_token_stored_delta)?;
+
+        self.last_update_time = std::cmp::min(current_time, self.reward_duration_end);
+        Ok(())
+    }
+}
 
 /// An account that has staked tokens into a [Quarry].
 #[account]
@@ -121,4 +241,35 @@ pub struct Miner {
 
     /// Index of the [Miner].
     pub index: u64,
+
+    /// Other reward info, possibly from partners
+    pub reward_infos: [UserRewardInfo; 3],
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default)]
+pub struct UserRewardInfo {
+    pub reward_per_token_complete: u128,
+    pub reward_pending: u64,
+}
+
+impl UserRewardInfo {
+    pub fn update_reward_per_token_stored(
+        &mut self,
+        balance: u64,
+        reward_info: &RewardInfo,
+    ) -> Result<()> {
+        let reward_per_token_stored = reward_info.reward_per_token_stored;
+
+        let new_reward: u64 = safe_mul_shr_cast(
+            balance.into(),
+            reward_per_token_stored.safe_sub(self.reward_per_token_complete)?,
+            SCALE_OFFSET,
+            Rounding::Down,
+        )?;
+
+        self.reward_pending = new_reward.safe_add(self.reward_pending)?;
+        self.reward_per_token_complete = reward_per_token_stored;
+
+        Ok(())
+    }
 }

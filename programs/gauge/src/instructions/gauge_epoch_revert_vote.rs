@@ -8,6 +8,7 @@ pub struct GaugeEpochRevertVote<'info> {
     pub gauge_factory: Box<Account<'info, GaugeFactory>>,
     pub gauge: Box<Account<'info, Gauge>>,
     pub gauge_voter: Box<Account<'info, GaugeVoter>>,
+    #[account(mut)]
     pub gauge_vote: Box<Account<'info, GaugeVote>>,
 
     #[account(mut)]
@@ -22,20 +23,27 @@ pub struct GaugeEpochRevertVote<'info> {
     pub vote_delegate: Signer<'info>,
 
     /// The [EpochGaugeVote] to revert.
-    #[account(
-        mut,
-        close = payer,
-    )]
-    pub epoch_gauge_vote: Box<Account<'info, EpochGaugeVote>>,
+    // #[account(
+    //     mut,
+    //     close = payer,
+    // )]
+    // pub epoch_gauge_vote: Box<Account<'info, EpochGaugeVote>>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
 }
 
 pub fn handler(ctx: Context<GaugeEpochRevertVote>) -> Result<()> {
+    let gauge_factory = &ctx.accounts.gauge_factory;
     let epoch_gauge = &mut ctx.accounts.epoch_gauge;
     let epoch_voter = &mut ctx.accounts.epoch_gauge_voter;
-    let epoch_vote = &mut ctx.accounts.epoch_gauge_vote;
+    let gauge_vote = &mut ctx.accounts.gauge_vote;
+
+    let current_vote_index =
+        gauge_vote.get_index_for_voting_epoch(gauge_factory.current_voting_epoch)?;
+
+    let epoch_vote = &mut gauge_vote.vote_epochs[current_vote_index];
+    // let epoch_vote = &mut ctx.accounts.epoch_gauge_vote;
 
     let power_subtract = epoch_vote.allocated_power;
     epoch_voter.allocated_power =
@@ -74,9 +82,9 @@ impl<'info> Validate<'info> for GaugeEpochRevertVote<'info> {
         assert_keys_eq!(self.gauge_vote.gauge_voter, self.gauge_voter);
         assert_keys_eq!(self.gauge_vote.gauge, self.gauge);
 
-        let (epoch_gauge_vote_key, _) =
-            EpochGaugeVote::find_program_address(&self.gauge_vote.key(), voting_epoch);
-        assert_keys_eq!(epoch_gauge_vote_key, self.epoch_gauge_vote);
+        // let (epoch_gauge_vote_key, _) =
+        //     EpochGaugeVote::find_program_address(&self.gauge_vote.key(), voting_epoch);
+        // assert_keys_eq!(epoch_gauge_vote_key, self.epoch_gauge_vote);
 
         assert_keys_eq!(self.escrow, self.gauge_voter.escrow);
         assert_keys_eq!(self.vote_delegate, self.escrow.vote_delegate);

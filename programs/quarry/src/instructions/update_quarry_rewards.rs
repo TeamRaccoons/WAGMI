@@ -14,9 +14,9 @@ pub struct UpdateQuarryRewards<'info> {
 pub fn handler(ctx: Context<UpdateQuarryRewards>) -> Result<()> {
     let current_ts = Clock::get()?.unix_timestamp;
     let rewarder = &ctx.accounts.rewarder;
-    let payroll: Payroll = (*ctx.accounts.quarry).into();
+    // let payroll: Payroll = (*ctx.accounts.quarry).into();
     let quarry = &mut ctx.accounts.quarry;
-    quarry.update_rewards_internal(current_ts, rewarder, &payroll)?;
+    quarry.update_rewards_internal(current_ts, rewarder)?;
 
     emit!(QuarryRewardsUpdateEvent {
         amm_pool: quarry.amm_pool,

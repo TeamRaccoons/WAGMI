@@ -11,6 +11,7 @@ use vipers::prelude::*;
 use anchor_spl::token::Token;
 use anchor_spl::token::{self, Mint, TokenAccount, Transfer};
 
+pub mod constants;
 mod instructions;
 mod macros;
 mod state;
@@ -141,13 +142,13 @@ pub mod gauge {
     /// Closes an [EpochGaugeVote], sending lamports to a user-specified address.
     ///
     /// Only the [voter::Escrow::vote_delegate] may call this.
-    #[access_control(ctx.accounts.validate())]
-    pub fn close_epoch_gauge_vote(
-        ctx: Context<CloseEpochGaugeVote>,
-        voting_epoch: u32,
-    ) -> Result<()> {
-        close_epoch_gauge_vote::handler(ctx, voting_epoch)
-    }
+    // #[access_control(ctx.accounts.validate())]
+    // pub fn close_epoch_gauge_vote(
+    //     ctx: Context<CloseEpochGaugeVote>,
+    //     voting_epoch: u32,
+    // ) -> Result<()> {
+    //     close_epoch_gauge_vote::handler(ctx, voting_epoch)
+    // }
 
     /// Create an [Bribe]
     ///
@@ -235,4 +236,6 @@ pub enum ErrorCode {
     MathOverflow,
     #[msg("type cast faled")]
     TypeCastFailed,
+    #[msg("Voting epoch is not found")]
+    VotingEpochNotFound,
 }

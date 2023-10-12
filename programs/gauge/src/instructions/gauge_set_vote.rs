@@ -15,7 +15,7 @@ pub struct GaugeSetVote<'info> {
     pub gauge_voter: Account<'info, GaugeVoter>,
     /// The [GaugeVote].
     #[account(mut)]
-    pub gauge_vote: Account<'info, GaugeVote>,
+    pub gauge_vote: Box<Account<'info, GaugeVote>>,
 
     /// The escrow.
     #[account(has_one = vote_delegate @ crate::ErrorCode::UnauthorizedNotDelegate)]

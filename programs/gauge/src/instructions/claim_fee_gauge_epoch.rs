@@ -1,20 +1,21 @@
 //! ClaimFee
 
-use crate::ErrorCode::TypeCastFailed;
+use crate::ErrorCode::{MathOverflow, TypeCastFailed};
+
 use crate::*;
 
 /// Accounts for [gauge::claim_fee].
 #[derive(Accounts)]
 #[instruction(voting_epoch: u32)]
 pub struct ClaimFeeGaugeEpoch<'info> {
+    /// The [GaugeFactory].
+    pub gauge_factory: Box<Account<'info, GaugeFactory>>,
+
     #[account(mut, has_one = gauge_voter, constraint = epoch_gauge_voter.voting_epoch == voting_epoch)]
     pub epoch_gauge_voter: Box<Account<'info, EpochGaugeVoter>>,
 
     #[account(constraint = epoch_gauge_voter.voting_epoch == voting_epoch, has_one = gauge)]
     pub epoch_gauge: Box<Account<'info, EpochGauge>>,
-
-    /// The [GaugeFactory].
-    pub gauge_factory: Box<Account<'info, GaugeFactory>>,
 
     /// The [Gauge].
     #[account(mut, has_one = gauge_factory, has_one = amm_pool)]
@@ -23,6 +24,10 @@ pub struct ClaimFeeGaugeEpoch<'info> {
     /// The [GaugeVoter].
     #[account(has_one = gauge_factory, has_one = escrow)]
     pub gauge_voter: Box<Account<'info, GaugeVoter>>,
+
+    /// The [GaugeVote].
+    #[account(mut, has_one = gauge_voter, has_one = gauge)]
+    pub gauge_vote: Box<Account<'info, GaugeVote>>,
 
     /// The [Escrow] which owns this [EpochGaugeVote].
     #[account(has_one = vote_delegate @ crate::ErrorCode::UnauthorizedNotDelegate)]
@@ -50,10 +55,11 @@ pub fn handler(ctx: Context<ClaimFeeGaugeEpoch>, voting_epoch: u32) -> Result<()
     invariant!(voting_epoch < current_voting_epoch, CloseEpochNotElapsed);
 
     let gauge = &mut ctx.accounts.gauge;
+    let gauge_vote = &mut ctx.accounts.gauge_vote;
     let epoch_gauge = &ctx.accounts.epoch_gauge;
     let epoch_gauge_voter = &mut ctx.accounts.epoch_gauge_voter;
     // check whether it is token a for token b
-    let (_is_token_a, fee_amount) = if gauge.token_a_fee_key == ctx.accounts.token_account.key() {
+    let fee_amount = if gauge.token_a_fee_key == ctx.accounts.token_account.key() {
         // check whether fee has been claimed
         invariant!(!epoch_gauge_voter.is_fee_a_claimed, FeeHasBeenClaimed);
         let fee_amount = epoch_gauge.get_allocated_fee_a(epoch_gauge_voter).unwrap();
@@ -64,7 +70,11 @@ pub fn handler(ctx: Context<ClaimFeeGaugeEpoch>, voting_epoch: u32) -> Result<()
             .checked_add(fee_amount as u128)
             .unwrap();
         epoch_gauge_voter.is_fee_a_claimed = true;
-        (true, fee_amount)
+        gauge_vote.claimed_token_a_fee = gauge_vote
+            .claimed_token_a_fee
+            .checked_add(fee_amount.into())
+            .ok_or(MathOverflow)?;
+        fee_amount
     } else {
         invariant!(!epoch_gauge_voter.is_fee_b_claimed, FeeHasBeenClaimed);
         let fee_amount = epoch_gauge.get_allocated_fee_b(epoch_gauge_voter).unwrap();
@@ -75,7 +85,12 @@ pub fn handler(ctx: Context<ClaimFeeGaugeEpoch>, voting_epoch: u32) -> Result<()
             .checked_add(fee_amount as u128)
             .unwrap();
         epoch_gauge_voter.is_fee_b_claimed = true;
-        (false, fee_amount)
+
+        gauge_vote.claimed_token_b_fee = gauge_vote
+            .claimed_token_b_fee
+            .checked_add(fee_amount.into())
+            .ok_or(MathOverflow)?;
+        fee_amount
     };
 
     let amm_type = AmmType::get_amm_type(gauge.amm_type).ok_or(TypeCastFailed)?;

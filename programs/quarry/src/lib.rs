@@ -22,15 +22,15 @@ use payroll::Payroll;
 pub use state::*;
 use vipers::prelude::*;
 
+mod instructions;
+pub mod math;
 pub mod payroll;
 pub mod quarry_state;
 pub mod rewarder;
-
-mod instructions;
+pub mod tests;
 pub use instructions::*;
 
 use crate::quarry_state::StakeAction;
-use amm::AmmType;
 
 declare_id!("quaJeeoTrxSszHnpzNQrtFoF1kcnfMiSWuYpk8ddobB");
 
@@ -135,6 +135,44 @@ pub mod quarry {
         update_quarry_lb_clmm_rewards::handler(ctx)
     }
 
+    /// Init new reward, only admin can do this
+    /// Init new rewards, provided by partners, similar to bribe
+    #[access_control(ctx.accounts.validate())]
+    pub fn initialize_new_reward(
+        ctx: Context<InitializeNewReward>,
+        index: u64,
+        reward_duration: u64,
+        funder: Pubkey,
+    ) -> Result<()> {
+        initialize_new_reward::handler(ctx, index, reward_duration, funder)
+    }
+
+    /// Update reward funder, only admin can change
+    #[access_control(ctx.accounts.validate())]
+    pub fn update_reward_funder(
+        ctx: Context<UpdateRewardFunder>,
+        reward_index: u64,
+        new_funder: Pubkey,
+    ) -> Result<()> {
+        update_reward_funder::handle(ctx, reward_index, new_funder)
+    }
+
+    /// Update reward duration, only admin can change
+    #[access_control(ctx.accounts.validate())]
+    pub fn update_reward_duration(
+        ctx: Context<UpdateRewardDuration>,
+        reward_index: u64,
+        new_duration: u64,
+    ) -> Result<()> {
+        update_reward_duration::handle(ctx, reward_index, new_duration)
+    }
+
+    /// Fund reward, only admin or funder can fund
+    #[access_control(ctx.accounts.validate())]
+    pub fn fund_reward(ctx: Context<FundReward>, reward_index: u64, amount: u64) -> Result<()> {
+        fund_reward::handle(ctx, reward_index, amount)
+    }
+
     /// --------------------------------
     /// Miner functions
     /// --------------------------------
@@ -151,6 +189,14 @@ pub mod quarry {
     #[access_control(ctx.accounts.validate())]
     pub fn claim_rewards(ctx: Context<ClaimRewards>) -> Result<()> {
         claim_rewards::handler(ctx)
+    }
+
+    /// Claims partner rewards for the [Miner].
+    pub fn claim_partner_rewards(
+        ctx: Context<ClaimPartnerRewards>,
+        reward_index: u64,
+    ) -> Result<()> {
+        claim_partner_rewards::handler(ctx, reward_index)
     }
 
     /// Stakes tokens into the [Miner].
@@ -193,4 +239,20 @@ pub enum ErrorCode {
     UpperboundExceeded,
     #[msg("type cast faled")]
     TypeCastFailed,
+    #[msg("Invalid reward index")]
+    InvalidRewardIndex,
+    #[msg("Invalid reward duration")]
+    InvalidRewardDuration,
+    #[msg("Reward not initialized")]
+    RewardUninitialized,
+    #[msg("Reward campaign in progress")]
+    RewardCampaignInProgress,
+    #[msg("Invalid reward vault")]
+    InvalidRewardVault,
+    #[msg("Invalid admin")]
+    InvalidAdmin,
+    #[msg("Math operation overflow")]
+    MathOverflow,
+    #[msg("Update same reward funder")]
+    SameFunder,
 }

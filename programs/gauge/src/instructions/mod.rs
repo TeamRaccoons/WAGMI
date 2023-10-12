@@ -1,7 +1,7 @@
 pub mod claim_bribe_gauge_epoch;
 pub mod claim_fee_gauge_epoch;
 pub mod clawback_bribe_gauge_epoch;
-pub mod close_epoch_gauge_vote;
+// pub mod close_epoch_gauge_vote;
 pub mod create_bribe_gauge;
 pub mod create_epoch_gauge;
 pub mod create_gauge;
@@ -22,7 +22,7 @@ pub mod trigger_next_epoch;
 pub use claim_bribe_gauge_epoch::*;
 pub use claim_fee_gauge_epoch::*;
 pub use clawback_bribe_gauge_epoch::*;
-pub use close_epoch_gauge_vote::*;
+// pub use close_epoch_gauge_vote::*;
 pub use create_bribe_gauge::*;
 pub use create_epoch_gauge::*;
 pub use create_gauge::*;

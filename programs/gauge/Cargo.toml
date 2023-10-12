@@ -24,3 +24,4 @@ num-traits = "0.2"
 quarry = {path="../quarry", features=["no-entrypoint", "cpi"]}
 voter = {path = "../voter", features=["no-entrypoint"]}
 amm = {path = "../../libs/amm" }
+bytemuck = { version = "1.13.1", features = ["derive", "min_const_generics"] }

@@ -12,7 +12,7 @@ pub struct GaugeEpochCommitVote<'info> {
     /// The [GaugeVoter].
     pub gauge_voter: Account<'info, GaugeVoter>,
     /// The [GaugeVote] containing the vote weights.
-    pub gauge_vote: Account<'info, GaugeVote>,
+    pub gauge_vote: Box<Account<'info, GaugeVote>>,
 
     /// The [EpochGauge].
     #[account(mut)]
@@ -22,18 +22,18 @@ pub struct GaugeEpochCommitVote<'info> {
     pub epoch_gauge_voter: Account<'info, EpochGaugeVoter>,
 
     /// The [EpochGaugeVote] to create.
-    #[account(
-        init,
-        seeds = [
-            b"EpochGaugeVote".as_ref(),
-            gauge_vote.key().as_ref(),
-            epoch_gauge_voter.voting_epoch.to_le_bytes().as_ref(),
-        ],
-        bump,
-        space = 8 + std::mem::size_of::<EpochGaugeVote>(),
-        payer = payer
-    )]
-    pub epoch_gauge_vote: Account<'info, EpochGaugeVote>,
+    // #[account(
+    //     init,
+    //     seeds = [
+    //         b"EpochGaugeVote".as_ref(),
+    //         gauge_vote.key().as_ref(),
+    //         epoch_gauge_voter.voting_epoch.to_le_bytes().as_ref(),
+    //     ],
+    //     bump,
+    //     space = 8 + std::mem::size_of::<EpochGaugeVote>(),
+    //     payer = payer
+    // )]
+    // pub epoch_gauge_vote: Account<'info, EpochGaugeVote>,
 
     /// Funder of the [EpochGaugeVote] to create.
     #[account(mut)]
@@ -70,10 +70,17 @@ pub fn handler(ctx: Context<GaugeEpochCommitVote>) -> Result<()> {
     if next_vote_shares == 0 {
         return Ok(());
     }
-
+    let gauge_factory = &ctx.accounts.gauge_factory;
     let epoch_gauge = &mut ctx.accounts.epoch_gauge;
     let epoch_gauge_voter = &mut ctx.accounts.epoch_gauge_voter;
-    let epoch_gauge_vote = &mut ctx.accounts.epoch_gauge_vote;
+    let gauge_vote = &mut ctx.accounts.gauge_vote;
+
+    let current_vote_index =
+        gauge_vote.pump_and_get_index_for_lastest_voting_epoch(gauge_factory.current_voting_epoch);
+
+    let epoch_gauge_vote = &mut gauge_vote.vote_epochs[current_vote_index];
+
+    // let epoch_gauge_vote = &mut ctx.accounts.epoch_gauge_vote;
 
     epoch_gauge_voter.allocated_power = unwrap_int!(epoch_gauge_voter
         .allocated_power

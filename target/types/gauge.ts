@@ -4,6 +4,20 @@ export type Gauge = {
   "docs": [
     "Smart wallet program."
   ],
+  "constants": [
+    {
+      "name": "MAX_BRIBE_EPOCH",
+      "type": "u32",
+      "value": "200"
+    },
+    {
+      "name": "MAX_EPOCH_PER_GAUGE",
+      "type": {
+        "defined": "usize"
+      },
+      "value": "1000"
+    }
+  ],
   "instructions": [
     {
       "name": "createGaugeFactory",
@@ -517,18 +531,11 @@ export type Gauge = {
           ]
         },
         {
-          "name": "epochGaugeVote",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "The [EpochGaugeVote] to create."
-          ]
-        },
-        {
           "name": "payer",
           "isMut": true,
           "isSigner": true,
           "docs": [
+            "The [EpochGaugeVote] to create.",
             "Funder of the [EpochGaugeVote] to create."
           ]
         },
@@ -567,7 +574,7 @@ export type Gauge = {
         },
         {
           "name": "gaugeVote",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -597,17 +604,12 @@ export type Gauge = {
           ]
         },
         {
-          "name": "epochGaugeVote",
+          "name": "payer",
           "isMut": true,
-          "isSigner": false,
+          "isSigner": true,
           "docs": [
             "The [EpochGaugeVote] to revert."
           ]
-        },
-        {
-          "name": "payer",
-          "isMut": true,
-          "isSigner": true
         }
       ],
       "args": []
@@ -810,6 +812,14 @@ export type Gauge = {
       ],
       "accounts": [
         {
+          "name": "gaugeFactory",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The [GaugeFactory]."
+          ]
+        },
+        {
           "name": "epochGaugeVoter",
           "isMut": true,
           "isSigner": false
@@ -818,14 +828,6 @@ export type Gauge = {
           "name": "epochGauge",
           "isMut": false,
           "isSigner": false
-        },
-        {
-          "name": "gaugeFactory",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The [GaugeFactory]."
-          ]
         },
         {
           "name": "gauge",
@@ -841,6 +843,14 @@ export type Gauge = {
           "isSigner": false,
           "docs": [
             "The [GaugeVoter]."
+          ]
+        },
+        {
+          "name": "gaugeVote",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The [GaugeVote]."
           ]
         },
         {
@@ -893,89 +903,11 @@ export type Gauge = {
       ]
     },
     {
-      "name": "closeEpochGaugeVote",
+      "name": "createBribe",
       "docs": [
         "Closes an [EpochGaugeVote], sending lamports to a user-specified address.",
         "",
-        "Only the [voter::Escrow::vote_delegate] may call this."
-      ],
-      "accounts": [
-        {
-          "name": "epochGaugeVote",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "The [EpochGaugeVote] to close.",
-            "Lamports go to the recipient."
-          ]
-        },
-        {
-          "name": "gaugeFactory",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The [GaugeFactory]."
-          ]
-        },
-        {
-          "name": "gauge",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The [Gauge]."
-          ]
-        },
-        {
-          "name": "gaugeVoter",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The [GaugeVoter]."
-          ]
-        },
-        {
-          "name": "gaugeVote",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The [GaugeVote]."
-          ]
-        },
-        {
-          "name": "escrow",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The [Escrow] which owns this [EpochGaugeVote]."
-          ]
-        },
-        {
-          "name": "voteDelegate",
-          "isMut": false,
-          "isSigner": true,
-          "docs": [
-            "The [Escrow::vote_delegate]."
-          ]
-        },
-        {
-          "name": "recipient",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "Recipient of the freed lamports."
-          ]
-        }
-      ],
-      "args": [
-        {
-          "name": "votingEpoch",
-          "type": "u32"
-        }
-      ]
-    },
-    {
-      "name": "createBribe",
-      "docs": [
+        "Only the [voter::Escrow::vote_delegate] may call this.",
         "Create an [Bribe]",
         "",
         "Permissionless, anyone can crate bribe"
@@ -1487,6 +1419,38 @@ export type Gauge = {
               "Proportion of votes that the voter is applying to this gauge."
             ],
             "type": "u32"
+          },
+          {
+            "name": "claimedTokenAFee",
+            "docs": [
+              "stats to track how many fee user has claimed"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "claimedTokenBFee",
+            "docs": [
+              "stats to track how many fee user has claimed"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "currentIndex",
+            "docs": [
+              "ring buffer to store vote for all epochs"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "voteEpochs",
+            "type": {
+              "array": [
+                {
+                  "defined": "GaugeVoteEpoch"
+                },
+                1000
+              ]
+            }
           }
         ]
       }
@@ -1612,7 +1576,7 @@ export type Gauge = {
       }
     },
     {
-      "name": "epochGaugeVote",
+      "name": "bribe",
       "docs": [
         "An [EpochGaugeVote] is a user's committed votes for a given [Gauge] at a given epoch.",
         "",
@@ -1623,28 +1587,7 @@ export type Gauge = {
         "gauge_vote.key().as_ref(),",
         "voting_epoch.to_le_bytes().as_ref(),",
         "];",
-        "```"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "allocatedPower",
-            "docs": [
-              "The rewards share used to vote for the derived epoch.",
-              "This is calculated from:",
-              "```rs",
-              "vote_power_at_expiry * (weight / total_weight)",
-              "```"
-            ],
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "bribe",
-      "docs": [
+        "```",
         "Bribe with a gauge"
       ],
       "type": {
@@ -1749,6 +1692,32 @@ export type Gauge = {
       }
     }
   ],
+  "types": [
+    {
+      "name": "GaugeVoteEpoch",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "votingEpoch",
+            "type": "u32"
+          },
+          {
+            "name": "allocatedPower",
+            "type": "u64"
+          },
+          {
+            "name": "isFeeAClaimed",
+            "type": "bool"
+          },
+          {
+            "name": "isFeeBClaimed",
+            "type": "bool"
+          }
+        ]
+      }
+    }
+  ],
   "events": [
     {
       "name": "BribeGaugeEpochClaimEvent",
@@ -1830,21 +1799,6 @@ export type Gauge = {
         },
         {
           "name": "bribe",
-          "type": "publicKey",
-          "index": true
-        },
-        {
-          "name": "votingEpoch",
-          "type": "u32",
-          "index": true
-        }
-      ]
-    },
-    {
-      "name": "CloseEpochGaugeVoteEvent",
-      "fields": [
-        {
-          "name": "gauge",
           "type": "publicKey",
           "index": true
         },
@@ -2411,6 +2365,11 @@ export type Gauge = {
       "code": 6024,
       "name": "TypeCastFailed",
       "msg": "type cast faled"
+    },
+    {
+      "code": 6025,
+      "name": "VotingEpochNotFound",
+      "msg": "Voting epoch is not found"
     }
   ]
 };
@@ -2421,6 +2380,20 @@ export const IDL: Gauge = {
   "docs": [
     "Smart wallet program."
   ],
+  "constants": [
+    {
+      "name": "MAX_BRIBE_EPOCH",
+      "type": "u32",
+      "value": "200"
+    },
+    {
+      "name": "MAX_EPOCH_PER_GAUGE",
+      "type": {
+        "defined": "usize"
+      },
+      "value": "1000"
+    }
+  ],
   "instructions": [
     {
       "name": "createGaugeFactory",
@@ -2934,18 +2907,11 @@ export const IDL: Gauge = {
           ]
         },
         {
-          "name": "epochGaugeVote",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "The [EpochGaugeVote] to create."
-          ]
-        },
-        {
           "name": "payer",
           "isMut": true,
           "isSigner": true,
           "docs": [
+            "The [EpochGaugeVote] to create.",
             "Funder of the [EpochGaugeVote] to create."
           ]
         },
@@ -2984,7 +2950,7 @@ export const IDL: Gauge = {
         },
         {
           "name": "gaugeVote",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -3014,17 +2980,12 @@ export const IDL: Gauge = {
           ]
         },
         {
-          "name": "epochGaugeVote",
+          "name": "payer",
           "isMut": true,
-          "isSigner": false,
+          "isSigner": true,
           "docs": [
             "The [EpochGaugeVote] to revert."
           ]
-        },
-        {
-          "name": "payer",
-          "isMut": true,
-          "isSigner": true
         }
       ],
       "args": []
@@ -3227,6 +3188,14 @@ export const IDL: Gauge = {
       ],
       "accounts": [
         {
+          "name": "gaugeFactory",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The [GaugeFactory]."
+          ]
+        },
+        {
           "name": "epochGaugeVoter",
           "isMut": true,
           "isSigner": false
@@ -3235,14 +3204,6 @@ export const IDL: Gauge = {
           "name": "epochGauge",
           "isMut": false,
           "isSigner": false
-        },
-        {
-          "name": "gaugeFactory",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The [GaugeFactory]."
-          ]
         },
         {
           "name": "gauge",
@@ -3258,6 +3219,14 @@ export const IDL: Gauge = {
           "isSigner": false,
           "docs": [
             "The [GaugeVoter]."
+          ]
+        },
+        {
+          "name": "gaugeVote",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The [GaugeVote]."
           ]
         },
         {
@@ -3310,89 +3279,11 @@ export const IDL: Gauge = {
       ]
     },
     {
-      "name": "closeEpochGaugeVote",
+      "name": "createBribe",
       "docs": [
         "Closes an [EpochGaugeVote], sending lamports to a user-specified address.",
         "",
-        "Only the [voter::Escrow::vote_delegate] may call this."
-      ],
-      "accounts": [
-        {
-          "name": "epochGaugeVote",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "The [EpochGaugeVote] to close.",
-            "Lamports go to the recipient."
-          ]
-        },
-        {
-          "name": "gaugeFactory",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The [GaugeFactory]."
-          ]
-        },
-        {
-          "name": "gauge",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The [Gauge]."
-          ]
-        },
-        {
-          "name": "gaugeVoter",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The [GaugeVoter]."
-          ]
-        },
-        {
-          "name": "gaugeVote",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The [GaugeVote]."
-          ]
-        },
-        {
-          "name": "escrow",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The [Escrow] which owns this [EpochGaugeVote]."
-          ]
-        },
-        {
-          "name": "voteDelegate",
-          "isMut": false,
-          "isSigner": true,
-          "docs": [
-            "The [Escrow::vote_delegate]."
-          ]
-        },
-        {
-          "name": "recipient",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "Recipient of the freed lamports."
-          ]
-        }
-      ],
-      "args": [
-        {
-          "name": "votingEpoch",
-          "type": "u32"
-        }
-      ]
-    },
-    {
-      "name": "createBribe",
-      "docs": [
+        "Only the [voter::Escrow::vote_delegate] may call this.",
         "Create an [Bribe]",
         "",
         "Permissionless, anyone can crate bribe"
@@ -3904,6 +3795,38 @@ export const IDL: Gauge = {
               "Proportion of votes that the voter is applying to this gauge."
             ],
             "type": "u32"
+          },
+          {
+            "name": "claimedTokenAFee",
+            "docs": [
+              "stats to track how many fee user has claimed"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "claimedTokenBFee",
+            "docs": [
+              "stats to track how many fee user has claimed"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "currentIndex",
+            "docs": [
+              "ring buffer to store vote for all epochs"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "voteEpochs",
+            "type": {
+              "array": [
+                {
+                  "defined": "GaugeVoteEpoch"
+                },
+                1000
+              ]
+            }
           }
         ]
       }
@@ -4029,7 +3952,7 @@ export const IDL: Gauge = {
       }
     },
     {
-      "name": "epochGaugeVote",
+      "name": "bribe",
       "docs": [
         "An [EpochGaugeVote] is a user's committed votes for a given [Gauge] at a given epoch.",
         "",
@@ -4040,28 +3963,7 @@ export const IDL: Gauge = {
         "gauge_vote.key().as_ref(),",
         "voting_epoch.to_le_bytes().as_ref(),",
         "];",
-        "```"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "allocatedPower",
-            "docs": [
-              "The rewards share used to vote for the derived epoch.",
-              "This is calculated from:",
-              "```rs",
-              "vote_power_at_expiry * (weight / total_weight)",
-              "```"
-            ],
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "bribe",
-      "docs": [
+        "```",
         "Bribe with a gauge"
       ],
       "type": {
@@ -4166,6 +4068,32 @@ export const IDL: Gauge = {
       }
     }
   ],
+  "types": [
+    {
+      "name": "GaugeVoteEpoch",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "votingEpoch",
+            "type": "u32"
+          },
+          {
+            "name": "allocatedPower",
+            "type": "u64"
+          },
+          {
+            "name": "isFeeAClaimed",
+            "type": "bool"
+          },
+          {
+            "name": "isFeeBClaimed",
+            "type": "bool"
+          }
+        ]
+      }
+    }
+  ],
   "events": [
     {
       "name": "BribeGaugeEpochClaimEvent",
@@ -4247,21 +4175,6 @@ export const IDL: Gauge = {
         },
         {
           "name": "bribe",
-          "type": "publicKey",
-          "index": true
-        },
-        {
-          "name": "votingEpoch",
-          "type": "u32",
-          "index": true
-        }
-      ]
-    },
-    {
-      "name": "CloseEpochGaugeVoteEvent",
-      "fields": [
-        {
-          "name": "gauge",
           "type": "publicKey",
           "index": true
         },
@@ -4828,6 +4741,11 @@ export const IDL: Gauge = {
       "code": 6024,
       "name": "TypeCastFailed",
       "msg": "type cast faled"
+    },
+    {
+      "code": 6025,
+      "name": "VotingEpochNotFound",
+      "msg": "Voting epoch is not found"
     }
   ]
 };
