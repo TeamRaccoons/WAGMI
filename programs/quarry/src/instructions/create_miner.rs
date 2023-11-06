@@ -69,6 +69,7 @@ pub fn handler(ctx: Context<CreateMiner>) -> Result<()> {
     miner.rewards_per_token_paid = 0;
     miner.balance = 0;
     miner.index = index;
+    miner.reward_infos = [UserRewardInfo::default(); MAX_REWARD];
 
     emit!(MinerCreateEvent {
         authority: miner.authority,

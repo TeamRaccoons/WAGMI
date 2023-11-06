@@ -1,5 +1,5 @@
-import * as anchor from "@project-serum/anchor";
-import { Program, web3, Wallet, } from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
+import { Program, web3, Wallet, } from "@coral-xyz/anchor";
 import type { PublicKey } from "@solana/web3.js";
 import { expect } from "chai";
 import { Minter } from "../../target/types/minter";

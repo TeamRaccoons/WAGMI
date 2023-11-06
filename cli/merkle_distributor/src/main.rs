@@ -204,7 +204,6 @@ fn claim<C: Deref<Target = impl Signer> + Clone>(
     let snapshot = read_snapshot(path_to_snapshot);
 
     let (index, amount, proof) = snapshot.get_user_claim_info(claimant)?;
-
     let (distributor, _bump) = Pubkey::find_program_address(
         &[b"MerkleDistributor".as_ref(), base.as_ref()],
         &merkle_distributor::id(),

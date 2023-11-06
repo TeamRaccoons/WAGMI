@@ -8,7 +8,8 @@ pub struct GaugeEpochRevertVote<'info> {
     pub gauge_factory: Box<Account<'info, GaugeFactory>>,
     pub gauge: Box<Account<'info, Gauge>>,
     pub gauge_voter: Box<Account<'info, GaugeVoter>>,
-    pub gauge_vote: Box<Account<'info, GaugeVote>>,
+    #[account(mut, has_one = gauge_voter, has_one = gauge)]
+    pub gauge_vote: AccountLoader<'info, GaugeVote>,
 
     #[account(mut)]
     pub epoch_gauge: Box<Account<'info, EpochGauge>>,
@@ -21,34 +22,36 @@ pub struct GaugeEpochRevertVote<'info> {
     /// The vote delegate.
     pub vote_delegate: Signer<'info>,
 
-    /// The [EpochGaugeVote] to revert.
-    #[account(
-        mut,
-        close = payer,
-    )]
-    pub epoch_gauge_vote: Box<Account<'info, EpochGaugeVote>>,
-
     #[account(mut)]
     pub payer: Signer<'info>,
 }
 
 pub fn handler(ctx: Context<GaugeEpochRevertVote>) -> Result<()> {
+    let gauge_factory = &ctx.accounts.gauge_factory;
     let epoch_gauge = &mut ctx.accounts.epoch_gauge;
-    let epoch_voter = &mut ctx.accounts.epoch_gauge_voter;
-    let epoch_vote = &mut ctx.accounts.epoch_gauge_vote;
+    let epoch_gauge_voter = &mut ctx.accounts.epoch_gauge_voter;
+    let mut gauge_vote = ctx.accounts.gauge_vote.load_mut()?;
 
-    let power_subtract = epoch_vote.allocated_power;
-    epoch_voter.allocated_power =
-        unwrap_int!(epoch_voter.allocated_power.checked_sub(power_subtract));
+    let current_vote_index =
+        gauge_vote.get_index_for_voting_epoch(gauge_factory.current_voting_epoch)?;
+
+    let vote_epoch = &mut gauge_vote.vote_epochs[current_vote_index];
+
+    let power_subtract = vote_epoch.allocated_power;
+    epoch_gauge_voter.allocated_power = unwrap_int!(epoch_gauge_voter
+        .allocated_power
+        .checked_sub(power_subtract));
     epoch_gauge.total_power = unwrap_int!(epoch_gauge.total_power.checked_sub(power_subtract));
+
+    gauge_vote.reset_voting_epoch(current_vote_index);
 
     emit!(GaugeEpochRevertVoteEvent {
         gauge_factory: ctx.accounts.gauge_factory.key(),
         gauge: ctx.accounts.gauge.key(),
         gauge_voter_owner: ctx.accounts.gauge_voter.owner,
         subtracted_power: power_subtract,
-        voting_epoch: epoch_voter.voting_epoch,
-        updated_allocated_power: epoch_voter.allocated_power,
+        voting_epoch: epoch_gauge_voter.voting_epoch,
+        updated_allocated_power: epoch_gauge_voter.allocated_power,
         updated_total_power: epoch_gauge.total_power,
     });
 
@@ -57,7 +60,6 @@ pub fn handler(ctx: Context<GaugeEpochRevertVote>) -> Result<()> {
 
 impl<'info> Validate<'info> for GaugeEpochRevertVote<'info> {
     fn validate(&self) -> Result<()> {
-        // assert_keys_eq!(self.gauge_factory, self.gauge.gauge_factory);
         let voting_epoch = self.gauge_factory.current_voting_epoch;
         invariant!(
             self.epoch_gauge.voting_epoch == voting_epoch,
@@ -70,13 +72,6 @@ impl<'info> Validate<'info> for GaugeEpochRevertVote<'info> {
 
         assert_keys_eq!(self.epoch_gauge.gauge, self.gauge);
         assert_keys_eq!(self.epoch_gauge_voter.gauge_voter, self.gauge_voter);
-
-        assert_keys_eq!(self.gauge_vote.gauge_voter, self.gauge_voter);
-        assert_keys_eq!(self.gauge_vote.gauge, self.gauge);
-
-        let (epoch_gauge_vote_key, _) =
-            EpochGaugeVote::find_program_address(&self.gauge_vote.key(), voting_epoch);
-        assert_keys_eq!(epoch_gauge_vote_key, self.epoch_gauge_vote);
 
         assert_keys_eq!(self.escrow, self.gauge_voter.escrow);
         assert_keys_eq!(self.vote_delegate, self.escrow.vote_delegate);

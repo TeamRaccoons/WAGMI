@@ -93,12 +93,12 @@ pub enum CliCommand {
         #[clap(long)]
         token_mint: Pubkey,
     },
-    CloseEpochGaugeVote {
-        #[clap(long)]
-        token_mint: Pubkey,
-        #[clap(long)]
-        voting_epoch: u32,
-    },
+    // CloseEpochGaugeVote {
+    //     #[clap(long)]
+    //     token_mint: Pubkey,
+    //     #[clap(long)]
+    //     voting_epoch: u32,
+    // },
     CreateBribe {
         #[clap(long)]
         token_mint: Pubkey,

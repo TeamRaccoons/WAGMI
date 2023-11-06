@@ -1,4 +1,4 @@
-import { BN, web3 } from "@project-serum/anchor";
+import { BN, web3 } from "@coral-xyz/anchor";
 import { keccak_256 } from "js-sha3";
 
 import { MerkleTree } from "./merkle-tree";

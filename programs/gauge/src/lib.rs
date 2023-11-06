@@ -11,6 +11,7 @@ use vipers::prelude::*;
 use anchor_spl::token::Token;
 use anchor_spl::token::{self, Mint, TokenAccount, Transfer};
 
+pub mod constants;
 mod instructions;
 mod macros;
 mod state;
@@ -61,6 +62,16 @@ pub mod gauge {
     #[access_control(ctx.accounts.validate())]
     pub fn create_epoch_gauge(ctx: Context<CreateEpochGauge>) -> Result<()> {
         create_epoch_gauge::handler(ctx)
+    }
+
+    /// Clean an empty [EpochGauge]. Permissionless.
+    /// Accumulate fee from empty epoch gauge
+    #[access_control(ctx.accounts.validate())]
+    pub fn clean_empty_epoch_gauge(
+        ctx: Context<CleanEmptyEpochGauge>,
+        voting_epoch: u32,
+    ) -> Result<()> {
+        clean_empty_epoch_gauge::handler(ctx, voting_epoch)
     }
 
     /// Creates an [EpochGaugeVoter]. Permissionless.
@@ -131,23 +142,25 @@ pub mod gauge {
     ///
     /// Only the [voter::Escrow::vote_delegate] may call this.
     #[access_control(ctx.accounts.validate())]
-    pub fn claim_fee_gauge_epoch(
-        ctx: Context<ClaimFeeGaugeEpoch>,
+    pub fn claim_fee_gauge_epoch<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, ClaimFeeGaugeEpoch<'info>>,
         voting_epoch: u32,
     ) -> Result<()> {
-        claim_fee_gauge_epoch::handler(ctx, voting_epoch)
+        ctx.accounts
+            .claim_fee_gauge_epoch(voting_epoch, ctx.remaining_accounts)
+        // claim_fee_gauge_epoch::handler(&ctx, voting_epoch, &ctx.remaining_accounts)
     }
 
     /// Closes an [EpochGaugeVote], sending lamports to a user-specified address.
     ///
     /// Only the [voter::Escrow::vote_delegate] may call this.
-    #[access_control(ctx.accounts.validate())]
-    pub fn close_epoch_gauge_vote(
-        ctx: Context<CloseEpochGaugeVote>,
-        voting_epoch: u32,
-    ) -> Result<()> {
-        close_epoch_gauge_vote::handler(ctx, voting_epoch)
-    }
+    // #[access_control(ctx.accounts.validate())]
+    // pub fn close_epoch_gauge_vote(
+    //     ctx: Context<CloseEpochGaugeVote>,
+    //     voting_epoch: u32,
+    // ) -> Result<()> {
+    //     close_epoch_gauge_vote::handler(ctx, voting_epoch)
+    // }
 
     /// Create an [Bribe]
     ///
@@ -235,4 +248,6 @@ pub enum ErrorCode {
     MathOverflow,
     #[msg("type cast faled")]
     TypeCastFailed,
+    #[msg("Voting epoch is not found")]
+    VotingEpochNotFound,
 }

@@ -1,5 +1,6 @@
 //! CreateBribe
 
+use crate::constants::MAX_BRIBE_EPOCH;
 use crate::ErrorCode::MathOverflow;
 use crate::*;
 
@@ -75,9 +76,18 @@ pub fn handler(
     let gauge_factory = &mut ctx.accounts.gauge_factory;
     let current_voting_epoch = gauge_factory.current_voting_epoch;
     invariant!(
-        bribe_rewards_epoch_end >= gauge_factory.current_voting_epoch,
+        bribe_rewards_epoch_end >= current_voting_epoch,
         BribeEpochEndError
     );
+
+    invariant!(
+        bribe_rewards_epoch_end
+            .checked_sub(current_voting_epoch)
+            .unwrap()
+            < MAX_BRIBE_EPOCH,
+        BribeEpochEndError
+    );
+
     invariant!(reward_each_epoch > 0, BribeRewardsIsZero);
 
     // get total bribe rewards

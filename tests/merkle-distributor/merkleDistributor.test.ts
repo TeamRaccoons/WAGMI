@@ -1,5 +1,5 @@
-import * as anchor from "@project-serum/anchor";
-import { Wallet, web3 } from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
+import { Wallet, web3 } from "@coral-xyz/anchor";
 import { TOKEN_PROGRAM_ID, createMint, mintTo } from "@solana/spl-token";
 import { BN } from "bn.js";
 import { expect } from "chai";

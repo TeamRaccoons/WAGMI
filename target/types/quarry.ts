@@ -4,6 +4,18 @@ export type Quarry = {
   "docs": [
     "Program for [quarry]."
   ],
+  "constants": [
+    {
+      "name": "MIN_REWARD_DURATION",
+      "type": "u64",
+      "value": "1"
+    },
+    {
+      "name": "MAX_REWARD_DURATION",
+      "type": "u64",
+      "value": "31536000"
+    }
+  ],
   "instructions": [
     {
       "name": "newRewarder",
@@ -478,6 +490,219 @@ export type Quarry = {
       "args": []
     },
     {
+      "name": "initializeNewReward",
+      "docs": [
+        "Init new reward, only admin can do this",
+        "Init new rewards, provided by partners, similar to bribe"
+      ],
+      "accounts": [
+        {
+          "name": "quarry",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rewardVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rewardMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "auth",
+          "accounts": [
+            {
+              "name": "admin",
+              "isMut": false,
+              "isSigner": true,
+              "docs": [
+                "Admin of the rewarder."
+              ]
+            },
+            {
+              "name": "rewarder",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "Rewarder of the farm."
+              ]
+            }
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Payer of [Quarry] creation."
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "index",
+          "type": "u64"
+        },
+        {
+          "name": "rewardDuration",
+          "type": "u64"
+        },
+        {
+          "name": "funder",
+          "type": "publicKey"
+        }
+      ]
+    },
+    {
+      "name": "updateRewardFunder",
+      "docs": [
+        "Update reward funder, only admin can change"
+      ],
+      "accounts": [
+        {
+          "name": "quarry",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "auth",
+          "accounts": [
+            {
+              "name": "admin",
+              "isMut": false,
+              "isSigner": true,
+              "docs": [
+                "Admin of the rewarder."
+              ]
+            },
+            {
+              "name": "rewarder",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "Rewarder of the farm."
+              ]
+            }
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "rewardIndex",
+          "type": "u64"
+        },
+        {
+          "name": "newFunder",
+          "type": "publicKey"
+        }
+      ]
+    },
+    {
+      "name": "updateRewardDuration",
+      "docs": [
+        "Update reward duration, only admin can change"
+      ],
+      "accounts": [
+        {
+          "name": "quarry",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "auth",
+          "accounts": [
+            {
+              "name": "admin",
+              "isMut": false,
+              "isSigner": true,
+              "docs": [
+                "Admin of the rewarder."
+              ]
+            },
+            {
+              "name": "rewarder",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "Rewarder of the farm."
+              ]
+            }
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "rewardIndex",
+          "type": "u64"
+        },
+        {
+          "name": "newDuration",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "fundReward",
+      "docs": [
+        "Fund reward, only admin or funder can fund"
+      ],
+      "accounts": [
+        {
+          "name": "quarry",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rewardVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "funderTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "rewarder",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "rewardIndex",
+          "type": "u64"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "createMiner",
       "docs": [
         "--------------------------------",
@@ -656,6 +881,73 @@ export type Quarry = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "claimPartnerRewards",
+      "docs": [
+        "Claims partner rewards for the [Miner]."
+      ],
+      "accounts": [
+        {
+          "name": "quarry",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Quarry to claim from."
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token program"
+          ]
+        },
+        {
+          "name": "miner",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Miner."
+          ]
+        },
+        {
+          "name": "rewardVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rewardsTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Account to claim rewards for."
+          ]
+        },
+        {
+          "name": "rewarder",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Rewarder"
+          ]
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Miner authority (i.e. the user)."
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "rewardIndex",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "stakeTokens",
@@ -993,6 +1285,20 @@ export type Quarry = {
               "Number of [Miner]s."
             ],
             "type": "u64"
+          },
+          {
+            "name": "rewardInfos",
+            "docs": [
+              "Other reward info, possibly from partners"
+            ],
+            "type": {
+              "array": [
+                {
+                  "defined": "RewardInfo"
+                },
+                3
+              ]
+            }
           }
         ]
       }
@@ -1069,12 +1375,123 @@ export type Quarry = {
               "Index of the [Miner]."
             ],
             "type": "u64"
+          },
+          {
+            "name": "rewardInfos",
+            "docs": [
+              "Other reward info, possibly from partners"
+            ],
+            "type": {
+              "array": [
+                {
+                  "defined": "UserRewardInfo"
+                },
+                3
+              ]
+            }
           }
         ]
       }
     }
   ],
   "types": [
+    {
+      "name": "RewardInfo",
+      "docs": [
+        "Other rewards beside main token"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "docs": [
+              "Reward token mint."
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "vault",
+            "docs": [
+              "Reward vault token account."
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "funder",
+            "docs": [
+              "Authority account that allows to fund rewards"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "rewardDuration",
+            "docs": [
+              "Reward duration"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "rewardDurationEnd",
+            "docs": [
+              "Reward duration end"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "rewardRate",
+            "docs": [
+              "Reward rate"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "lastUpdateTime",
+            "docs": [
+              "The last time reward states were updated."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "rewardPerTokenStored",
+            "docs": [
+              "reward per token stored"
+            ],
+            "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UserRewardInfo",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rewardPerTokenComplete",
+            "type": "u128"
+          },
+          {
+            "name": "rewardPending",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Rounding",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Up"
+          },
+          {
+            "name": "Down"
+          }
+        ]
+      }
+    },
     {
       "name": "StakeAction",
       "docs": [
@@ -1094,6 +1511,46 @@ export type Quarry = {
     }
   ],
   "events": [
+    {
+      "name": "ClaimPartnerRewardEvent",
+      "fields": [
+        {
+          "name": "quarry",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "rewardIndex",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "authority",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "stakedToken",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "rewardsToken",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "amount",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
+    },
     {
       "name": "ClaimEvent",
       "fields": [
@@ -1155,6 +1612,56 @@ export type Quarry = {
         {
           "name": "timestamp",
           "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "FundRewardEvent",
+      "fields": [
+        {
+          "name": "quarry",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "funder",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "rewardIndex",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "amount",
+          "type": "u64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "InitializeNewRewardEvent",
+      "fields": [
+        {
+          "name": "rewardMint",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "funder",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "rewardIndex",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "rewardDuration",
+          "type": "u64",
           "index": false
         }
       ]
@@ -1245,6 +1752,56 @@ export type Quarry = {
         {
           "name": "timestamp",
           "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "UpdateRewardDurationEvent",
+      "fields": [
+        {
+          "name": "quarry",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "rewardIndex",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "oldRewardDuration",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "newRewardDuration",
+          "type": "u64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "UpdateRewardFunderEvent",
+      "fields": [
+        {
+          "name": "quarry",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "rewardIndex",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "oldFunder",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "newFunder",
+          "type": "publicKey",
           "index": false
         }
       ]
@@ -1360,6 +1917,46 @@ export type Quarry = {
       "code": 6011,
       "name": "TypeCastFailed",
       "msg": "type cast faled"
+    },
+    {
+      "code": 6012,
+      "name": "InvalidRewardIndex",
+      "msg": "Invalid reward index"
+    },
+    {
+      "code": 6013,
+      "name": "InvalidRewardDuration",
+      "msg": "Invalid reward duration"
+    },
+    {
+      "code": 6014,
+      "name": "RewardUninitialized",
+      "msg": "Reward not initialized"
+    },
+    {
+      "code": 6015,
+      "name": "RewardCampaignInProgress",
+      "msg": "Reward campaign in progress"
+    },
+    {
+      "code": 6016,
+      "name": "InvalidRewardVault",
+      "msg": "Invalid reward vault"
+    },
+    {
+      "code": 6017,
+      "name": "InvalidAdmin",
+      "msg": "Invalid admin"
+    },
+    {
+      "code": 6018,
+      "name": "MathOverflow",
+      "msg": "Math operation overflow"
+    },
+    {
+      "code": 6019,
+      "name": "SameFunder",
+      "msg": "Update same reward funder"
     }
   ]
 };
@@ -1370,6 +1967,18 @@ export const IDL: Quarry = {
   "docs": [
     "Program for [quarry]."
   ],
+  "constants": [
+    {
+      "name": "MIN_REWARD_DURATION",
+      "type": "u64",
+      "value": "1"
+    },
+    {
+      "name": "MAX_REWARD_DURATION",
+      "type": "u64",
+      "value": "31536000"
+    }
+  ],
   "instructions": [
     {
       "name": "newRewarder",
@@ -1844,6 +2453,219 @@ export const IDL: Quarry = {
       "args": []
     },
     {
+      "name": "initializeNewReward",
+      "docs": [
+        "Init new reward, only admin can do this",
+        "Init new rewards, provided by partners, similar to bribe"
+      ],
+      "accounts": [
+        {
+          "name": "quarry",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rewardVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rewardMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "auth",
+          "accounts": [
+            {
+              "name": "admin",
+              "isMut": false,
+              "isSigner": true,
+              "docs": [
+                "Admin of the rewarder."
+              ]
+            },
+            {
+              "name": "rewarder",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "Rewarder of the farm."
+              ]
+            }
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Payer of [Quarry] creation."
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "index",
+          "type": "u64"
+        },
+        {
+          "name": "rewardDuration",
+          "type": "u64"
+        },
+        {
+          "name": "funder",
+          "type": "publicKey"
+        }
+      ]
+    },
+    {
+      "name": "updateRewardFunder",
+      "docs": [
+        "Update reward funder, only admin can change"
+      ],
+      "accounts": [
+        {
+          "name": "quarry",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "auth",
+          "accounts": [
+            {
+              "name": "admin",
+              "isMut": false,
+              "isSigner": true,
+              "docs": [
+                "Admin of the rewarder."
+              ]
+            },
+            {
+              "name": "rewarder",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "Rewarder of the farm."
+              ]
+            }
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "rewardIndex",
+          "type": "u64"
+        },
+        {
+          "name": "newFunder",
+          "type": "publicKey"
+        }
+      ]
+    },
+    {
+      "name": "updateRewardDuration",
+      "docs": [
+        "Update reward duration, only admin can change"
+      ],
+      "accounts": [
+        {
+          "name": "quarry",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "auth",
+          "accounts": [
+            {
+              "name": "admin",
+              "isMut": false,
+              "isSigner": true,
+              "docs": [
+                "Admin of the rewarder."
+              ]
+            },
+            {
+              "name": "rewarder",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "Rewarder of the farm."
+              ]
+            }
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "rewardIndex",
+          "type": "u64"
+        },
+        {
+          "name": "newDuration",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "fundReward",
+      "docs": [
+        "Fund reward, only admin or funder can fund"
+      ],
+      "accounts": [
+        {
+          "name": "quarry",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rewardVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "funderTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "rewarder",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "rewardIndex",
+          "type": "u64"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "createMiner",
       "docs": [
         "--------------------------------",
@@ -2022,6 +2844,73 @@ export const IDL: Quarry = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "claimPartnerRewards",
+      "docs": [
+        "Claims partner rewards for the [Miner]."
+      ],
+      "accounts": [
+        {
+          "name": "quarry",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Quarry to claim from."
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token program"
+          ]
+        },
+        {
+          "name": "miner",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Miner."
+          ]
+        },
+        {
+          "name": "rewardVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rewardsTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Account to claim rewards for."
+          ]
+        },
+        {
+          "name": "rewarder",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Rewarder"
+          ]
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Miner authority (i.e. the user)."
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "rewardIndex",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "stakeTokens",
@@ -2359,6 +3248,20 @@ export const IDL: Quarry = {
               "Number of [Miner]s."
             ],
             "type": "u64"
+          },
+          {
+            "name": "rewardInfos",
+            "docs": [
+              "Other reward info, possibly from partners"
+            ],
+            "type": {
+              "array": [
+                {
+                  "defined": "RewardInfo"
+                },
+                3
+              ]
+            }
           }
         ]
       }
@@ -2435,12 +3338,123 @@ export const IDL: Quarry = {
               "Index of the [Miner]."
             ],
             "type": "u64"
+          },
+          {
+            "name": "rewardInfos",
+            "docs": [
+              "Other reward info, possibly from partners"
+            ],
+            "type": {
+              "array": [
+                {
+                  "defined": "UserRewardInfo"
+                },
+                3
+              ]
+            }
           }
         ]
       }
     }
   ],
   "types": [
+    {
+      "name": "RewardInfo",
+      "docs": [
+        "Other rewards beside main token"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "docs": [
+              "Reward token mint."
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "vault",
+            "docs": [
+              "Reward vault token account."
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "funder",
+            "docs": [
+              "Authority account that allows to fund rewards"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "rewardDuration",
+            "docs": [
+              "Reward duration"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "rewardDurationEnd",
+            "docs": [
+              "Reward duration end"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "rewardRate",
+            "docs": [
+              "Reward rate"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "lastUpdateTime",
+            "docs": [
+              "The last time reward states were updated."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "rewardPerTokenStored",
+            "docs": [
+              "reward per token stored"
+            ],
+            "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UserRewardInfo",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rewardPerTokenComplete",
+            "type": "u128"
+          },
+          {
+            "name": "rewardPending",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Rounding",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Up"
+          },
+          {
+            "name": "Down"
+          }
+        ]
+      }
+    },
     {
       "name": "StakeAction",
       "docs": [
@@ -2460,6 +3474,46 @@ export const IDL: Quarry = {
     }
   ],
   "events": [
+    {
+      "name": "ClaimPartnerRewardEvent",
+      "fields": [
+        {
+          "name": "quarry",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "rewardIndex",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "authority",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "stakedToken",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "rewardsToken",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "amount",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
+    },
     {
       "name": "ClaimEvent",
       "fields": [
@@ -2521,6 +3575,56 @@ export const IDL: Quarry = {
         {
           "name": "timestamp",
           "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "FundRewardEvent",
+      "fields": [
+        {
+          "name": "quarry",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "funder",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "rewardIndex",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "amount",
+          "type": "u64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "InitializeNewRewardEvent",
+      "fields": [
+        {
+          "name": "rewardMint",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "funder",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "rewardIndex",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "rewardDuration",
+          "type": "u64",
           "index": false
         }
       ]
@@ -2611,6 +3715,56 @@ export const IDL: Quarry = {
         {
           "name": "timestamp",
           "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "UpdateRewardDurationEvent",
+      "fields": [
+        {
+          "name": "quarry",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "rewardIndex",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "oldRewardDuration",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "newRewardDuration",
+          "type": "u64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "UpdateRewardFunderEvent",
+      "fields": [
+        {
+          "name": "quarry",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "rewardIndex",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "oldFunder",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "newFunder",
+          "type": "publicKey",
           "index": false
         }
       ]
@@ -2726,6 +3880,46 @@ export const IDL: Quarry = {
       "code": 6011,
       "name": "TypeCastFailed",
       "msg": "type cast faled"
+    },
+    {
+      "code": 6012,
+      "name": "InvalidRewardIndex",
+      "msg": "Invalid reward index"
+    },
+    {
+      "code": 6013,
+      "name": "InvalidRewardDuration",
+      "msg": "Invalid reward duration"
+    },
+    {
+      "code": 6014,
+      "name": "RewardUninitialized",
+      "msg": "Reward not initialized"
+    },
+    {
+      "code": 6015,
+      "name": "RewardCampaignInProgress",
+      "msg": "Reward campaign in progress"
+    },
+    {
+      "code": 6016,
+      "name": "InvalidRewardVault",
+      "msg": "Invalid reward vault"
+    },
+    {
+      "code": 6017,
+      "name": "InvalidAdmin",
+      "msg": "Invalid admin"
+    },
+    {
+      "code": 6018,
+      "name": "MathOverflow",
+      "msg": "Math operation overflow"
+    },
+    {
+      "code": 6019,
+      "name": "SameFunder",
+      "msg": "Update same reward funder"
     }
   ]
 };

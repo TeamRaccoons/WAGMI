@@ -61,6 +61,8 @@ pub fn handler(ctx: Context<CreateQuarry>, amm_type: u64) -> Result<()> {
     quarry.rewards_share = 0;
     quarry.amm_type = amm_type.decode();
 
+    quarry.reward_infos = [RewardInfo::default(); MAX_REWARD];
+
     let current_ts = Clock::get()?.unix_timestamp;
     emit!(QuarryCreateEvent {
         amm_pool: quarry.amm_pool,

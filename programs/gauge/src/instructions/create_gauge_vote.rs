@@ -16,10 +16,10 @@ pub struct CreateGaugeVote<'info> {
             gauge.key().as_ref(),
         ],
         bump,
-        space = 8 + std::mem::size_of::<GaugeVote>(),
+        space = 8 + GaugeVote::INIT_SPACE,
         payer = payer
     )]
-    pub gauge_vote: Account<'info, GaugeVote>,
+    pub gauge_vote: AccountLoader<'info, GaugeVote>,
 
     /// Gauge voter.
     pub gauge_voter: Account<'info, GaugeVoter>,
@@ -36,11 +36,14 @@ pub struct CreateGaugeVote<'info> {
 }
 
 pub fn handler(ctx: Context<CreateGaugeVote>) -> Result<()> {
-    let gauge_vote = &mut ctx.accounts.gauge_vote;
-    gauge_vote.gauge_voter = ctx.accounts.gauge_voter.key();
-    gauge_vote.gauge = ctx.accounts.gauge.key();
+    let mut gauge_vote = ctx.accounts.gauge_vote.load_init()?;
 
-    gauge_vote.weight = 0;
+    gauge_vote.init(ctx.accounts.gauge_voter.key(), ctx.accounts.gauge.key());
+
+    // gauge_vote.gauge_voter = ctx.accounts.gauge_voter.key();
+    // gauge_vote.gauge = ctx.accounts.gauge.key();
+
+    // gauge_vote.weight = 0;
 
     emit!(GaugeVoteCreateEvent {
         gauge_factory: ctx.accounts.gauge.gauge_factory,

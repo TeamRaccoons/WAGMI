@@ -12,6 +12,16 @@ url = "https://api.apr.dev"
 cluster = "localnet"
 wallet = "./tests/test-key.json"
 
+[test.validator]
+
+[[test.genesis]]
+address = "24Uqj9JCLxUeoC3hGfh5W3s9FM9uCHDS2SG3LYwBpyTi"
+program = "tests/deps/mercurial_vault.so"
+
+[[test.genesis]]
+address = "Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB"
+program = "tests/deps/amm.so"
+
 [programs.localnet]
 smart_wallet = "smaK3fwkA7ubbxEhsimp1iqPTzfS4MBsNL77QLABZP6"
 govern = "GovaE4iu227srtG2s3tZzB4RmWBzw8sTwrCLZz7kN7rY"

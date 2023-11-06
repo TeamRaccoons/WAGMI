@@ -1,4 +1,4 @@
-import { AnchorError, BN, Program, Wallet, web3 } from "@project-serum/anchor";
+import { AnchorError, BN, Program, Wallet, web3 } from "@coral-xyz/anchor";
 import { Govern } from "../../target/types/govern";
 import { SmartWallet } from "../../target/types/smart_wallet";
 import { Voter } from "../../target/types/voter";
@@ -431,5 +431,11 @@ export async function invokeAndAssertError(
 export const encodeU32 = (num: number): Buffer => {
   const buf = Buffer.alloc(4);
   buf.writeUInt32LE(num);
+  return buf;
+};
+
+export const encodeU64 = (num: number): Buffer => {
+  const buf = Buffer.alloc(8);
+  buf.writeBigUint64LE(BigInt(num));
   return buf;
 };

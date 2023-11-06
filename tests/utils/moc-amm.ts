@@ -1,4 +1,4 @@
-import { Program, web3 } from "@project-serum/anchor";
+import { Program, web3 } from "@coral-xyz/anchor";
 
 import {
     createAndFundWallet,
@@ -7,7 +7,7 @@ import {
 import { TOKEN_PROGRAM_ID, createMint, mintTo } from "@solana/spl-token";
 import { PublicKey, SystemProgram, Keypair } from "@solana/web3.js";
 
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import { MocAmm } from "../../target/types/moc_amm";
 import { BN } from "bn.js";
 

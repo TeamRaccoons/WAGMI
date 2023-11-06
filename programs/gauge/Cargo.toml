@@ -17,10 +17,11 @@ test-bpf = []
 mainnet = []
 
 [dependencies]
-anchor-lang = "0.28.0"
+anchor-lang = {version = "0.28.0", features = ["init-if-needed"]}
 anchor-spl = "0.28.0"
 vipers = {path = "../../libs/vipers"}
 num-traits = "0.2"
 quarry = {path="../quarry", features=["no-entrypoint", "cpi"]}
 voter = {path = "../voter", features=["no-entrypoint"]}
 amm = {path = "../../libs/amm" }
+bytemuck = { version = "1.13.1", features = ["derive", "min_const_generics"] }
