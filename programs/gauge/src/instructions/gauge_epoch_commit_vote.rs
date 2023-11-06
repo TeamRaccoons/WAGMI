@@ -12,7 +12,8 @@ pub struct GaugeEpochCommitVote<'info> {
     /// The [GaugeVoter].
     pub gauge_voter: Account<'info, GaugeVoter>,
     /// The [GaugeVote] containing the vote weights.
-    pub gauge_vote: Box<Account<'info, GaugeVote>>,
+    #[account(mut, has_one = gauge_voter, has_one = gauge)]
+    pub gauge_vote: AccountLoader<'info, GaugeVote>,
 
     /// The [EpochGauge].
     #[account(mut)]
@@ -21,25 +22,9 @@ pub struct GaugeEpochCommitVote<'info> {
     #[account(mut)]
     pub epoch_gauge_voter: Account<'info, EpochGaugeVoter>,
 
-    /// The [EpochGaugeVote] to create.
-    // #[account(
-    //     init,
-    //     seeds = [
-    //         b"EpochGaugeVote".as_ref(),
-    //         gauge_vote.key().as_ref(),
-    //         epoch_gauge_voter.voting_epoch.to_le_bytes().as_ref(),
-    //     ],
-    //     bump,
-    //     space = 8 + std::mem::size_of::<EpochGaugeVote>(),
-    //     payer = payer
-    // )]
-    // pub epoch_gauge_vote: Account<'info, EpochGaugeVote>,
-
     /// Funder of the [EpochGaugeVote] to create.
     #[account(mut)]
     pub payer: Signer<'info>,
-    /// The [System] program.
-    pub system_program: Program<'info, System>,
 }
 
 fn mul_div_u64(x: u64, y: u64, z: u64) -> Option<u64> {
@@ -49,45 +34,45 @@ fn mul_div_u64(x: u64, y: u64, z: u64) -> Option<u64> {
     u64::try_from(x.checked_mul(y)?.checked_div(z)?).ok()
 }
 impl<'info> GaugeEpochCommitVote<'info> {
-    fn vote_shares_for_next_epoch(&self) -> Option<u64> {
-        if self.gauge_vote.weight == 0 {
+    fn vote_shares_for_next_epoch(&self, weight: u32) -> Option<u64> {
+        if weight == 0 {
             return Some(0);
         }
         let power: u64 = self.epoch_gauge_voter.voting_power;
-        let total_shares = mul_div_u64(
-            power,
-            self.gauge_vote.weight.into(),
-            self.gauge_voter.total_weight.into(),
-        )?;
+        let total_shares = mul_div_u64(power, weight.into(), self.gauge_voter.total_weight.into())?;
         msg!("power: {}, shares: {}", power, total_shares);
         Some(total_shares)
     }
 }
 
 pub fn handler(ctx: Context<GaugeEpochCommitVote>) -> Result<()> {
-    let next_vote_shares = unwrap_int!(ctx.accounts.vote_shares_for_next_epoch());
+    let mut gauge_vote = ctx.accounts.gauge_vote.load_mut()?;
+
+    let next_vote_shares = unwrap_int!(ctx.accounts.vote_shares_for_next_epoch(gauge_vote.weight));
+
     // if zero vote shares, don't do anything
     if next_vote_shares == 0 {
         return Ok(());
     }
+
     let gauge_factory = &ctx.accounts.gauge_factory;
     let epoch_gauge = &mut ctx.accounts.epoch_gauge;
     let epoch_gauge_voter = &mut ctx.accounts.epoch_gauge_voter;
-    let gauge_vote = &mut ctx.accounts.gauge_vote;
 
     let current_vote_index =
         gauge_vote.pump_and_get_index_for_lastest_voting_epoch(gauge_factory.current_voting_epoch);
 
-    let epoch_gauge_vote = &mut gauge_vote.vote_epochs[current_vote_index];
-
-    // let epoch_gauge_vote = &mut ctx.accounts.epoch_gauge_vote;
+    let vote_epoch = &mut gauge_vote.vote_epochs[current_vote_index];
 
     epoch_gauge_voter.allocated_power = unwrap_int!(epoch_gauge_voter
         .allocated_power
         .checked_add(next_vote_shares));
-    epoch_gauge_vote.allocated_power = next_vote_shares;
+
+    vote_epoch.allocated_power = next_vote_shares;
 
     epoch_gauge.total_power = unwrap_int!(epoch_gauge.total_power.checked_add(next_vote_shares));
+
+    msg!("allocated_power {}", epoch_gauge_voter.allocated_power);
 
     emit!(GaugeEpochCommitVoteEvent {
         gauge_factory: ctx.accounts.gauge.gauge_factory,
@@ -105,8 +90,6 @@ pub fn handler(ctx: Context<GaugeEpochCommitVote>) -> Result<()> {
 impl<'info> Validate<'info> for GaugeEpochCommitVote<'info> {
     fn validate(&self) -> Result<()> {
         assert_keys_eq!(self.gauge_factory, self.gauge.gauge_factory);
-        assert_keys_eq!(self.gauge, self.gauge_vote.gauge);
-        assert_keys_eq!(self.gauge_voter, self.gauge_vote.gauge_voter);
 
         assert_keys_eq!(self.epoch_gauge.gauge, self.gauge);
         assert_keys_eq!(self.epoch_gauge_voter.gauge_voter, self.gauge_voter);

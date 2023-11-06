@@ -17,7 +17,7 @@ test-bpf = []
 mainnet = []
 
 [dependencies]
-anchor-lang = "0.28.0"
+anchor-lang = {version = "0.28.0", features = ["init-if-needed"]}
 anchor-spl = "0.28.0"
 vipers = {path = "../../libs/vipers"}
 num-traits = "0.2"

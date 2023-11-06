@@ -1,4 +1,4 @@
-import { AnchorError, BN, Program, Wallet, web3 } from "@project-serum/anchor";
+import { AnchorError, BN, Program, Wallet, web3 } from "@coral-xyz/anchor";
 import { Govern } from "../../target/types/govern";
 import { SmartWallet } from "../../target/types/smart_wallet";
 import { Voter } from "../../target/types/voter";

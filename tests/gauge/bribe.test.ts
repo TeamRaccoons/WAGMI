@@ -1,5 +1,5 @@
-import * as anchor from "@project-serum/anchor";
-import { Program, web3 } from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
+import { Program, web3 } from "@coral-xyz/anchor";
 import { TOKEN_PROGRAM_ID, createMint } from "@solana/spl-token";
 
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
@@ -28,7 +28,7 @@ import {
     getOrCreateEpochGaugeForCurrentEpoch,
     setVote,
     getOrCreateEpochGaugeVoterForCurrentEpoch,
-    getOrCreateEpochGaugeVoteByCurrentEpoch,
+    commitVoteForCurrentEpoch,
     createQuarryFromAmm,
     getEpochGaugeVoterForVotingEpoch,
     claimAFeeInVotingEpoch,
@@ -347,12 +347,14 @@ describe("Bribe Gauge", () => {
         expect(gaugeFactoryState.currentVotingEpoch).equal(2);
 
         await getOrCreateEpochGaugeForCurrentEpoch(gauge, programGauge);
+
         await setVote(gauge, 50, voterKP, programGauge, programVoter);
         // prepare epoch
         await getOrCreateEpochGaugeVoterForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter)
 
         // commit votes            
-        await getOrCreateEpochGaugeVoteByCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter);
+        await commitVoteForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter);
+
 
         // create bribe
         let bribeEpochEnd = 4;
@@ -457,14 +459,14 @@ describe("Bribe Gauge", () => {
         // prepare epoch
         await getOrCreateEpochGaugeVoterForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter)
         // commit votes            
-        await getOrCreateEpochGaugeVoteByCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter);
+        await commitVoteForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter);
 
         // voter 2 set vote
         await setVote(gauge, 50, voterKP2, programGauge, programVoter);
         // prepare epoch
         await getOrCreateEpochGaugeVoterForCurrentEpoch(gauge, voterKP2.publicKey, programGauge, programVoter)
         // commit votes            
-        await getOrCreateEpochGaugeVoteByCurrentEpoch(gauge, voterKP2.publicKey, programGauge, programVoter);
+        await commitVoteForCurrentEpoch(gauge, voterKP2.publicKey, programGauge, programVoter);
 
         // // wait for next epoch
         await sleep(TEST_EPOCH_SECONDS * 1_000 + 500);

@@ -27,7 +27,7 @@ pub struct ClaimFeeGaugeEpoch<'info> {
 
     /// The [GaugeVote].
     #[account(mut, has_one = gauge_voter, has_one = gauge)]
-    pub gauge_vote: Box<Account<'info, GaugeVote>>,
+    pub gauge_vote: AccountLoader<'info, GaugeVote>,
 
     /// The [Escrow] which owns this [EpochGaugeVote].
     #[account(has_one = vote_delegate @ crate::ErrorCode::UnauthorizedNotDelegate)]
@@ -49,72 +49,85 @@ pub struct ClaimFeeGaugeEpoch<'info> {
     /// The [Escrow::vote_delegate].
     pub vote_delegate: Signer<'info>,
 }
+impl<'info> ClaimFeeGaugeEpoch<'info> {
+    pub fn claim_fee_gauge_epoch(
+        &mut self,
+        voting_epoch: u32,
+        remaining_accounts: &[AccountInfo<'info>],
+    ) -> Result<()> {
+        let current_voting_epoch = self.gauge_factory.current_voting_epoch;
+        invariant!(voting_epoch < current_voting_epoch, CloseEpochNotElapsed);
 
-pub fn handler(ctx: Context<ClaimFeeGaugeEpoch>, voting_epoch: u32) -> Result<()> {
-    let current_voting_epoch = ctx.accounts.gauge_factory.current_voting_epoch;
-    invariant!(voting_epoch < current_voting_epoch, CloseEpochNotElapsed);
+        let gauge = &mut self.gauge;
+        let mut gauge_vote = self.gauge_vote.load_mut()?;
+        let voting_epoch_index = gauge_vote.get_index_for_voting_epoch(voting_epoch)?;
+        let gauge_vote_epoch = &mut gauge_vote.vote_epochs[voting_epoch_index];
 
-    let gauge = &mut ctx.accounts.gauge;
-    let gauge_vote = &mut ctx.accounts.gauge_vote;
-    let epoch_gauge = &ctx.accounts.epoch_gauge;
-    let epoch_gauge_voter = &mut ctx.accounts.epoch_gauge_voter;
-    // check whether it is token a for token b
-    let fee_amount = if gauge.token_a_fee_key == ctx.accounts.token_account.key() {
-        // check whether fee has been claimed
-        invariant!(!epoch_gauge_voter.is_fee_a_claimed, FeeHasBeenClaimed);
-        let fee_amount = epoch_gauge.get_allocated_fee_a(epoch_gauge_voter).unwrap();
+        let epoch_gauge = &self.epoch_gauge;
+        let epoch_gauge_voter = &mut self.epoch_gauge_voter;
+        // check whether it is token a for token b
+        let fee_amount = if gauge.token_a_fee_key == self.token_account.key() {
+            // check whether fee has been claimed
+            invariant!(gauge_vote_epoch.is_fee_a_claimed == 0, FeeHasBeenClaimed);
+            let fee_amount = epoch_gauge.get_allocated_fee_a(epoch_gauge_voter).unwrap();
 
-        // update claimed fee
-        gauge.cummulative_claimed_token_a_fee = gauge
-            .cummulative_claimed_token_a_fee
-            .checked_add(fee_amount as u128)
-            .unwrap();
-        epoch_gauge_voter.is_fee_a_claimed = true;
-        gauge_vote.claimed_token_a_fee = gauge_vote
-            .claimed_token_a_fee
-            .checked_add(fee_amount.into())
-            .ok_or(MathOverflow)?;
-        fee_amount
-    } else {
-        invariant!(!epoch_gauge_voter.is_fee_b_claimed, FeeHasBeenClaimed);
-        let fee_amount = epoch_gauge.get_allocated_fee_b(epoch_gauge_voter).unwrap();
+            // update claimed fee
+            gauge.cummulative_claimed_token_a_fee = gauge
+                .cummulative_claimed_token_a_fee
+                .checked_add(fee_amount as u128)
+                .unwrap();
+            gauge_vote_epoch.is_fee_a_claimed = 1;
+            gauge_vote.claimed_token_a_fee = gauge_vote
+                .claimed_token_a_fee
+                .checked_add(fee_amount.into())
+                .ok_or(MathOverflow)?;
+            fee_amount
+        } else {
+            invariant!(gauge_vote_epoch.is_fee_b_claimed == 0, FeeHasBeenClaimed);
+            let fee_amount = epoch_gauge.get_allocated_fee_b(epoch_gauge_voter).unwrap();
 
-        // update claimed fee
-        gauge.cummulative_claimed_token_b_fee = gauge
-            .cummulative_claimed_token_b_fee
-            .checked_add(fee_amount as u128)
-            .unwrap();
-        epoch_gauge_voter.is_fee_b_claimed = true;
+            // update claimed fee
+            gauge.cummulative_claimed_token_b_fee = gauge
+                .cummulative_claimed_token_b_fee
+                .checked_add(fee_amount as u128)
+                .unwrap();
+            gauge_vote_epoch.is_fee_b_claimed = 1;
 
-        gauge_vote.claimed_token_b_fee = gauge_vote
-            .claimed_token_b_fee
-            .checked_add(fee_amount.into())
-            .ok_or(MathOverflow)?;
-        fee_amount
-    };
+            gauge_vote.claimed_token_b_fee = gauge_vote
+                .claimed_token_b_fee
+                .checked_add(fee_amount.into())
+                .ok_or(MathOverflow)?;
+            fee_amount
+        };
 
-    let amm_type = AmmType::get_amm_type(gauge.amm_type).ok_or(TypeCastFailed)?;
-    let amm_pool = amm_type.get_amm(ctx.accounts.amm_pool.to_account_info())?;
+        let amm_type = AmmType::get_amm_type(gauge.amm_type).ok_or(TypeCastFailed)?;
+        let amm_pool = amm_type.get_amm(self.amm_pool.to_account_info())?;
 
-    amm_pool.claim_fee(
-        &ctx.accounts.token_account,
-        &ctx.accounts.dest_token_account,
-        &ctx.accounts.token_program,
-        &ctx.accounts.amm_pool,
-        &ctx.accounts.amm_program,
-        fee_amount,
-    )?;
+        let signer_seeds: &[&[&[u8]]] = gauge_factory_seeds!(self.gauge_factory);
 
-    emit!(ClaimFeeGaugeEpochEvent {
-        gauge: ctx.accounts.gauge.key(),
-        amm_pool: ctx.accounts.amm_pool.key(),
-        voting_epoch,
-        fee_amount,
-        fee_mint: ctx.accounts.token_account.mint,
-        escrow: ctx.accounts.escrow.key(),
-    });
+        amm_pool.claim_fee(
+            &self.token_account,
+            &self.dest_token_account,
+            &self.token_program,
+            &self.amm_pool,
+            &self.amm_program,
+            &self.gauge_factory.to_account_info(),
+            remaining_accounts,
+            signer_seeds,
+            fee_amount,
+        )?;
 
-    Ok(())
+        emit!(ClaimFeeGaugeEpochEvent {
+            gauge: self.gauge.key(),
+            amm_pool: self.amm_pool.key(),
+            voting_epoch,
+            fee_amount,
+            fee_mint: self.token_account.mint,
+            escrow: self.escrow.key(),
+        });
+
+        Ok(())
+    }
 }
 
 impl<'info> Validate<'info> for ClaimFeeGaugeEpoch<'info> {

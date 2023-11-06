@@ -20,6 +20,15 @@ pub struct ClaimBribeGaugeEpoch<'info> {
     )]
     pub epoch_bribe_voter: Account<'info, EpochBribeVoter>,
 
+    #[account(
+        init_if_needed,
+        seeds = [b"BribeVoter".as_ref(), bribe.key().as_ref(), escrow.key().as_ref()],
+        bump,
+        space = 8 + std::mem::size_of::<BribeVoter>(),
+        payer = vote_delegate,
+    )]
+    pub bribe_voter: Account<'info, BribeVoter>,
+
     #[account(has_one = gauge_voter, constraint = epoch_gauge_voter.voting_epoch == voting_epoch)]
     pub epoch_gauge_voter: Box<Account<'info, EpochGaugeVoter>>,
 
@@ -81,6 +90,11 @@ pub fn handler(ctx: Context<ClaimBribeGaugeEpoch>, voting_epoch: u32) -> Result<
         )
         .ok_or(MathOverflow)?;
 
+    let bribe_voter = &mut ctx.accounts.bribe_voter;
+    if !bribe_voter.is_intialized() {
+        bribe_voter.initialize(bribe.key(), ctx.accounts.escrow.key());
+    }
+
     if rewards > 0 {
         let signer_seeds: &[&[&[u8]]] = gauge_factory_seeds!(ctx.accounts.gauge_factory);
         token::transfer(
@@ -98,6 +112,11 @@ pub fn handler(ctx: Context<ClaimBribeGaugeEpoch>, voting_epoch: u32) -> Result<
         bribe.claimed_amount = bribe
             .claimed_amount
             .checked_add(rewards)
+            .ok_or(MathOverflow)?;
+
+        bribe_voter.claimed_amount = bribe_voter
+            .claimed_amount
+            .checked_add(rewards.into())
             .ok_or(MathOverflow)?;
     }
 

@@ -1,10 +1,10 @@
 
-import { Program, web3 } from "@project-serum/anchor";
+import { Program, web3 } from "@coral-xyz/anchor";
 
 import { TOKEN_PROGRAM_ID, createMint, setAuthority, AuthorityType } from "@solana/spl-token";
 import { PublicKey, SystemProgram, Keypair } from "@solana/web3.js";
 
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import { Minter } from "../../target/types/minter";
 
 const programMinter = anchor.workspace.Minter as Program<Minter>;

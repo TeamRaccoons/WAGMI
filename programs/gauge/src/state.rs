@@ -117,7 +117,7 @@ pub struct GaugeVoter {
 
 /// A [GaugeVote] is a user's vote for a given [Gauge].
 #[account(zero_copy)]
-#[derive(Debug)]
+#[derive(Debug, InitSpace)]
 pub struct GaugeVote {
     /// The [GaugeVoter].
     pub gauge_voter: Pubkey,
@@ -126,6 +126,7 @@ pub struct GaugeVote {
 
     /// Proportion of votes that the voter is applying to this gauge.
     pub weight: u32,
+    pub _padding_1: [u8; 12],
 
     /// stats to track how many fee user has claimed
     pub claimed_token_a_fee: u128,
@@ -134,10 +135,19 @@ pub struct GaugeVote {
 
     /// ring buffer to store vote for all epochs
     pub current_index: u64,
+    pub _padding_2: u64,
     pub vote_epochs: [GaugeVoteEpoch; MAX_EPOCH_PER_GAUGE],
 }
 
 impl GaugeVote {
+    // pub fn update_vote(&mut self, weight: u32) {
+    //     self.weight = weight;
+    // }
+    pub fn init(&mut self, gauge_voter: Pubkey, gauge: Pubkey) {
+        self.gauge_voter = gauge_voter;
+        self.gauge = gauge;
+        self.vote_epochs = [GaugeVoteEpoch::default(); MAX_EPOCH_PER_GAUGE];
+    }
     pub fn pump_and_get_index_for_lastest_voting_epoch(
         &mut self,
         latest_voting_epoch: u32,
@@ -160,6 +170,17 @@ impl GaugeVote {
         }
         return Err(VotingEpochNotFound.into());
     }
+
+    pub fn reset_voting_epoch(&mut self, current_vote_index: usize) {
+        self.vote_epochs[current_vote_index] = GaugeVoteEpoch::default();
+        let current_index = current_vote_index
+            .checked_add(MAX_EPOCH_PER_GAUGE)
+            .unwrap()
+            .checked_sub(1)
+            .unwrap()
+            % MAX_EPOCH_PER_GAUGE;
+        self.current_index = u64::try_from(current_index).unwrap();
+    }
 }
 
 impl Default for GaugeVote {
@@ -168,21 +189,24 @@ impl Default for GaugeVote {
             gauge_voter: Pubkey::default(),
             gauge: Pubkey::default(),
             weight: 0,
+            _padding_1: [0u8; 12],
             claimed_token_a_fee: 0,
             claimed_token_b_fee: 0,
             current_index: 0,
+            _padding_2: 0u64,
             vote_epochs: [GaugeVoteEpoch::default(); MAX_EPOCH_PER_GAUGE],
         }
     }
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default)]
+#[zero_copy]
+#[derive(Default, Debug, InitSpace)]
+#[repr(C)]
 pub struct GaugeVoteEpoch {
     pub voting_epoch: u32,
+    pub is_fee_a_claimed: u16,
+    pub is_fee_b_claimed: u16,
     pub allocated_power: u64,
-    // pub is_voted: bool,
-    pub is_fee_a_claimed: bool,
-    pub is_fee_b_claimed: bool,
 }
 
 /// An [EpochGauge] is a [Gauge]'s total committed votes for a given epoch.
@@ -256,10 +280,10 @@ pub struct EpochGaugeVoter {
     /// The total amount of gauge voting power that has been allocated.
     /// If this number is non-zero, vote weights cannot be changed until they are all withdrawn.
     pub allocated_power: u64,
-    /// whether user has claimed fee a
-    pub is_fee_a_claimed: bool,
-    /// whether user has claimed fee b
-    pub is_fee_b_claimed: bool,
+    // /// whether user has claimed fee a
+    // pub is_fee_a_claimed: bool,
+    // /// whether user has claimed fee b
+    // pub is_fee_b_claimed: bool,
 }
 
 /// An [EpochGaugeVote] is a user's committed votes for a given [Gauge] at a given epoch.
@@ -343,13 +367,35 @@ pub struct EpochBribeVoter {
     pub gauge_voter: Pubkey,
 }
 
+/// An [BribeVoter]
+#[account]
+#[derive(Copy, Debug, Default)]
+pub struct BribeVoter {
+    /// The [Bribe].
+    pub bribe: Pubkey,
+    /// escrow pk
+    pub escrow: Pubkey,
+    /// gauge voter
+    pub claimed_amount: u128,
+}
+
+impl BribeVoter {
+    pub fn is_intialized(&self) -> bool {
+        self.bribe.ne(&Pubkey::default())
+    }
+    pub fn initialize(&mut self, bribe: Pubkey, escrow: Pubkey) {
+        self.bribe = bribe;
+        self.escrow = escrow;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_gauge_vote_size() {
-        let size = std::mem::size_of::<GaugeVote>();
+        let size = GaugeVote::INIT_SPACE;
         println!("{}", size);
 
         let fee = 3480 * 2 * size;

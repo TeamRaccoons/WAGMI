@@ -1,6 +1,6 @@
 
-import * as anchor from "@project-serum/anchor";
-import { Program, web3 } from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
+import { Program, web3 } from "@coral-xyz/anchor";
 import { TOKEN_PROGRAM_ID, createMint, mintTo } from "@solana/spl-token";
 
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
@@ -31,8 +31,8 @@ export async function commitVotes(gauges: PublicKey[],
             await programGauge.account.gauge.fetch(gauge);
         let gaugeFactoryState =
             await programGauge.account.gaugeFactory.fetch(gaugeState.gaugeFactory);
-        let votingEpoch = gaugeFactoryState.votingEpoch + 1;
-        await getOrCreateEpochGaugeVoteByVotingEpoch(gauge, owner, votingEpoch, programGauge, programVoter);
+        // let votingEpoch = gaugeFactoryState.votingEpoch + 1;
+        await commitVoteForCurrentEpoch(gauge, owner, programGauge, programVoter);
     }
 }
 
@@ -125,7 +125,7 @@ export async function createQuarry(rewarder: PublicKey, adminKP: Keypair, progra
 }
 
 
-export async function createQuarryFromAmm(ammPool: PublicKey, rewarder: PublicKey, adminKP: Keypair, programQuarry: Program<Quarry>): Promise<{
+export async function createQuarryFromAmm(ammPool: PublicKey, ammType: number, rewarder: PublicKey, adminKP: Keypair, programQuarry: Program<Quarry>): Promise<{
     quarry: PublicKey;
 }> {
     const [quarry, qBump] =
@@ -133,7 +133,7 @@ export async function createQuarryFromAmm(ammPool: PublicKey, rewarder: PublicKe
             [Buffer.from("Quarry"), rewarder.toBuffer(), ammPool.toBuffer()],
             programQuarry.programId
         );
-    await programQuarry.methods.createQuarry(new BN(0)).accounts({
+    await programQuarry.methods.createQuarry(new BN(ammType)).accounts({
         quarry,
         auth: {
             admin: adminKP.publicKey,
@@ -190,6 +190,34 @@ export async function getEpochGaugeVoterForVotingEpoch(
 
     return epochGaugeVoter;
 }
+
+
+export async function cleanEmptyEpochGauge(
+    gauge: web3.PublicKey,
+    programGauge: Program<Gauge>,
+    votingEpoch: number,
+) {
+    let gaugeState =
+        await programGauge.account.gauge.fetch(gauge);
+
+    const [epochGauge, gaugeVoteBump] =
+        anchor.web3.PublicKey.findProgramAddressSync(
+            [Buffer.from("EpochGauge"), gauge.toBuffer(), encodeU32(votingEpoch)],
+            programGauge.programId
+        );
+    await programGauge.methods
+        .cleanEmptyEpochGauge(votingEpoch)
+        .accounts({
+            gaugeFactory: gaugeState.gaugeFactory,
+            epochGauge,
+            gauge,
+            rentReceiver: PublicKey.unique(),
+        })
+        .rpc();
+}
+
+
+
 
 export async function getOrCreateEpochGaugeVoterByVotingEpoch(
     gauge: web3.PublicKey,
@@ -299,27 +327,27 @@ export async function getOrCreateEpochGaugeVoterForCurrentEpoch(
     // return epochGaugeVoter;
 }
 
-export async function getOrCreateEpochGaugeVoteByCurrentEpoch(
+export async function commitVoteForCurrentEpoch(
     gauge: web3.PublicKey,
     owner: web3.PublicKey,
     programGauge: Program<Gauge>,
     programVoter: Program<Voter>,
-): Promise<PublicKey> {
+) {
     let gaugeState =
         await programGauge.account.gauge.fetch(gauge);
     let gaugeFactoryState =
         await programGauge.account.gaugeFactory.fetch(gaugeState.gaugeFactory);
     const votingEpoch = gaugeFactoryState.currentVotingEpoch;
-    return getOrCreateEpochGaugeVoteByVotingEpoch(gauge, owner, votingEpoch, programGauge, programVoter)
+    await commitVote(gauge, owner, votingEpoch, programGauge, programVoter)
 }
 
-export async function getOrCreateEpochGaugeVoteByVotingEpoch(
+export async function commitVote(
     gauge: web3.PublicKey,
     owner: web3.PublicKey,
     votingEpoch: number,
     programGauge: Program<Gauge>,
     programVoter: Program<Voter>,
-): Promise<PublicKey> {
+) {
     let gaugeState =
         await programGauge.account.gauge.fetch(gauge);
     let gaugeFactoryState =
@@ -348,16 +376,23 @@ export async function getOrCreateEpochGaugeVoteByVotingEpoch(
             programGauge.programId
         );
 
-    let epochGaugeVoterState =
-        await programGauge.account.epochGaugeVoter.fetch(epochGaugeVoter);
+    // let epochGaugeVoterState =
+    //     await programGauge.account.epochGaugeVoter.fetch(epochGaugeVoter);
 
-    const [epochGaugeVote, epochGaugeVoteBump] =
-        anchor.web3.PublicKey.findProgramAddressSync(
-            [Buffer.from("EpochGaugeVote"), gaugeVote.toBuffer(), encodeU32(epochGaugeVoterState.votingEpoch)],
-            programGauge.programId
-        );
-    const epochGaugeVoteState = await programGauge.account.epochGaugeVote.fetchNullable(epochGaugeVote);
-    if (!epochGaugeVoteState) {
+    const gaugeVoteState = await programGauge.account.gaugeVote.fetchNullable(gaugeVote);
+
+
+
+    // const [epochGaugeVote, epochGaugeVoteBump] =
+    //     anchor.web3.PublicKey.findProgramAddressSync(
+    //         [Buffer.from("EpochGaugeVote"), gaugeVote.toBuffer(), encodeU32(epochGaugeVoterState.votingEpoch)],
+    //         programGauge.programId
+    //     );
+    // const epochGaugeVoteState = await programGauge.account.epochGaugeVote.fetchNullable(epochGaugeVote);
+
+    let gaugeVotingEpoch = gaugeVoteState.voteEpochs[gaugeVoteState.currentIndex.toNumber()].votingEpoch;
+
+    if (gaugeVotingEpoch != votingEpoch) {
         await programGauge.methods
             .gaugeEpochCommitVote()
             .accounts({
@@ -367,13 +402,11 @@ export async function getOrCreateEpochGaugeVoteByVotingEpoch(
                 gaugeVote,
                 epochGauge,
                 epochGaugeVoter,
-                epochGaugeVote,
                 payer: provider.wallet.publicKey,
-                systemProgram: SystemProgram.programId,
             })
             .rpc();
     }
-    return epochGaugeVote;
+    // return epochGaugeVote;
 }
 
 export async function findEpochGaugeVoterByVotingEpoch(
@@ -530,6 +563,12 @@ export async function claimAFeeInVotingEpoch(
         provider.connection
     );
 
+    const [gaugeVote, xBump] =
+        await anchor.web3.PublicKey.findProgramAddress(
+            [Buffer.from("GaugeVote"), gaugeVoter.toBuffer(), gauge.toBuffer()],
+            programGauge.programId
+        );
+
     await programGauge.methods
         .claimFeeGaugeEpoch(votingEpoch)
         .accounts({
@@ -538,6 +577,7 @@ export async function claimAFeeInVotingEpoch(
             gaugeFactory: gaugeState.gaugeFactory,
             gauge,
             gaugeVoter,
+            gaugeVote,
             escrow,
             tokenAccount: ammState.tokenAFee,
             destTokenAccount,
@@ -592,6 +632,13 @@ export async function claimBFeeInVotingEpoch(
         provider.connection
     );
 
+
+    const [gaugeVote, xBump] =
+        await anchor.web3.PublicKey.findProgramAddress(
+            [Buffer.from("GaugeVote"), gaugeVoter.toBuffer(), gauge.toBuffer()],
+            programGauge.programId
+        );
+
     await programGauge.methods
         .claimFeeGaugeEpoch(votingEpoch)
         .accounts({
@@ -600,6 +647,7 @@ export async function claimBFeeInVotingEpoch(
             gaugeFactory: gaugeState.gaugeFactory,
             gauge,
             gaugeVoter,
+            gaugeVote,
             escrow,
             tokenAccount: ammState.tokenBFee,
             destTokenAccount,
@@ -722,7 +770,6 @@ export async function getOrCreateVoterGauge(gauge: PublicKey, voterKP: Keypair, 
             .rpc();
     }
 
-
     return {
         gaugeVoter, gaugeVote,
     }
@@ -743,7 +790,7 @@ export async function createBribe(
     let gaugeFactoryState = await programGauge.account.gaugeFactory.fetch(gaugeState.gaugeFactory);
 
     let [bribe, bBump] = web3.PublicKey.findProgramAddressSync(
-        [Buffer.from("Bribe"), gaugeState.gaugeFactory.toBytes(), encodeU32(gaugeState.bribeIndex)],
+        [Buffer.from("Bribe"), gaugeState.gaugeFactory.toBytes(), encodeU32(gaugeFactoryState.bribeIndex)],
         programGauge.programId
     );
 
@@ -825,11 +872,17 @@ export async function claimBribe(
         programGauge.programId
     );
 
+    let [bribeVoter, bvBump] = web3.PublicKey.findProgramAddressSync(
+        [Buffer.from("BribeVoter"), bribe.toBytes(), escrow.toBytes()],
+        programGauge.programId
+    );
+
     await programGauge.methods.claimBribeGaugeEpoch(votingEpoch).accounts({
         bribe,
         epochBribeVoter,
         epochGauge,
         epochGaugeVoter,
+        bribeVoter,
         gaugeVoter,
         escrow,
         gaugeFactory: gaugeState.gaugeFactory,

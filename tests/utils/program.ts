@@ -1,5 +1,5 @@
-import * as anchor from "@project-serum/anchor";
-import { Program, Wallet, web3 } from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
+import { Program, Wallet, web3 } from "@coral-xyz/anchor";
 import { Govern, IDL as GovernIDL } from "../../target/types/govern";
 import {
   MerkleDistributor,

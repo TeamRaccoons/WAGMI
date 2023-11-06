@@ -1,5 +1,5 @@
-import * as anchor from "@project-serum/anchor";
-import { IdlAccounts, Program } from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
+import { IdlAccounts, Program } from "@coral-xyz/anchor";
 import {
   Keypair,
   SystemProgram,

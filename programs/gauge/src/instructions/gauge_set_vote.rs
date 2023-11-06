@@ -14,8 +14,8 @@ pub struct GaugeSetVote<'info> {
     #[account(mut)]
     pub gauge_voter: Account<'info, GaugeVoter>,
     /// The [GaugeVote].
-    #[account(mut)]
-    pub gauge_vote: Box<Account<'info, GaugeVote>>,
+    #[account(mut, has_one = gauge_voter, has_one = gauge)]
+    pub gauge_vote: AccountLoader<'info, GaugeVote>,
 
     /// The escrow.
     #[account(has_one = vote_delegate @ crate::ErrorCode::UnauthorizedNotDelegate)]
@@ -26,11 +26,11 @@ pub struct GaugeSetVote<'info> {
 }
 
 impl<'info> GaugeSetVote<'info> {
-    fn next_total_weight(&self, new_weight: u32) -> Option<u32> {
+    fn next_total_weight(&self, current_weight: u32, new_weight: u32) -> Option<u32> {
         let total_weight = self
             .gauge_voter
             .total_weight
-            .checked_sub(self.gauge_vote.weight)?
+            .checked_sub(current_weight)?
             .checked_add(new_weight)?;
         Some(total_weight)
     }
@@ -41,15 +41,20 @@ impl<'info> GaugeSetVote<'info> {
             invariant!(!self.gauge.is_disabled, CannotVoteGaugeDisabled);
         }
 
-        if self.gauge_vote.weight == weight {
+        let mut gauge_vote = self.gauge_vote.load_mut()?;
+
+        // assert_keys_eq!(self.gauge, gauge_vote.gauge);
+        // assert_keys_eq!(self.gauge_voter, gauge_vote.gauge_voter);
+
+        if gauge_vote.weight == weight {
             // Don't do anything if the weight is not changed.
             return Ok(());
         }
 
-        let next_total_weight = unwrap_int!(self.next_total_weight(weight));
+        let next_total_weight = unwrap_int!(self.next_total_weight(gauge_vote.weight, weight));
 
         let gauge_voter = &mut self.gauge_voter;
-        let gauge_vote = &mut self.gauge_vote;
+        // let gauge_vote = &mut self.gauge_vote;
 
         // update voter
         let prev_total_weight = gauge_voter.total_weight;
@@ -83,8 +88,8 @@ pub fn handler(ctx: Context<GaugeSetVote>, weight: u32) -> Result<()> {
 impl<'info> Validate<'info> for GaugeSetVote<'info> {
     fn validate(&self) -> Result<()> {
         assert_keys_eq!(self.gauge_factory, self.gauge.gauge_factory);
-        assert_keys_eq!(self.gauge, self.gauge_vote.gauge);
-        assert_keys_eq!(self.gauge_voter, self.gauge_vote.gauge_voter);
+        // assert_keys_eq!(self.gauge, self.gauge_vote.gauge);
+        // assert_keys_eq!(self.gauge_voter, self.gauge_vote.gauge_voter);
 
         assert_keys_eq!(self.escrow, self.gauge_voter.escrow);
         assert_keys_eq!(self.vote_delegate, self.escrow.vote_delegate);

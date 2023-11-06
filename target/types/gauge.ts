@@ -15,7 +15,7 @@ export type Gauge = {
       "type": {
         "defined": "usize"
       },
-      "value": "1000"
+      "value": "500"
     }
   ],
   "instructions": [
@@ -310,6 +310,50 @@ export type Gauge = {
       "args": []
     },
     {
+      "name": "cleanEmptyEpochGauge",
+      "docs": [
+        "Clean an empty [EpochGauge]. Permissionless.",
+        "Accumulate fee from empty epoch gauge"
+      ],
+      "accounts": [
+        {
+          "name": "gaugeFactory",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The [GaugeFactory]."
+          ]
+        },
+        {
+          "name": "gauge",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The [Gauge] to create an [EpochGauge] of."
+          ]
+        },
+        {
+          "name": "epochGauge",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The [EpochGauge] to be created."
+          ]
+        },
+        {
+          "name": "rentReceiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "votingEpoch",
+          "type": "u32"
+        }
+      ]
+    },
+    {
       "name": "prepareEpochGaugeVoter",
       "docs": [
         "Creates an [EpochGaugeVoter]. Permissionless."
@@ -508,7 +552,7 @@ export type Gauge = {
         },
         {
           "name": "gaugeVote",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "The [GaugeVote] containing the vote weights."
@@ -535,16 +579,7 @@ export type Gauge = {
           "isMut": true,
           "isSigner": true,
           "docs": [
-            "The [EpochGaugeVote] to create.",
             "Funder of the [EpochGaugeVote] to create."
-          ]
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The [System] program."
           ]
         }
       ],
@@ -1010,6 +1045,11 @@ export type Gauge = {
           "isSigner": false
         },
         {
+          "name": "bribeVoter",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "epochGaugeVoter",
           "isMut": false,
           "isSigner": false
@@ -1421,6 +1461,15 @@ export type Gauge = {
             "type": "u32"
           },
           {
+            "name": "padding1",
+            "type": {
+              "array": [
+                "u8",
+                12
+              ]
+            }
+          },
+          {
             "name": "claimedTokenAFee",
             "docs": [
               "stats to track how many fee user has claimed"
@@ -1442,13 +1491,17 @@ export type Gauge = {
             "type": "u64"
           },
           {
+            "name": "padding2",
+            "type": "u64"
+          },
+          {
             "name": "voteEpochs",
             "type": {
               "array": [
                 {
                   "defined": "GaugeVoteEpoch"
                 },
-                1000
+                500
               ]
             }
           }
@@ -1557,20 +1610,6 @@ export type Gauge = {
               "If this number is non-zero, vote weights cannot be changed until they are all withdrawn."
             ],
             "type": "u64"
-          },
-          {
-            "name": "isFeeAClaimed",
-            "docs": [
-              "whether user has claimed fee a"
-            ],
-            "type": "bool"
-          },
-          {
-            "name": "isFeeBClaimed",
-            "docs": [
-              "whether user has claimed fee b"
-            ],
-            "type": "bool"
           }
         ]
       }
@@ -1690,6 +1729,38 @@ export type Gauge = {
           }
         ]
       }
+    },
+    {
+      "name": "bribeVoter",
+      "docs": [
+        "An [BribeVoter]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bribe",
+            "docs": [
+              "The [Bribe]."
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "escrow",
+            "docs": [
+              "escrow pk"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "claimedAmount",
+            "docs": [
+              "gauge voter"
+            ],
+            "type": "u128"
+          }
+        ]
+      }
     }
   ],
   "types": [
@@ -1703,16 +1774,16 @@ export type Gauge = {
             "type": "u32"
           },
           {
-            "name": "allocatedPower",
-            "type": "u64"
-          },
-          {
             "name": "isFeeAClaimed",
-            "type": "bool"
+            "type": "u16"
           },
           {
             "name": "isFeeBClaimed",
-            "type": "bool"
+            "type": "u16"
+          },
+          {
+            "name": "allocatedPower",
+            "type": "u64"
           }
         ]
       }
@@ -1806,6 +1877,26 @@ export type Gauge = {
           "name": "votingEpoch",
           "type": "u32",
           "index": true
+        }
+      ]
+    },
+    {
+      "name": "CleanEmptyEpochGaugeEvent",
+      "fields": [
+        {
+          "name": "gaugeFactory",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "votingEpoch",
+          "type": "u32",
+          "index": true
+        },
+        {
+          "name": "gauge",
+          "type": "publicKey",
+          "index": false
         }
       ]
     },
@@ -2391,7 +2482,7 @@ export const IDL: Gauge = {
       "type": {
         "defined": "usize"
       },
-      "value": "1000"
+      "value": "500"
     }
   ],
   "instructions": [
@@ -2686,6 +2777,50 @@ export const IDL: Gauge = {
       "args": []
     },
     {
+      "name": "cleanEmptyEpochGauge",
+      "docs": [
+        "Clean an empty [EpochGauge]. Permissionless.",
+        "Accumulate fee from empty epoch gauge"
+      ],
+      "accounts": [
+        {
+          "name": "gaugeFactory",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The [GaugeFactory]."
+          ]
+        },
+        {
+          "name": "gauge",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The [Gauge] to create an [EpochGauge] of."
+          ]
+        },
+        {
+          "name": "epochGauge",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The [EpochGauge] to be created."
+          ]
+        },
+        {
+          "name": "rentReceiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "votingEpoch",
+          "type": "u32"
+        }
+      ]
+    },
+    {
       "name": "prepareEpochGaugeVoter",
       "docs": [
         "Creates an [EpochGaugeVoter]. Permissionless."
@@ -2884,7 +3019,7 @@ export const IDL: Gauge = {
         },
         {
           "name": "gaugeVote",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "The [GaugeVote] containing the vote weights."
@@ -2911,16 +3046,7 @@ export const IDL: Gauge = {
           "isMut": true,
           "isSigner": true,
           "docs": [
-            "The [EpochGaugeVote] to create.",
             "Funder of the [EpochGaugeVote] to create."
-          ]
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The [System] program."
           ]
         }
       ],
@@ -3386,6 +3512,11 @@ export const IDL: Gauge = {
           "isSigner": false
         },
         {
+          "name": "bribeVoter",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "epochGaugeVoter",
           "isMut": false,
           "isSigner": false
@@ -3797,6 +3928,15 @@ export const IDL: Gauge = {
             "type": "u32"
           },
           {
+            "name": "padding1",
+            "type": {
+              "array": [
+                "u8",
+                12
+              ]
+            }
+          },
+          {
             "name": "claimedTokenAFee",
             "docs": [
               "stats to track how many fee user has claimed"
@@ -3818,13 +3958,17 @@ export const IDL: Gauge = {
             "type": "u64"
           },
           {
+            "name": "padding2",
+            "type": "u64"
+          },
+          {
             "name": "voteEpochs",
             "type": {
               "array": [
                 {
                   "defined": "GaugeVoteEpoch"
                 },
-                1000
+                500
               ]
             }
           }
@@ -3933,20 +4077,6 @@ export const IDL: Gauge = {
               "If this number is non-zero, vote weights cannot be changed until they are all withdrawn."
             ],
             "type": "u64"
-          },
-          {
-            "name": "isFeeAClaimed",
-            "docs": [
-              "whether user has claimed fee a"
-            ],
-            "type": "bool"
-          },
-          {
-            "name": "isFeeBClaimed",
-            "docs": [
-              "whether user has claimed fee b"
-            ],
-            "type": "bool"
           }
         ]
       }
@@ -4066,6 +4196,38 @@ export const IDL: Gauge = {
           }
         ]
       }
+    },
+    {
+      "name": "bribeVoter",
+      "docs": [
+        "An [BribeVoter]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bribe",
+            "docs": [
+              "The [Bribe]."
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "escrow",
+            "docs": [
+              "escrow pk"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "claimedAmount",
+            "docs": [
+              "gauge voter"
+            ],
+            "type": "u128"
+          }
+        ]
+      }
     }
   ],
   "types": [
@@ -4079,16 +4241,16 @@ export const IDL: Gauge = {
             "type": "u32"
           },
           {
-            "name": "allocatedPower",
-            "type": "u64"
-          },
-          {
             "name": "isFeeAClaimed",
-            "type": "bool"
+            "type": "u16"
           },
           {
             "name": "isFeeBClaimed",
-            "type": "bool"
+            "type": "u16"
+          },
+          {
+            "name": "allocatedPower",
+            "type": "u64"
           }
         ]
       }
@@ -4182,6 +4344,26 @@ export const IDL: Gauge = {
           "name": "votingEpoch",
           "type": "u32",
           "index": true
+        }
+      ]
+    },
+    {
+      "name": "CleanEmptyEpochGaugeEvent",
+      "fields": [
+        {
+          "name": "gaugeFactory",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "votingEpoch",
+          "type": "u32",
+          "index": true
+        },
+        {
+          "name": "gauge",
+          "type": "publicKey",
+          "index": false
         }
       ]
     },
