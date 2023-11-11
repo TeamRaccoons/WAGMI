@@ -2,17 +2,18 @@
 
 use crate::*;
 
-/// Accounts for [gauge::gauge_set_vote].
+/// Accounts for [gauge::set_vote].
 #[derive(Accounts)]
-pub struct GaugeSetVote<'info> {
+pub struct SetVote<'info> {
     /// The [GaugeFactory].
     pub gauge_factory: Account<'info, GaugeFactory>,
     /// The [Gauge].
-    pub gauge: Account<'info, Gauge>,
+    #[account( has_one = gauge_factory)]
+    pub gauge: AccountLoader<'info, Gauge>,
 
     /// The [GaugeVoter].
-    #[account(mut)]
-    pub gauge_voter: Account<'info, GaugeVoter>,
+    #[account(mut, has_one = gauge_factory, has_one = escrow)]
+    pub gauge_voter: AccountLoader<'info, GaugeVoter>,
     /// The [GaugeVote].
     #[account(mut, has_one = gauge_voter, has_one = gauge)]
     pub gauge_vote: AccountLoader<'info, GaugeVote>,
@@ -25,11 +26,14 @@ pub struct GaugeSetVote<'info> {
     pub vote_delegate: Signer<'info>,
 }
 
-impl<'info> GaugeSetVote<'info> {
-    fn next_total_weight(&self, current_weight: u32, new_weight: u32) -> Option<u32> {
-        let total_weight = self
-            .gauge_voter
-            .total_weight
+impl<'info> SetVote<'info> {
+    fn next_total_weight(
+        &self,
+        current_weight: u32,
+        new_weight: u32,
+        total_weight: u32,
+    ) -> Option<u32> {
+        let total_weight = total_weight
             .checked_sub(current_weight)?
             .checked_add(new_weight)?;
         Some(total_weight)
@@ -37,24 +41,24 @@ impl<'info> GaugeSetVote<'info> {
 
     /// Sets a non-zero vote.
     fn set_vote(&mut self, weight: u32) -> Result<()> {
+        let gauge = self.gauge.load()?;
         if weight != 0 {
-            invariant!(!self.gauge.is_disabled, CannotVoteGaugeDisabled);
+            invariant!(gauge.is_disabled == 0, CannotVoteGaugeDisabled);
         }
 
         let mut gauge_vote = self.gauge_vote.load_mut()?;
-
-        // assert_keys_eq!(self.gauge, gauge_vote.gauge);
-        // assert_keys_eq!(self.gauge_voter, gauge_vote.gauge_voter);
 
         if gauge_vote.weight == weight {
             // Don't do anything if the weight is not changed.
             return Ok(());
         }
+        let mut gauge_voter = self.gauge_voter.load_mut()?;
 
-        let next_total_weight = unwrap_int!(self.next_total_weight(gauge_vote.weight, weight));
-
-        let gauge_voter = &mut self.gauge_voter;
-        // let gauge_vote = &mut self.gauge_vote;
+        let next_total_weight = unwrap_int!(self.next_total_weight(
+            gauge_vote.weight,
+            weight,
+            gauge_voter.total_weight
+        ));
 
         // update voter
         let prev_total_weight = gauge_voter.total_weight;
@@ -67,7 +71,7 @@ impl<'info> GaugeSetVote<'info> {
         // update vote
         gauge_vote.weight = weight;
 
-        emit!(SetGaugeVoteEvent {
+        emit!(SetVoteEvent {
             gauge_factory: self.gauge_factory.key(),
             gauge: self.gauge.key(),
             gauge_voter_owner: gauge_voter.owner,
@@ -81,25 +85,19 @@ impl<'info> GaugeSetVote<'info> {
     }
 }
 
-pub fn handler(ctx: Context<GaugeSetVote>, weight: u32) -> Result<()> {
+pub fn handler(ctx: Context<SetVote>, weight: u32) -> Result<()> {
     ctx.accounts.set_vote(weight)
 }
 
-impl<'info> Validate<'info> for GaugeSetVote<'info> {
+impl<'info> Validate<'info> for SetVote<'info> {
     fn validate(&self) -> Result<()> {
-        assert_keys_eq!(self.gauge_factory, self.gauge.gauge_factory);
-        // assert_keys_eq!(self.gauge, self.gauge_vote.gauge);
-        // assert_keys_eq!(self.gauge_voter, self.gauge_vote.gauge_voter);
-
-        assert_keys_eq!(self.escrow, self.gauge_voter.escrow);
-        assert_keys_eq!(self.vote_delegate, self.escrow.vote_delegate);
         Ok(())
     }
 }
 
-/// Event called in [gauge::gauge_set_vote].
+/// Event called in [gauge::set_vote].
 #[event]
-pub struct SetGaugeVoteEvent {
+pub struct SetVoteEvent {
     #[index]
     /// The [GaugeFactory].
     pub gauge_factory: Pubkey,

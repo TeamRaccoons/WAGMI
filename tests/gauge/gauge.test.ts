@@ -22,12 +22,12 @@ import {
 } from "../utils";
 
 import {
-    getOrCreateEpochGaugeForCurrentEpoch,
     setVote,
-    getOrCreateEpochGaugeVoterForCurrentEpoch,
-    commitVoteForCurrentEpoch,
-    // getOrCreateEpochGaugeVoteByVotingEpoch,
-    findEpochGaugeVoterByVotingEpoch,
+    commit,
+    prepare,
+    getAllocatedPowerInEpochGaugeVoter,
+    pumpEpochGauge,
+    resetVote,
     syncGauge,
     createQuarry,
 } from "./utils";
@@ -306,6 +306,7 @@ describe("Gauge", () => {
                 programGauge.programId
             );
         gauge = gaugeAddr
+
         await programGauge.methods
             .createGauge()
             .accounts({
@@ -317,7 +318,6 @@ describe("Gauge", () => {
                 systemProgram: web3.SystemProgram.programId,
             })
             .rpc();
-
         // create gauge voter
         const [gaugeVoterAddr, gaugeVoterBump] =
             await anchor.web3.PublicKey.findProgramAddress(
@@ -347,6 +347,7 @@ describe("Gauge", () => {
             .createGaugeVote()
             .accounts({
                 gaugeVote,
+                gaugeFactory,
                 gaugeVoter,
                 gauge,
                 payer: provider.wallet.publicKey,
@@ -357,7 +358,7 @@ describe("Gauge", () => {
 
     describe("single gauge", () => {
         it("allows syncing after epoch step", async () => {
-            await getOrCreateEpochGaugeForCurrentEpoch(gauge, programGauge);
+            // await getOrCreateEpochGauge(gauge, programGauge);
             await programGauge.methods
                 .triggerNextEpoch()
                 .accounts({
@@ -392,6 +393,7 @@ describe("Gauge", () => {
                     [Buffer.from("Gauge"), gaugeFactory.toBuffer(), quarry2.toBuffer()],
                     programGauge.programId
                 );
+
             await programGauge.methods
                 .createGauge()
                 .accounts({
@@ -399,6 +401,22 @@ describe("Gauge", () => {
                     gaugeFactory,
                     quarry: quarry2,
                     ammPool: ammPool2,
+                    payer: provider.wallet.publicKey,
+                    systemProgram: web3.SystemProgram.programId,
+                })
+                .rpc();
+            const [gaugeVoteAddr, gaugeVoteBump] =
+                await anchor.web3.PublicKey.findProgramAddress(
+                    [Buffer.from("GaugeVote"), gaugeVoter.toBuffer(), gauge2.toBuffer()],
+                    programGauge.programId
+                );
+            await programGauge.methods
+                .createGaugeVote()
+                .accounts({
+                    gaugeVote: gaugeVoteAddr,
+                    gaugeFactory,
+                    gaugeVoter,
+                    gauge: gauge2,
                     payer: provider.wallet.publicKey,
                     systemProgram: web3.SystemProgram.programId,
                 })
@@ -411,14 +429,11 @@ describe("Gauge", () => {
                 })
                 .rpc();
 
-            await getOrCreateEpochGaugeForCurrentEpoch(gauge, programGauge);
-            await getOrCreateEpochGaugeForCurrentEpoch(gauge2, programGauge);
-
             let gaugeFactoryState = await programGauge.account.gaugeFactory.fetch(gaugeFactory);
             expect(gaugeFactoryState.currentVotingEpoch).equal(2);
 
             await programGauge.methods
-                .gaugeEnable()
+                .enableGauge()
                 .accounts({
                     gauge,
                     gaugeFactory,
@@ -427,7 +442,7 @@ describe("Gauge", () => {
                 .rpc();
 
             await programGauge.methods
-                .gaugeEnable()
+                .enableGauge()
                 .accounts({
                     gauge: gauge2,
                     gaugeFactory,
@@ -435,8 +450,10 @@ describe("Gauge", () => {
                 }).signers([adminKP])
                 .rpc();
 
-            await setVote(gauge, 50, voterKP, programGauge, programVoter);
+            await pumpEpochGauge(gauge, programGauge);
+            await pumpEpochGauge(gauge2, programGauge);
 
+            await setVote(gauge, 50, voterKP, programGauge, programVoter);
             await setVote(gauge2, 25, voterKP, programGauge, programVoter);
 
             let voterState = await programGauge.account.gaugeVoter.fetch(gaugeVoter);
@@ -444,22 +461,18 @@ describe("Gauge", () => {
 
 
             // prepare epoch
-            await getOrCreateEpochGaugeVoterForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter)
+            await prepare(gaugeFactory, voterKP, programGauge, programVoter);
+
             // commit votes            
-            await commitVoteForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter);
-            await commitVoteForCurrentEpoch(gauge2, voterKP.publicKey, programGauge, programVoter);
+            await commit(gauge, voterKP, programGauge, programVoter);
+            await commit(gauge2, voterKP, programGauge, programVoter);
+            let gaugeVoterState = await programGauge.account.gaugeVoter.fetch(gaugeVoter);
 
-            let newEpochGaugeVoter = await findEpochGaugeVoterByVotingEpoch(gauge, voterKP.publicKey, 2, programGauge, programVoter);
-            let newEpochGaugeVoterState = await programGauge.account.epochGaugeVoter.fetch(newEpochGaugeVoter);
-
-            // let otherSTatePk = await findEpochGaugeVoterByVotingEpoch(gauge2, voterKP.publicKey, 2, programGauge, programVoter);
-            // let otherSTate = await programGauge.account.epochGaugeVoter.fetch(otherSTatePk);
-            // console.log(otherSTate)
-
-            expect(newEpochGaugeVoterState.allocatedPower.toNumber()).greaterThan(
+            gaugeFactoryState = await programGauge.account.gaugeFactory.fetch(gaugeFactory);
+            expect(getAllocatedPowerInEpochGaugeVoter(gaugeVoterState, gaugeFactoryState.currentVotingEpoch).toNumber()).greaterThan(
                 lockAmount * 9_999 / 10_000
             );
-            expect(newEpochGaugeVoterState.allocatedPower.toNumber()).lessThan(
+            expect(getAllocatedPowerInEpochGaugeVoter(gaugeVoterState, gaugeFactoryState.currentVotingEpoch).toNumber()).lessThan(
                 lockAmount
             );
 
@@ -613,7 +626,7 @@ describe("Gauge", () => {
     describe("revert", () => {
         it("can revert votes", async () => {
             await programGauge.methods
-                .gaugeEnable()
+                .enableGauge()
                 .accounts({
                     gauge,
                     gaugeFactory,
@@ -627,79 +640,52 @@ describe("Gauge", () => {
                     gaugeFactory,
                 })
                 .rpc();
-
-
-            let epochGauge = await getOrCreateEpochGaugeForCurrentEpoch(gauge, programGauge);
+            await pumpEpochGauge(gauge, programGauge);
 
             await setVote(gauge, 50, voterKP, programGauge, programVoter);
             // prepare epoch
-            let epochGaugeVoter = await getOrCreateEpochGaugeVoterForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter)
-            // commit votes            
-            // let epochGaugeVote = await getOrCreateEpochGaugeVoteByCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter);
+            await prepare(gaugeFactory, voterKP, programGauge, programVoter)
 
-            await commitVoteForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter);
-
+            await commit(gauge, voterKP, programGauge, programVoter);
 
             let gaugeVoterState = await programGauge.account.gaugeVoter.fetch(gaugeVoter);
             expect(gaugeVoterState.totalWeight).to.equal(50);
 
-            let epochGaugeVoterState = await programGauge.account.epochGaugeVoter.fetch(epochGaugeVoter);
-            expect(epochGaugeVoterState.votingEpoch).equal(2);
-            // should be around 1,000 veTOK
-            expect(epochGaugeVoterState.allocatedPower.toNumber()).greaterThan(
-                lockAmount * 9_999 / 10_000
-            );
-            expect(epochGaugeVoterState.allocatedPower.toNumber()).lessThan(
-                lockAmount
-            );
-            /// TODO assert 
-            // let epochGaugeVoteState = await programGauge.account.epochGaugeVote.fetch(epochGaugeVote);
-            // expect(epochGaugeVoteState.allocatedPower.toNumber()).to.equal(
-            //     epochGaugeVoterState.allocatedPower.toNumber()
-            // );
-
             let gaugeFactoryState = await programGauge.account.gaugeFactory.fetch(gaugeFactory);
             expect(gaugeFactoryState.currentVotingEpoch).equal(2);
-
-            let epochGaugeState = await programGauge.account.epochGauge.fetch(epochGauge);
-            expect(epochGaugeState.votingEpoch).equal(2);
-            let gaugeState = await programGauge.account.gauge.fetch(gauge);
-            expect(gaugeState.gaugeFactory.toString()).equal(gaugeFactory.toString());
+            expect(getAllocatedPowerInEpochGaugeVoter(gaugeVoterState, gaugeFactoryState.currentVotingEpoch).toNumber()).greaterThan(
+                lockAmount * 9_999 / 10_000
+            );
+            expect(getAllocatedPowerInEpochGaugeVoter(gaugeVoterState, gaugeFactoryState.currentVotingEpoch).toNumber()).lessThan(
+                lockAmount
+            );
 
             // revert votes
             await programGauge.methods
-                .gaugeEpochRevertVote()
+                .revertVote()
                 .accounts({
                     gaugeFactory,
                     gauge,
                     gaugeVoter,
                     gaugeVote,
-                    epochGauge,
-                    epochGaugeVoter,
-                    // epochGaugeVote,
                     escrow: voterEscrow,
                     voteDelegate: voterKP.publicKey,
-                    payer: provider.wallet.publicKey,
                 }).signers([voterKP])
                 .rpc();
 
             // vote weight allocation should remain after revert
             gaugeVoterState = await programGauge.account.gaugeVoter.fetch(gaugeVoter);
             expect(gaugeVoterState.totalWeight).to.equal(50);
-            // zero power after revert
-            epochGaugeVoterState = await programGauge.account.epochGaugeVoter.fetch(epochGaugeVoter);
-            expect(epochGaugeVoterState.allocatedPower.toNumber()).to.equal(0);
-            /// TODO assert 
-            // // epoch gauge vote should be deleted
-            // epochGaugeVoteState = await programGauge.account.epochGaugeVote.fetchNullable(epochGaugeVote);
-            // expect(epochGaugeVoteState).to.be.null;
+            expect(getAllocatedPowerInEpochGaugeVoter(gaugeVoterState, gaugeFactoryState.currentVotingEpoch).toNumber()).to.equal(
+                0
+            );
 
             // vote again
             await setVote(gauge, 100, voterKP, programGauge, programVoter);
             // prepare
-            await getOrCreateEpochGaugeVoterForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter)
+            await resetVote(gaugeFactory, voterKP, programGauge, programVoter)
             // commit votes
-            await commitVoteForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter);
+            await commit(gauge, voterKP, programGauge, programVoter);
             gaugeVoterState = await programGauge.account.gaugeVoter.fetch(gaugeVoter);
             expect(gaugeVoterState.totalWeight).to.equal(100);
         });

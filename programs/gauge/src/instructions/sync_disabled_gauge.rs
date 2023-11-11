@@ -10,10 +10,11 @@ pub struct SyncDisabledGauge<'info> {
     pub gauge_factory: Account<'info, GaugeFactory>,
 
     /// The [Gauge].
-    pub gauge: Account<'info, Gauge>,
+    #[account(has_one = gauge_factory, has_one = quarry)]
+    pub gauge: AccountLoader<'info, Gauge>,
 
     /// [quarry::Quarry].
-    #[account(mut)]
+    #[account(mut, has_one = rewarder)]
     pub quarry: Account<'info, quarry::Quarry>,
 
     /// [GaugeFactory::rewarder].
@@ -54,12 +55,8 @@ pub fn handler(ctx: Context<SyncDisabledGauge>) -> Result<()> {
 
 impl<'info> Validate<'info> for SyncDisabledGauge<'info> {
     fn validate(&self) -> Result<()> {
-        assert_keys_eq!(self.gauge_factory, self.gauge.gauge_factory);
-        assert_keys_eq!(self.gauge_factory.rewarder, self.rewarder);
-        invariant!(self.gauge.is_disabled);
-        assert_keys_eq!(self.quarry, self.gauge.quarry);
-        assert_keys_eq!(self.quarry.rewarder, self.rewarder);
-
+        let gauge = self.gauge.load()?;
+        invariant!(gauge.is_disabled == 1);
         invariant!(
             self.gauge_factory.rewards_epoch()? != 0,
             GaugeEpochCannotBeZero

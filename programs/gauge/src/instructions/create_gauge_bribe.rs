@@ -4,9 +4,9 @@ use crate::constants::MAX_BRIBE_EPOCH;
 use crate::ErrorCode::MathOverflow;
 use crate::*;
 
-/// Accounts for [gauge::create_bribe_gauge].
+/// Accounts for [gauge::create_gauge_bribe].
 #[derive(Accounts)]
-pub struct CreateBribeGauge<'info> {
+pub struct CreateGaugeBribe<'info> {
     /// The [Bribe] to be created.
     #[account(
             init,
@@ -34,7 +34,7 @@ pub struct CreateBribeGauge<'info> {
 
     /// The [Gauge].
     #[account(mut, has_one = gauge_factory)]
-    pub gauge: Box<Account<'info, Gauge>>,
+    pub gauge: AccountLoader<'info, Gauge>,
 
     /// [TokenAccount] holding the token [Mint].
     #[account(
@@ -68,7 +68,7 @@ pub fn get_total_bribe_rewards(
 }
 
 pub fn handler(
-    ctx: Context<CreateBribeGauge>,
+    ctx: Context<CreateGaugeBribe>,
     reward_each_epoch: u64,
     bribe_rewards_epoch_end: u32,
 ) -> Result<()> {
@@ -122,7 +122,7 @@ pub fn handler(
 
     gauge_factory.inc_bribe_index()?;
 
-    emit!(BribeGaugeCreateEvent {
+    emit!(CreateGaugeBribeEvent {
         gauge: ctx.accounts.gauge.key(),
         bribe: ctx.accounts.bribe.key(),
         bribe_rewards_epoch_start: current_voting_epoch,
@@ -133,15 +133,15 @@ pub fn handler(
     Ok(())
 }
 
-impl<'info> Validate<'info> for CreateBribeGauge<'info> {
+impl<'info> Validate<'info> for CreateGaugeBribe<'info> {
     fn validate(&self) -> Result<()> {
         Ok(())
     }
 }
 
-/// Event called in [gauge::create_bribe_gauge].
+/// Event called in [gauge::create_gauge_bribe].
 #[event]
-pub struct BribeGaugeCreateEvent {
+pub struct CreateGaugeBribeEvent {
     #[index]
     /// The [Gauge].
     pub gauge: Pubkey,

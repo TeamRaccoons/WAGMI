@@ -22,10 +22,14 @@ pub struct CreateGaugeVote<'info> {
     pub gauge_vote: AccountLoader<'info, GaugeVote>,
 
     /// Gauge voter.
-    pub gauge_voter: Account<'info, GaugeVoter>,
+    #[account(has_one = gauge_factory)]
+    pub gauge_voter: AccountLoader<'info, GaugeVoter>,
 
-    /// Gauge.
-    pub gauge: Account<'info, Gauge>,
+    /// The [GaugeFactory].
+    pub gauge_factory: Account<'info, GaugeFactory>,
+    /// The [Gauge].
+    #[account(mut, has_one = gauge_factory)]
+    pub gauge: AccountLoader<'info, Gauge>,
 
     /// Payer.
     #[account(mut)]
@@ -40,15 +44,12 @@ pub fn handler(ctx: Context<CreateGaugeVote>) -> Result<()> {
 
     gauge_vote.init(ctx.accounts.gauge_voter.key(), ctx.accounts.gauge.key());
 
-    // gauge_vote.gauge_voter = ctx.accounts.gauge_voter.key();
-    // gauge_vote.gauge = ctx.accounts.gauge.key();
+    let gauge_voter = ctx.accounts.gauge_voter.load()?;
 
-    // gauge_vote.weight = 0;
-
-    emit!(GaugeVoteCreateEvent {
-        gauge_factory: ctx.accounts.gauge.gauge_factory,
+    emit!(CreateGaugeVoteEvent {
+        gauge_factory: ctx.accounts.gauge_factory.key(),
         gauge: gauge_vote.gauge,
-        gauge_voter_owner: ctx.accounts.gauge_voter.owner,
+        gauge_voter_owner: gauge_voter.owner,
     });
 
     Ok(())
@@ -56,14 +57,13 @@ pub fn handler(ctx: Context<CreateGaugeVote>) -> Result<()> {
 
 impl<'info> Validate<'info> for CreateGaugeVote<'info> {
     fn validate(&self) -> Result<()> {
-        assert_keys_eq!(self.gauge_voter.gauge_factory, self.gauge.gauge_factory);
         Ok(())
     }
 }
 
 /// Event called in [gauge::create_gauge_vote].
 #[event]
-pub struct GaugeVoteCreateEvent {
+pub struct CreateGaugeVoteEvent {
     #[index]
     /// The [GaugeFactory].
     pub gauge_factory: Pubkey,

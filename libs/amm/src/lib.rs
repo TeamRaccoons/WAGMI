@@ -44,14 +44,14 @@ impl Default for AmmType {
 }
 
 impl AmmType {
-    pub fn decode(&self) -> u64 {
+    pub fn decode(&self) -> u32 {
         match self {
             AmmType::MocAmm => 0,
             AmmType::MeteoraAmm => 1,
             AmmType::LbClmm => 2,
         }
     }
-    pub fn get_amm_type(amm_type: u64) -> Option<Self> {
+    pub fn get_amm_type(amm_type: u32) -> Option<Self> {
         match amm_type {
             0 => Some(AmmType::MocAmm),
             1 => Some(AmmType::MeteoraAmm),

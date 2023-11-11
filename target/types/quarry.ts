@@ -351,7 +351,7 @@ export type Quarry = {
       "args": [
         {
           "name": "ammType",
-          "type": "u64"
+          "type": "u32"
         }
       ]
     },
@@ -1213,7 +1213,7 @@ export type Quarry = {
             "docs": [
               "Amm type, can be Meteora or LbClmm"
             ],
-            "type": "u64"
+            "type": "u32"
           },
           {
             "name": "tokenMintKey",
@@ -2314,7 +2314,7 @@ export const IDL: Quarry = {
       "args": [
         {
           "name": "ammType",
-          "type": "u64"
+          "type": "u32"
         }
       ]
     },
@@ -3176,7 +3176,7 @@ export const IDL: Quarry = {
             "docs": [
               "Amm type, can be Meteora or LbClmm"
             ],
-            "type": "u64"
+            "type": "u32"
           },
           {
             "name": "tokenMintKey",

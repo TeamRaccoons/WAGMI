@@ -11,4 +11,5 @@ program = "../deps/amm.so"
 
 [scripts]
 test = "yarn run ts-mocha -t 1000000 tests/gauge/*.test.ts"
-# test = "yarn run ts-mocha -t 1000000 tests/gauge/gauge.test.ts"
+# test = "yarn run ts-mocha -t 1000000 tests/gauge/,_amm_claim_fee.test.ts"
+# test = "yarn run ts-mocha -t 1000000 tests/gauge/bribe.test.ts"

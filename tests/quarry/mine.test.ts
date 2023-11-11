@@ -197,7 +197,7 @@ describe("Mine", () => {
             program.programId
           );
 
-        await program.methods.createQuarry(new BN(0)).accounts({
+        await program.methods.createQuarry(0).accounts({
           quarry,
           auth: {
             admin: adminKP.publicKey,
@@ -284,7 +284,7 @@ describe("Mine", () => {
           );
 
         try {
-          await program.methods.createQuarry(new BN(0)).accounts({
+          await program.methods.createQuarry(0).accounts({
             quarry,
             auth: {
               admin: fakeAuthority.publicKey,
@@ -309,7 +309,7 @@ describe("Mine", () => {
           );
 
         try {
-          await program.methods.createQuarry(new BN(0)).accounts({
+          await program.methods.createQuarry(0).accounts({
             quarry,
             auth: {
               admin: adminKP.publicKey,
@@ -352,7 +352,7 @@ describe("Mine", () => {
               program.programId
             );
 
-          await program.methods.createQuarry(new BN(0)).accounts({
+          await program.methods.createQuarry(0).accounts({
             quarry,
             auth: {
               admin: adminKP.publicKey,
@@ -535,7 +535,7 @@ describe("Mine", () => {
           program.programId
         );
 
-      await program.methods.createQuarry(new BN(0)).accounts({
+      await program.methods.createQuarry(0).accounts({
         quarry,
         auth: {
           admin: adminKP.publicKey,

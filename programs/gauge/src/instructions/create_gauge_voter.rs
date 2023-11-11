@@ -2,11 +2,17 @@
 
 use vipers::assert_keys_eq;
 
-use crate::*;
+use crate::{constants::MAX_EPOCH_PER_GAUGE, *};
 
 /// Accounts for [gauge::create_gauge_voter].
 #[derive(Accounts)]
 pub struct CreateGaugeVoter<'info> {
+    /// [GaugeFactory].
+    pub gauge_factory: Account<'info, GaugeFactory>,
+
+    /// [voter::Escrow].
+    pub escrow: Account<'info, voter::Escrow>,
+
     /// The [GaugeVoter] to be created.
     #[account(
         init,
@@ -16,16 +22,10 @@ pub struct CreateGaugeVoter<'info> {
             escrow.key().as_ref(),
         ],
         bump,
-        space = 8 + std::mem::size_of::<GaugeVoter>(),
+        space = 8 + GaugeVoter::INIT_SPACE,
         payer = payer
     )]
-    pub gauge_voter: Account<'info, GaugeVoter>,
-
-    /// [GaugeFactory].
-    pub gauge_factory: Account<'info, GaugeFactory>,
-
-    /// [voter::Escrow].
-    pub escrow: Account<'info, voter::Escrow>,
+    pub gauge_voter: AccountLoader<'info, GaugeVoter>,
 
     /// Payer.
     #[account(mut)]
@@ -36,15 +36,16 @@ pub struct CreateGaugeVoter<'info> {
 }
 
 pub fn handler(ctx: Context<CreateGaugeVoter>) -> Result<()> {
-    let gauge_voter = &mut ctx.accounts.gauge_voter;
+    let mut gauge_voter = ctx.accounts.gauge_voter.load_init()?;
     gauge_voter.gauge_factory = ctx.accounts.gauge_factory.key();
     gauge_voter.escrow = ctx.accounts.escrow.key();
 
     gauge_voter.owner = ctx.accounts.escrow.owner;
     gauge_voter.total_weight = 0;
     gauge_voter.weight_change_seqno = 0;
+    gauge_voter.vote_epochs = [EpochGaugeVoter::default(); MAX_EPOCH_PER_GAUGE];
 
-    emit!(GaugeVoterCreateEvent {
+    emit!(CreateGaugeVoterEvent {
         gauge_factory: gauge_voter.gauge_factory,
         rewarder: ctx.accounts.gauge_factory.rewarder,
         gauge_voter_owner: gauge_voter.owner,
@@ -62,7 +63,7 @@ impl<'info> Validate<'info> for CreateGaugeVoter<'info> {
 
 /// Event called in [gauge::create_gauge_voter].
 #[event]
-pub struct GaugeVoterCreateEvent {
+pub struct CreateGaugeVoterEvent {
     #[index]
     /// The [GaugeFactory].
     pub gauge_factory: Pubkey,

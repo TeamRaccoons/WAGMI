@@ -147,7 +147,7 @@ describe("Partner Rewards", () => {
                 program.programId
             );
         quarryKey = quarry;
-        await program.methods.createQuarry(new BN(0)).accounts({
+        await program.methods.createQuarry(0).accounts({
             quarry,
             auth: {
                 admin: adminKP.publicKey,

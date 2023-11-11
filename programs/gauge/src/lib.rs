@@ -57,67 +57,56 @@ pub mod gauge {
         create_gauge_vote::handler(ctx)
     }
 
-    /// Creates an [EpochGauge]. Permissionless.
-    /// Only allow create epoch for current epoch, that ensure we can accumulate fee
+    /// pump gauge epoch
     #[access_control(ctx.accounts.validate())]
-    pub fn create_epoch_gauge(ctx: Context<CreateEpochGauge>) -> Result<()> {
-        create_epoch_gauge::handler(ctx)
+    pub fn pump_gauge_epoch(ctx: Context<PumpGaugeEpoch>) -> Result<()> {
+        pump_gauge_epoch::handler(ctx)
     }
 
-    /// Clean an empty [EpochGauge]. Permissionless.
-    /// Accumulate fee from empty epoch gauge
+    /// Prepare vote Permissionless.
     #[access_control(ctx.accounts.validate())]
-    pub fn clean_empty_epoch_gauge(
-        ctx: Context<CleanEmptyEpochGauge>,
-        voting_epoch: u32,
-    ) -> Result<()> {
-        clean_empty_epoch_gauge::handler(ctx, voting_epoch)
-    }
-
-    /// Creates an [EpochGaugeVoter]. Permissionless.
-    #[access_control(ctx.accounts.validate())]
-    pub fn prepare_epoch_gauge_voter(ctx: Context<PrepareEpochGaugeVoter>) -> Result<()> {
-        prepare_epoch_gauge_voter::handler(ctx)
+    pub fn prepare_vote(ctx: Context<PrepareVote>) -> Result<()> {
+        prepare_vote::handler(ctx)
     }
 
     /// Resets an [EpochGaugeVoter]; that is, syncs the [EpochGaugeVoter]
     /// with the latest power amount only if the votes have yet to be
     /// committed. Permissionless.
     #[access_control(ctx.accounts.validate())]
-    pub fn reset_epoch_gauge_voter(ctx: Context<ResetEpochGaugeVoter>) -> Result<()> {
-        reset_epoch_gauge_voter::handler(ctx)
+    pub fn reset_vote(ctx: Context<ResetVote>) -> Result<()> {
+        reset_vote::handler(ctx)
     }
 
     /// Sets the vote of a [Gauge].
     #[access_control(ctx.accounts.validate())]
-    pub fn gauge_set_vote(ctx: Context<GaugeSetVote>, weight: u32) -> Result<()> {
-        gauge_set_vote::handler(ctx, weight)
+    pub fn set_vote(ctx: Context<SetVote>, weight: u32) -> Result<()> {
+        set_vote::handler(ctx, weight)
     }
 
     /// Commits the vote of a [Gauge].
     /// Anyone can call this on any voter's gauge votes.
     #[access_control(ctx.accounts.validate())]
-    pub fn gauge_epoch_commit_vote(ctx: Context<GaugeEpochCommitVote>) -> Result<()> {
-        gauge_epoch_commit_vote::handler(ctx)
+    pub fn commit_vote(ctx: Context<CommitVote>) -> Result<()> {
+        commit_vote::handler(ctx)
     }
 
     /// Reverts a vote commitment of a [Gauge].
     /// Only the voter can call this.
     #[access_control(ctx.accounts.validate())]
-    pub fn gauge_epoch_revert_vote(ctx: Context<GaugeEpochRevertVote>) -> Result<()> {
-        gauge_epoch_revert_vote::handler(ctx)
+    pub fn revert_vote(ctx: Context<RevertVote>) -> Result<()> {
+        revert_vote::handler(ctx)
     }
 
     /// Enables a [Gauge].
     #[access_control(ctx.accounts.validate())]
-    pub fn gauge_enable(ctx: Context<GaugeEnable>) -> Result<()> {
-        gauge_enable::handler(ctx)
+    pub fn enable_gauge(ctx: Context<EnableGauge>) -> Result<()> {
+        enable_gauge::handler(ctx)
     }
 
     /// Disables a [Gauge].
     #[access_control(ctx.accounts.validate())]
-    pub fn gauge_disable(ctx: Context<GaugeDisable>) -> Result<()> {
-        gauge_disable::handler(ctx)
+    pub fn disable_gauge(ctx: Context<DisableGauge>) -> Result<()> {
+        disable_gauge::handler(ctx)
     }
 
     /// Triggers the next epoch. Permissionless.
@@ -142,46 +131,36 @@ pub mod gauge {
     ///
     /// Only the [voter::Escrow::vote_delegate] may call this.
     #[access_control(ctx.accounts.validate())]
-    pub fn claim_fee_gauge_epoch<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, ClaimFeeGaugeEpoch<'info>>,
-        voting_epoch: u32,
+    pub fn claim_gauge_fee<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, ClaimGaugeFee<'info>>,
+        to_epoch: u32,
     ) -> Result<()> {
         ctx.accounts
-            .claim_fee_gauge_epoch(voting_epoch, ctx.remaining_accounts)
+            .claim_gauge_fee(to_epoch, ctx.remaining_accounts)
         // claim_fee_gauge_epoch::handler(&ctx, voting_epoch, &ctx.remaining_accounts)
     }
-
-    /// Closes an [EpochGaugeVote], sending lamports to a user-specified address.
-    ///
-    /// Only the [voter::Escrow::vote_delegate] may call this.
-    // #[access_control(ctx.accounts.validate())]
-    // pub fn close_epoch_gauge_vote(
-    //     ctx: Context<CloseEpochGaugeVote>,
-    //     voting_epoch: u32,
-    // ) -> Result<()> {
-    //     close_epoch_gauge_vote::handler(ctx, voting_epoch)
-    // }
 
     /// Create an [Bribe]
     ///
     /// Permissionless, anyone can crate bribe
     #[access_control(ctx.accounts.validate())]
-    pub fn create_bribe(
-        ctx: Context<CreateBribeGauge>,
+    pub fn create_gauge_bribe(
+        ctx: Context<CreateGaugeBribe>,
         reward_each_epoch: u64,
         bribe_epoch_end: u32,
     ) -> Result<()> {
-        create_bribe_gauge::handler(ctx, reward_each_epoch, bribe_epoch_end)
+        create_gauge_bribe::handler(ctx, reward_each_epoch, bribe_epoch_end)
+    }
+
+    pub fn create_epoch_bribe_voter(ctx: Context<CreateEpochBribeVoter>) -> Result<()> {
+        create_epoch_bribe_voter::handler(ctx)
     }
     /// Claim an [Bribe] for voting epoch
     ///
     /// Permissionless, anyone can crate bribe
     #[access_control(ctx.accounts.validate())]
-    pub fn claim_bribe_gauge_epoch(
-        ctx: Context<ClaimBribeGaugeEpoch>,
-        voting_epoch: u32,
-    ) -> Result<()> {
-        claim_bribe_gauge_epoch::handler(ctx, voting_epoch)
+    pub fn claim_gauge_bribe(ctx: Context<ClaimGaugeBribe>) -> Result<()> {
+        claim_gauge_bribe::handler(ctx)
     }
     /// Rescue an [Bribe] for voting epoch
     ///
@@ -250,4 +229,16 @@ pub enum ErrorCode {
     TypeCastFailed,
     #[msg("Voting epoch is not found")]
     VotingEpochNotFound,
+
+    #[msg("Recreate voting epoch")]
+    RecreatedVotingEpoch,
+
+    #[msg("Invalid epoch")]
+    InvalidEpoch,
+
+    #[msg("Bribe has been ended.")]
+    BribeHasBeenEnded,
+
+    #[msg("No more bribe rewards.")]
+    NoMoreBribeReward,
 }

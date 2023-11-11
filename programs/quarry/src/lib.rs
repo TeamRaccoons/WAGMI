@@ -104,7 +104,7 @@ pub mod quarry {
     /// Creates a new [Quarry].
     /// This may only be called by the [Rewarder]::admin.    
     #[access_control(ctx.accounts.validate())]
-    pub fn create_quarry(ctx: Context<CreateQuarry>, amm_type: u64) -> Result<()> {
+    pub fn create_quarry(ctx: Context<CreateQuarry>, amm_type: u32) -> Result<()> {
         create_quarry::handler(ctx, amm_type)
     }
 

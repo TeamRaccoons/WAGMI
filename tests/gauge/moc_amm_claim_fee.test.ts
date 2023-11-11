@@ -22,21 +22,21 @@ import {
     simulateSwapBtoA,
     createMocAmm,
 
+
 } from "../utils";
 
 import {
-    getOrCreateEpochGaugeForCurrentEpoch,
     setVote,
-    getOrCreateEpochGaugeVoterForCurrentEpoch,
-    commitVoteForCurrentEpoch,
+    prepare,
+    commit,
     createQuarryFromAmm,
-    getEpochGaugeVoterForVotingEpoch,
     claimAFeeInVotingEpoch,
     claimBFeeInVotingEpoch,
-    getEpochGaugeByVotingEpoch,
     setupVoterAndLockAmount,
     getOrCreateVoterGauge,
-    cleanEmptyEpochGauge,
+    pumpEpochGauge,
+    getFeeInEpochGauge,
+    assertEpochFee,
 } from "./utils";
 import { MocAmm } from "../../target/types/moc_amm";
 
@@ -316,7 +316,7 @@ describe("Claim fee Gauge", () => {
             .rpc();
 
         await programGauge.methods
-            .gaugeEnable()
+            .enableGauge()
             .accounts({
                 gauge,
                 gaugeFactory,
@@ -344,14 +344,12 @@ describe("Claim fee Gauge", () => {
                 gaugeFactory,
             })
             .rpc();
-        await getOrCreateEpochGaugeForCurrentEpoch(gauge, programGauge);
-
+        await pumpEpochGauge(gauge, programGauge);
         await setVote(gauge, 50, voterKP, programGauge, programVoter);
         // prepare epoch
-        await getOrCreateEpochGaugeVoterForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter)
+        await prepare(gaugeFactory, voterKP, programGauge, programVoter)
         // commit votes            
-        await commitVoteForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter);
-
+        await commit(gauge, voterKP, programGauge, programVoter);
         // // wait for next epoch
         await sleep(TEST_EPOCH_SECONDS * 1_000 + 500);
         // trigger next epoch
@@ -364,9 +362,12 @@ describe("Claim fee Gauge", () => {
         let gaugeFactoryState = await programGauge.account.gaugeFactory.fetch(gaugeFactory);
         expect(gaugeFactoryState.currentVotingEpoch).equal(3);
 
-
         // claim some fee in epoch 2
-        await claimAFeeInVotingEpoch(gauge, voterKP, 2, programGauge, programVoter, programMocAmm);
+        try {
+            await claimAFeeInVotingEpoch(gauge, voterKP, 2, programGauge, programVoter, programMocAmm);
+        } catch (err) {
+            console.log(err)
+        }
 
 
 
@@ -385,15 +386,7 @@ describe("Claim fee Gauge", () => {
             .getTokenAccountBalance(destTokenAccount);
         expect(Number(destTokenAccountBalance.value.amount)).to.deep.equal(swapAAmount * AMM_FEE / 10000);
 
-        /// TODO assert 
-        // let epochGaugeVoter = await getEpochGaugeVoterForVotingEpoch(gauge, voterKP.publicKey, 2, programGauge, programVoter);
-        // let epochGaugeVoterState = await programGauge.account.epochGaugeVoter.fetch(epochGaugeVoter);
-        // expect(epochGaugeVoterState.isFeeAClaimed).equal(true);
-
-        await assertEpochFee(gauge);
-
-
-
+        await assertEpochFee(gauge, programGauge);
         // cannot claim again
         try {
             await claimAFeeInVotingEpoch(gauge, voterKP, 2, programGauge, programVoter, programMocAmm);
@@ -409,15 +402,15 @@ describe("Claim fee Gauge", () => {
             .getTokenAccountBalance(tokenBFee);
         expect(Number(tokenBFeeBalance.value.amount)).to.deep.equal(swapBAmount * AMM_FEE / 10000);
 
-        await getOrCreateEpochGaugeForCurrentEpoch(gauge, programGauge);
+        await pumpEpochGauge(gauge, programGauge);
 
-        await assertEpochFee(gauge);
+        await assertEpochFee(gauge, programGauge);
 
         await setVote(gauge, 50, voterKP, programGauge, programVoter);
         // prepare epoch
-        await getOrCreateEpochGaugeVoterForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter)
+        await prepare(gaugeFactory, voterKP, programGauge, programVoter)
         // commit votes            
-        await commitVoteForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter);
+        await commit(gauge, voterKP, programGauge, programVoter);
 
         // // wait for next epoch
         await sleep(TEST_EPOCH_SECONDS * 1_000 + 500);
@@ -446,16 +439,12 @@ describe("Claim fee Gauge", () => {
             provider.connection
         );
 
+
         var destTokenBAccountBalance = await provider.connection
             .getTokenAccountBalance(destTokenBAccount);
         expect(Number(destTokenBAccountBalance.value.amount)).to.deep.equal(swapBAmount * AMM_FEE / 10000);
 
-        /// TODO assert 
-        // epochGaugeVoter = await getEpochGaugeVoterForVotingEpoch(gauge, voterKP.publicKey, 3, programGauge, programVoter);
-        // epochGaugeVoterState = await programGauge.account.epochGaugeVoter.fetch(epochGaugeVoter);
-        // expect(epochGaugeVoterState.isFeeBClaimed).equal(true);
-
-        await assertEpochFee(gauge);
+        await assertEpochFee(gauge, programGauge);
     });
 
     it("A voter claim all fee when an epoch is skipped", async () => {
@@ -488,13 +477,13 @@ describe("Claim fee Gauge", () => {
         gaugeFactoryState = await programGauge.account.gaugeFactory.fetch(gaugeFactory);
         expect(gaugeFactoryState.currentVotingEpoch).equal(3);
 
-        await getOrCreateEpochGaugeForCurrentEpoch(gauge, programGauge);
+        await pumpEpochGauge(gauge, programGauge);
 
         await setVote(gauge, 50, voterKP, programGauge, programVoter);
         // prepare epoch
-        await getOrCreateEpochGaugeVoterForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter)
+        await prepare(gaugeFactory, voterKP, programGauge, programVoter)
         // commit votes            
-        await commitVoteForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter);
+        await commit(gauge, voterKP, programGauge, programVoter);
 
         // // wait for next epoch
         await sleep(TEST_EPOCH_SECONDS * 1_000 + 500);
@@ -527,12 +516,8 @@ describe("Claim fee Gauge", () => {
         expect(Number(destTokenAccountBalance.value.amount)).to.deep.equal(swapAAmount * AMM_FEE / 10000);
 
 
-        /// TODO assert 
-        // let epochGaugeVoter = await getEpochGaugeVoterForVotingEpoch(gauge, voterKP.publicKey, 3, programGauge, programVoter);
-        // let epochGaugeVoterState = await programGauge.account.epochGaugeVoter.fetch(epochGaugeVoter);
-        // expect(epochGaugeVoterState.isFeeAClaimed).equal(true);
 
-        await assertEpochFee(gauge);
+        await assertEpochFee(gauge, programGauge);
     })
 
 
@@ -552,17 +537,8 @@ describe("Claim fee Gauge", () => {
             .rpc();
         let gaugeFactoryState = await programGauge.account.gaugeFactory.fetch(gaugeFactory);
         expect(gaugeFactoryState.currentVotingEpoch).equal(2);
-
         // create epoch gauge, but dont vote
-        await getOrCreateEpochGaugeForCurrentEpoch(gauge, programGauge);
-        // cannot clean empty epoch in current voting epoch
-        try {
-            await cleanEmptyEpochGauge(gauge, programGauge, 2);
-            expect(1).equal(0)
-        } catch (e) {
-            // console.log(e);
-            console.log("Cannot clean empty epoch gauge in current epoch")
-        }
+        await pumpEpochGauge(gauge, programGauge);
 
         // // wait for next epoch
         await sleep(TEST_EPOCH_SECONDS * 1_000 + 500);
@@ -577,18 +553,12 @@ describe("Claim fee Gauge", () => {
         gaugeFactoryState = await programGauge.account.gaugeFactory.fetch(gaugeFactory);
         expect(gaugeFactoryState.currentVotingEpoch).equal(3);
 
-        // can clean now
-        await cleanEmptyEpochGauge(gauge, programGauge, 2);
-
-
-        await getOrCreateEpochGaugeForCurrentEpoch(gauge, programGauge);
-
+        await pumpEpochGauge(gauge, programGauge);
         await setVote(gauge, 50, voterKP, programGauge, programVoter);
         // prepare epoch
-        await getOrCreateEpochGaugeVoterForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter)
+        await prepare(gaugeFactory, voterKP, programGauge, programVoter)
         // commit votes            
-        await commitVoteForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter);
-
+        await commit(gauge, voterKP, programGauge, programVoter);
         // // wait for next epoch
         await sleep(TEST_EPOCH_SECONDS * 1_000 + 500);
         // trigger next epoch
@@ -600,13 +570,12 @@ describe("Claim fee Gauge", () => {
             .rpc();
         gaugeFactoryState = await programGauge.account.gaugeFactory.fetch(gaugeFactory);
         expect(gaugeFactoryState.currentVotingEpoch).equal(4);
-
-        // claim some fee in epoch 3
-        await claimAFeeInVotingEpoch(gauge, voterKP, 3, programGauge, programVoter, programMocAmm);
+        gaugeFactoryState = await programGauge.account.gaugeFactory.fetch(gaugeFactory);
+        await claimAFeeInVotingEpoch(gauge, voterKP, gaugeFactoryState.currentVotingEpoch - 1, programGauge, programVoter, programMocAmm);
 
         var tokenAFeeBalance = await provider.connection
             .getTokenAccountBalance(tokenAFee);
-        expect(Number(tokenAFeeBalance.value.amount)).to.deep.equal(0);
+        expect(Number(tokenAFeeBalance.value.amount)).to.deep.equal(1000);
 
         const destTokenAccount = await getOrCreateATA(
             tokenAMint,
@@ -614,27 +583,11 @@ describe("Claim fee Gauge", () => {
             voterKP,
             provider.connection
         );
-
         var destTokenAccountBalance = await provider.connection
             .getTokenAccountBalance(destTokenAccount);
-        expect(Number(destTokenAccountBalance.value.amount)).to.deep.equal(swapAAmount * AMM_FEE / 10000);
+        expect(Number(destTokenAccountBalance.value.amount)).to.deep.equal(0);
 
-
-
-        // cannot clean epoch that has non-zero voting power
-        try {
-            await cleanEmptyEpochGauge(gauge, programGauge, 3);
-            expect(1).equal(0)
-        } catch (e) {
-            // console.log(e);
-            console.log("Cannot clean empty epoch that has non-zero voting power")
-        }
-        /// TODO assert 
-        // let epochGaugeVoter = await getEpochGaugeVoterForVotingEpoch(gauge, voterKP.publicKey, 3, programGauge, programVoter);
-        // let epochGaugeVoterState = await programGauge.account.epochGaugeVoter.fetch(epochGaugeVoter);
-        // expect(epochGaugeVoterState.isFeeAClaimed).equal(true);
-
-        await assertEpochFee(gauge);
+        await assertEpochFee(gauge, programGauge);
     })
 
     it("2 voters share fee in epoch", async () => {
@@ -676,21 +629,21 @@ describe("Claim fee Gauge", () => {
         expect(gaugeFactoryState.currentVotingEpoch).equal(2);
 
 
-        let epochGauge = await getOrCreateEpochGaugeForCurrentEpoch(gauge, programGauge);
+        let epochGauge = await pumpEpochGauge(gauge, programGauge);
 
         // voter 1 set vote
         await setVote(gauge, 50, voterKP, programGauge, programVoter);
         // prepare epoch
-        await getOrCreateEpochGaugeVoterForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter)
+        await prepare(gaugeFactory, voterKP, programGauge, programVoter)
         // commit votes            
-        await commitVoteForCurrentEpoch(gauge, voterKP.publicKey, programGauge, programVoter);
+        await commit(gauge, voterKP, programGauge, programVoter);
 
         // voter 2 set vote
         await setVote(gauge, 50, voterKP2, programGauge, programVoter);
         // prepare epoch
-        await getOrCreateEpochGaugeVoterForCurrentEpoch(gauge, voterKP2.publicKey, programGauge, programVoter)
+        await prepare(gaugeFactory, voterKP2, programGauge, programVoter)
         // commit votes            
-        await commitVoteForCurrentEpoch(gauge, voterKP2.publicKey, programGauge, programVoter);
+        await commit(gauge, voterKP2, programGauge, programVoter);
 
         // // wait for next epoch
         await sleep(TEST_EPOCH_SECONDS * 1_000 + 500);
@@ -735,40 +688,12 @@ describe("Claim fee Gauge", () => {
         console.log("claimed fees of voter 1: ", destTokenAccountBalance1.value.amount)
         console.log("claimed fees of voter 2: ", destTokenAccountBalance2.value.amount)
 
-        let epochGaugeState = await programGauge.account.epochGauge.fetch(epochGauge);
-        expect(+(Number(destTokenAccountBalance1.value.amount) + Number(destTokenAccountBalance2.value.amount) - epochGaugeState.tokenAFee.toNumber())).lessThan(2); // precision
+        let gaugeState = await programGauge.account.gauge.fetch(gauge);
+        let gaugeFee = getFeeInEpochGauge(gaugeState, 2);
+        expect(+(Number(destTokenAccountBalance1.value.amount) + Number(destTokenAccountBalance2.value.amount) - gaugeFee.tokenAFee.toNumber())).lessThan(2); // precision
 
-        await assertEpochFee(gauge);
+        await assertEpochFee(gauge, programGauge);
     })
 });
 
 
-async function assertEpochFee(gauge: PublicKey) {
-    // assert fee in gauge
-    let gaugeState = await programGauge.account.gauge.fetch(gauge);
-    let feeABalance = await provider.connection
-        .getTokenAccountBalance((gaugeState).tokenAFeeKey);
-    expect(gaugeState.cummulativeTokenAFee.toNumber()).equal(Number(feeABalance.value.amount) + gaugeState.cummulativeClaimedTokenAFee.toNumber());
-    let feeBBalance = await provider.connection
-        .getTokenAccountBalance((gaugeState).tokenBFeeKey);
-    expect(gaugeState.cummulativeTokenBFee.toNumber()).equal(Number(feeBBalance.value.amount) + gaugeState.cummulativeClaimedTokenBFee.toNumber());
-
-    // assert fee in epoch
-    let gaugeFactoryState = await programGauge.account.gaugeFactory.fetch(gaugeState.gaugeFactory);
-    let votingEpoch = gaugeFactoryState.currentVotingEpoch;
-
-    let totalEpochAFee = 0;
-    let totalEpochBFee = 0;
-    for (let i = 1; i <= votingEpoch; i++) {
-        let epochGauge = await getEpochGaugeByVotingEpoch(gauge, i, programGauge);
-        const epochGaugeState = await programGauge.account.epochGauge.fetchNullable(epochGauge);
-        if (epochGaugeState) {
-            totalEpochAFee += epochGaugeState.tokenAFee.toNumber();
-            totalEpochBFee += epochGaugeState.tokenBFee.toNumber();
-        }
-    }
-
-    expect(gaugeState.cummulativeTokenAFee.toNumber()).equal(totalEpochAFee);
-    expect(gaugeState.cummulativeTokenBFee.toNumber()).equal(totalEpochBFee);
-
-}

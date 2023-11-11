@@ -750,10 +750,8 @@ export async function claimFeeInVotingEpoch(
         );
 
     await programGauge.methods
-        .claimFeeGaugeEpoch(votingEpoch)
+        .claimGaugeFee(votingEpoch)
         .accounts({
-            epochGaugeVoter,
-            epochGauge,
             gaugeFactory: gaugeState.gaugeFactory,
             gauge,
             gaugeVoter,

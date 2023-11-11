@@ -1,5 +1,6 @@
 //! Creates a [Gauge].
 
+use crate::constants::MAX_EPOCH_PER_GAUGE;
 use crate::ErrorCode::TypeCastFailed;
 use amm::AmmType;
 
@@ -17,10 +18,10 @@ pub struct CreateGauge<'info> {
             quarry.key().as_ref(),
         ],
         bump,
-        space = 8 + std::mem::size_of::<Gauge>(),
+        space = 8 + Gauge::INIT_SPACE,
         payer = payer
     )]
-    pub gauge: Account<'info, Gauge>,
+    pub gauge: AccountLoader<'info, Gauge>,
 
     /// [GaugeFactory].
     pub gauge_factory: Account<'info, GaugeFactory>,
@@ -42,13 +43,15 @@ pub struct CreateGauge<'info> {
 }
 
 pub fn handler(ctx: Context<CreateGauge>) -> Result<()> {
-    let gauge = &mut ctx.accounts.gauge;
+    let mut gauge = ctx.accounts.gauge.load_init()?;
     let quarry = &ctx.accounts.quarry;
     gauge.gauge_factory = ctx.accounts.gauge_factory.key();
     gauge.quarry = ctx.accounts.quarry.key();
 
+    gauge.vote_epochs = [EpochGauge::default(); MAX_EPOCH_PER_GAUGE];
+
     // Since this is permissionless, gauges are disabled when they are created.
-    gauge.is_disabled = true;
+    gauge.is_disabled = 1;
 
     gauge.amm_pool = quarry.amm_pool;
 
@@ -64,7 +67,7 @@ pub fn handler(ctx: Context<CreateGauge>) -> Result<()> {
 
     gauge.amm_type = quarry.amm_type;
 
-    emit!(GaugeCreateEvent {
+    emit!(CreateGaugeEvent {
         gauge_factory: gauge.gauge_factory,
         quarry: gauge.quarry,
         amm_pool: ctx.accounts.amm_pool.key(),
@@ -84,7 +87,7 @@ impl<'info> Validate<'info> for CreateGauge<'info> {
 
 /// Event called in [gauge::create_gauge].
 #[event]
-pub struct GaugeCreateEvent {
+pub struct CreateGaugeEvent {
     #[index]
     /// The [GaugeFactory].
     pub gauge_factory: Pubkey,
@@ -95,5 +98,5 @@ pub struct GaugeCreateEvent {
     /// The [quarry::Quarry] being voted on.
     pub quarry: Pubkey,
     /// The Amm type.
-    pub amm_type: u64,
+    pub amm_type: u32,
 }

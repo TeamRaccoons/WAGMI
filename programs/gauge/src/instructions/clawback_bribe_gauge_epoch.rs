@@ -1,7 +1,7 @@
 //! ClaimBribe
 use crate::*;
 
-/// Accounts for [gauge::claim_bribe].
+/// Accounts for [gauge::clawback_bribe_gauge_epoch].
 #[derive(Accounts)]
 #[instruction(voting_epoch: u32)]
 pub struct ClawbackBribeGaugeEpoch<'info> {
@@ -9,23 +9,12 @@ pub struct ClawbackBribeGaugeEpoch<'info> {
     #[account(has_one = gauge, has_one = token_account_vault, has_one = briber)]
     pub bribe: Account<'info, Bribe>,
 
-    /// CHECK:
-    #[account(
-        seeds = [
-            b"EpochGauge".as_ref(),
-            gauge.key().as_ref(),
-            voting_epoch.to_le_bytes().as_ref()
-        ],
-        bump,
-    )]
-    pub epoch_gauge: AccountInfo<'info>,
-
     /// The [GaugeFactory].
     pub gauge_factory: Box<Account<'info, GaugeFactory>>,
 
     /// The [Gauge].
     #[account(has_one = gauge_factory)]
-    pub gauge: Box<Account<'info, Gauge>>,
+    pub gauge: AccountLoader<'info, Gauge>,
 
     #[account(mut)]
     pub token_account_vault: Box<Account<'info, TokenAccount>>,
@@ -55,18 +44,9 @@ pub fn handler(ctx: Context<ClawbackBribeGaugeEpoch>, voting_epoch: u32) -> Resu
         ClawbackEpochIsNotCorrect
     );
 
-    // check epoch_gauge is not existed or total_power is zero
-    let mut data: &[u8] = &ctx.accounts.epoch_gauge.try_borrow_data()?;
-    let reserve_state = EpochGauge::try_deserialize(&mut data);
-    let can_clawback = if reserve_state.is_err() {
-        // epoch gauge is not existed
-        true
-    } else {
-        // epoch gauge is not voted
-        let reserve_state = reserve_state?;
-        reserve_state.total_power == 0
-    };
-    invariant!(can_clawback, EpochGaugeIsVoted);
+    let gauge = ctx.accounts.gauge.load()?;
+
+    invariant!(!gauge.is_epoch_voted(voting_epoch), EpochGaugeIsVoted);
 
     let signer_seeds: &[&[&[u8]]] = gauge_factory_seeds!(ctx.accounts.gauge_factory);
     token::transfer(

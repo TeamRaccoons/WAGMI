@@ -17,21 +17,21 @@ pub struct UserStake<'info> {
 
     /// Quarry to claim from.
     #[account(mut)]
-    pub quarry: Account<'info, Quarry>,
+    pub quarry: Box<Account<'info, Quarry>>,
 
     /// Vault of the miner.
     #[account(mut)]
-    pub miner_vault: Account<'info, TokenAccount>,
+    pub miner_vault: Box<Account<'info, TokenAccount>>,
 
     /// User's staked token account
     #[account(mut)]
-    pub token_account: Account<'info, TokenAccount>,
+    pub token_account: Box<Account<'info, TokenAccount>>,
 
     /// Token program
     pub token_program: Program<'info, Token>,
 
     /// Rewarder
-    pub rewarder: Account<'info, Rewarder>,
+    pub rewarder: Box<Account<'info, Rewarder>>,
 }
 
 pub fn handler_stake_tokens(ctx: Context<UserStake>, amount: u64) -> Result<()> {

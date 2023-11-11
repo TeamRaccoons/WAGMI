@@ -60,7 +60,7 @@ pub struct Quarry {
     /// Amm pool this quarry is designated to
     pub amm_pool: Pubkey,
     /// Amm type, can be Meteora or LbClmm
-    pub amm_type: u64,
+    pub amm_type: u32,
     /// LP token this quarry is designated to
     pub token_mint_key: Pubkey,
     /// Bump.

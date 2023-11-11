@@ -62,32 +62,29 @@ fn main() -> Result<()> {
         CliCommand::CreateGaugeVote { token_mint } => {
             create_gauge_vote(&program, token_mint, base.pubkey())?;
         }
-        CliCommand::CreateEpochGauge {
-            token_mint,
-            voting_epoch,
-        } => {
-            create_epoch_gauge(&program, voting_epoch, token_mint, base.pubkey())?;
+        CliCommand::PumpGaugeEpoch { token_mint } => {
+            pump_gauge_epoch(&program, token_mint, base.pubkey())?;
         }
-        CliCommand::PrepareEpochGaugeVoter {} => {
-            prepare_epoch_gauge_voter(&program, base.pubkey())?;
+        CliCommand::PrepareVote {} => {
+            prepare_vote(&program, base.pubkey())?;
         }
-        CliCommand::ResetEpochGaugeVoter {} => {
-            reset_epoch_gauge_voter(&program, base.pubkey())?;
+        CliCommand::ResetVote {} => {
+            reset_vote(&program, base.pubkey())?;
         }
-        CliCommand::GaugeSetVote { token_mint, weight } => {
-            gauge_set_vote(&program, weight, token_mint, base.pubkey())?;
+        CliCommand::SetVote { token_mint, weight } => {
+            set_vote(&program, weight, token_mint, base.pubkey())?;
         }
-        CliCommand::GaugeCommitVote { token_mint } => {
-            gauge_commit_vote(&program, token_mint, base.pubkey())?;
+        CliCommand::CommitVote { token_mint } => {
+            commit_vote(&program, token_mint, base.pubkey())?;
         }
-        CliCommand::GaugeRevertVote { token_mint } => {
-            gauge_revert_vote(&program, token_mint, base.pubkey())?;
+        CliCommand::RevertVote { token_mint } => {
+            revert_vote(&program, token_mint, base.pubkey())?;
         }
-        CliCommand::GaugeEnable { quarry_base } => {
-            gauge_enable(&program, quarry_base, base.pubkey())?;
+        CliCommand::EnableGauge { quarry_base } => {
+            enable_gauge(&program, quarry_base, base.pubkey())?;
         }
-        CliCommand::GaugeDisable { token_mint } => {
-            gauge_disable(&program, token_mint, base.pubkey())?;
+        CliCommand::DisableGauge { token_mint } => {
+            disable_gauge(&program, token_mint, base.pubkey())?;
         }
         CliCommand::TriggerNextEpoch {} => {
             trigger_next_epoch(&program, base.pubkey())?;
@@ -320,6 +317,7 @@ fn create_gauge_vote<C: Deref<Target = impl Signer> + Clone>(
         .request()
         .accounts(gauge::accounts::CreateGaugeVote {
             gauge_vote,
+            gauge_factory,
             gauge_voter,
             gauge,
             payer: program.payer(),
@@ -331,9 +329,8 @@ fn create_gauge_vote<C: Deref<Target = impl Signer> + Clone>(
     Ok(())
 }
 
-fn create_epoch_gauge<C: Deref<Target = impl Signer> + Clone>(
+fn pump_gauge_epoch<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
-    voting_epoch: u32,
     token_mint: Pubkey,
     base: Pubkey,
 ) -> Result<()> {
@@ -351,36 +348,90 @@ fn create_epoch_gauge<C: Deref<Target = impl Signer> + Clone>(
         &gauge::id(),
     );
 
-    let (epoch_gauge, _bump) = Pubkey::find_program_address(
-        &[
-            b"EpochGauge".as_ref(),
-            gauge.as_ref(),
-            voting_epoch.to_le_bytes().as_ref(),
-        ],
-        &gauge::id(),
-    );
-
     let gauge_state: gauge::Gauge = program.account(gauge)?;
 
     let builder = program
         .request()
-        .accounts(gauge::accounts::CreateEpochGauge {
+        .accounts(gauge::accounts::PumpGaugeEpoch {
             gauge_factory,
             gauge,
-            epoch_gauge,
             amm_pool: gauge_state.amm_pool,
             token_a_fee: gauge_state.token_a_fee_key,
             token_b_fee: gauge_state.token_b_fee_key,
-            payer: program.payer(),
-            system_program: system_program::id(),
         })
-        .args(gauge::instruction::CreateEpochGauge {});
+        .args(gauge::instruction::PumpGaugeEpoch {});
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())
 }
 
-fn prepare_epoch_gauge_voter<C: Deref<Target = impl Signer> + Clone>(
+fn prepare_vote<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+) -> Result<()> {
+    let (gauge_factory, _bump) =
+        Pubkey::find_program_address(&[b"GaugeFactory".as_ref(), base.as_ref()], &gauge::id());
+
+    let (locker, _bump) =
+        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
+    let (escrow, _bump) = Pubkey::find_program_address(
+        &[
+            b"Escrow".as_ref(),
+            locker.as_ref(),
+            program.payer().as_ref(),
+        ],
+        &voter::id(),
+    );
+    let escrow_state: voter::Escrow = program.account(escrow)?;
+    let mut instructions = vec![];
+
+    let (gauge_voter, _bump) = Pubkey::find_program_address(
+        &[
+            b"GaugeVoter".as_ref(),
+            gauge_factory.as_ref(),
+            escrow.as_ref(),
+        ],
+        &gauge::id(),
+    );
+
+    let gauge_factory_state: gauge::GaugeFactory = program.account(gauge_factory)?;
+
+    let (epoch_gauge_voter, _bump) = Pubkey::find_program_address(
+        &[
+            b"EpochGaugeVoter".as_ref(),
+            gauge_voter.as_ref(),
+            gauge_factory_state
+                .current_voting_epoch
+                .to_le_bytes()
+                .as_ref(),
+        ],
+        &gauge::id(),
+    );
+
+    instructions.push(Instruction {
+        accounts: gauge::accounts::PrepareVote {
+            locker,
+            gauge_voter,
+            gauge_factory,
+            escrow,
+            vote_delegate: escrow_state.vote_delegate,
+        }
+        .to_account_metas(None),
+        data: gauge::instruction::PrepareVote {}.data(),
+        program_id: gauge::id(),
+    });
+
+    let builder = program.request();
+    let builder = instructions
+        .into_iter()
+        .fold(builder, |bld, ix| bld.instruction(ix));
+
+    let signature = builder.send()?;
+    println!("Signature {:?}", signature);
+    Ok(())
+}
+
+fn reset_vote<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     base: Pubkey,
 ) -> Result<()> {
@@ -410,30 +461,15 @@ fn prepare_epoch_gauge_voter<C: Deref<Target = impl Signer> + Clone>(
 
     let gauge_factory_state: gauge::GaugeFactory = program.account(gauge_factory)?;
 
-    let (epoch_gauge_voter, _bump) = Pubkey::find_program_address(
-        &[
-            b"EpochGaugeVoter".as_ref(),
-            gauge_voter.as_ref(),
-            gauge_factory_state
-                .current_voting_epoch
-                .to_le_bytes()
-                .as_ref(),
-        ],
-        &gauge::id(),
-    );
-
     instructions.push(Instruction {
-        accounts: gauge::accounts::PrepareEpochGaugeVoter {
+        accounts: gauge::accounts::ResetVote {
             locker,
             gauge_voter,
             gauge_factory,
-            epoch_gauge_voter,
             escrow,
-            payer: program.payer(),
-            system_program: system_program::id(),
         }
         .to_account_metas(None),
-        data: gauge::instruction::PrepareEpochGaugeVoter {}.data(),
+        data: gauge::instruction::ResetVote {}.data(),
         program_id: gauge::id(),
     });
 
@@ -447,72 +483,7 @@ fn prepare_epoch_gauge_voter<C: Deref<Target = impl Signer> + Clone>(
     Ok(())
 }
 
-fn reset_epoch_gauge_voter<C: Deref<Target = impl Signer> + Clone>(
-    program: &Program<C>,
-    base: Pubkey,
-) -> Result<()> {
-    let (gauge_factory, _bump) =
-        Pubkey::find_program_address(&[b"GaugeFactory".as_ref(), base.as_ref()], &gauge::id());
-
-    let (locker, _bump) =
-        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
-    let (escrow, _bump) = Pubkey::find_program_address(
-        &[
-            b"Escrow".as_ref(),
-            locker.as_ref(),
-            program.payer().as_ref(),
-        ],
-        &voter::id(),
-    );
-    let mut instructions = vec![];
-
-    let (gauge_voter, _bump) = Pubkey::find_program_address(
-        &[
-            b"GaugeVoter".as_ref(),
-            gauge_factory.as_ref(),
-            escrow.as_ref(),
-        ],
-        &gauge::id(),
-    );
-
-    let gauge_factory_state: gauge::GaugeFactory = program.account(gauge_factory)?;
-
-    let (epoch_gauge_voter, _bump) = Pubkey::find_program_address(
-        &[
-            b"EpochGaugeVoter".as_ref(),
-            gauge_voter.as_ref(),
-            gauge_factory_state
-                .current_voting_epoch
-                .to_le_bytes()
-                .as_ref(),
-        ],
-        &gauge::id(),
-    );
-
-    instructions.push(Instruction {
-        accounts: gauge::accounts::ResetEpochGaugeVoter {
-            locker,
-            gauge_voter,
-            gauge_factory,
-            epoch_gauge_voter,
-            escrow,
-        }
-        .to_account_metas(None),
-        data: gauge::instruction::ResetEpochGaugeVoter {}.data(),
-        program_id: gauge::id(),
-    });
-
-    let builder = program.request();
-    let builder = instructions
-        .into_iter()
-        .fold(builder, |bld, ix| bld.instruction(ix));
-
-    let signature = builder.send()?;
-    println!("Signature {:?}", signature);
-    Ok(())
-}
-
-fn gauge_set_vote<C: Deref<Target = impl Signer> + Clone>(
+fn set_vote<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     weight: u32,
     token_mint: Pubkey,
@@ -542,6 +513,8 @@ fn gauge_set_vote<C: Deref<Target = impl Signer> + Clone>(
         ],
         &voter::id(),
     );
+
+    let escrow_state: voter::Escrow = program.account(escrow)?;
 
     let mut instructions = vec![];
     let (gauge_voter, _bump) = Pubkey::find_program_address(
@@ -580,6 +553,7 @@ fn gauge_set_vote<C: Deref<Target = impl Signer> + Clone>(
                 gauge_voter,
                 gauge,
                 payer: program.payer(),
+                gauge_factory,
                 system_program: system_program::id(),
             }
             .to_account_metas(None),
@@ -588,7 +562,7 @@ fn gauge_set_vote<C: Deref<Target = impl Signer> + Clone>(
         });
     }
     instructions.push(Instruction {
-        accounts: gauge::accounts::GaugeSetVote {
+        accounts: gauge::accounts::SetVote {
             gauge_factory,
             escrow,
             gauge,
@@ -597,7 +571,7 @@ fn gauge_set_vote<C: Deref<Target = impl Signer> + Clone>(
             vote_delegate: program.payer(),
         }
         .to_account_metas(None),
-        data: gauge::instruction::GaugeSetVote { weight }.data(),
+        data: gauge::instruction::SetVote { weight }.data(),
         program_id: gauge::id(),
     });
 
@@ -611,7 +585,7 @@ fn gauge_set_vote<C: Deref<Target = impl Signer> + Clone>(
     Ok(())
 }
 
-fn gauge_commit_vote<C: Deref<Target = impl Signer> + Clone>(
+fn commit_vote<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     token_mint: Pubkey,
     base: Pubkey,
@@ -659,49 +633,7 @@ fn gauge_commit_vote<C: Deref<Target = impl Signer> + Clone>(
 
     let gauge_factory_state: gauge::GaugeFactory = program.account(gauge_factory)?;
 
-    let (epoch_gauge, _bump) = Pubkey::find_program_address(
-        &[
-            b"EpochGauge".as_ref(),
-            gauge.as_ref(),
-            gauge_factory_state
-                .current_voting_epoch
-                .to_le_bytes()
-                .as_ref(),
-        ],
-        &gauge::id(),
-    );
-
     let mut instructions = vec![];
-    let epoch_gauge_info = program.rpc().get_account(&epoch_gauge);
-    if epoch_gauge_info.is_err() {
-        instructions.push(Instruction {
-            accounts: gauge::accounts::CreateEpochGauge {
-                gauge_factory,
-                gauge,
-                amm_pool: gauge_state.amm_pool,
-                token_a_fee: gauge_state.token_a_fee_key,
-                token_b_fee: gauge_state.token_b_fee_key,
-                epoch_gauge,
-                payer: program.payer(),
-                system_program: system_program::id(),
-            }
-            .to_account_metas(None),
-            data: gauge::instruction::CreateEpochGauge {}.data(),
-            program_id: gauge::id(),
-        });
-    }
-
-    let (epoch_gauge_voter, _bump) = Pubkey::find_program_address(
-        &[
-            b"EpochGaugeVoter".as_ref(),
-            gauge_voter.as_ref(),
-            gauge_factory_state
-                .current_voting_epoch
-                .to_le_bytes()
-                .as_ref(),
-        ],
-        &gauge::id(),
-    );
 
     // let (epoch_gauge_vote, _bump) = Pubkey::find_program_address(
     //     &[
@@ -716,17 +648,16 @@ fn gauge_commit_vote<C: Deref<Target = impl Signer> + Clone>(
     // );
 
     instructions.push(Instruction {
-        accounts: gauge::accounts::GaugeEpochCommitVote {
+        accounts: gauge::accounts::CommitVote {
             gauge_factory,
             gauge,
             gauge_voter,
             gauge_vote,
-            epoch_gauge_voter,
-            epoch_gauge,
-            payer: program.payer(),
+            escrow,
+            vote_delegate: program.payer(),
         }
         .to_account_metas(None),
-        data: gauge::instruction::GaugeEpochCommitVote {}.data(),
+        data: gauge::instruction::CommitVote {}.data(),
         program_id: gauge::id(),
     });
 
@@ -744,7 +675,7 @@ fn gauge_commit_vote<C: Deref<Target = impl Signer> + Clone>(
     Ok(())
 }
 
-fn gauge_revert_vote<C: Deref<Target = impl Signer> + Clone>(
+fn revert_vote<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     token_mint: Pubkey,
     base: Pubkey,
@@ -790,51 +721,24 @@ fn gauge_revert_vote<C: Deref<Target = impl Signer> + Clone>(
 
     let gauge_factory_state: gauge::GaugeFactory = program.account(gauge_factory)?;
 
-    let (epoch_gauge, _bump) = Pubkey::find_program_address(
-        &[
-            b"EpochGauge".as_ref(),
-            gauge.as_ref(),
-            gauge_factory_state
-                .current_voting_epoch
-                .to_le_bytes()
-                .as_ref(),
-        ],
-        &gauge::id(),
-    );
-
-    let (epoch_gauge_voter, _bump) = Pubkey::find_program_address(
-        &[
-            b"EpochGaugeVoter".as_ref(),
-            gauge_voter.as_ref(),
-            gauge_factory_state
-                .current_voting_epoch
-                .to_le_bytes()
-                .as_ref(),
-        ],
-        &gauge::id(),
-    );
-
     let builder = program
         .request()
-        .accounts(gauge::accounts::GaugeEpochRevertVote {
+        .accounts(gauge::accounts::RevertVote {
             escrow,
             gauge_factory,
             gauge,
             gauge_voter,
             gauge_vote,
-            epoch_gauge_voter,
-            epoch_gauge,
-            payer: program.payer(),
             vote_delegate: program.payer(),
         })
-        .args(gauge::instruction::GaugeEpochRevertVote {});
+        .args(gauge::instruction::RevertVote {});
 
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())
 }
 
-fn gauge_enable<C: Deref<Target = impl Signer> + Clone>(
+fn enable_gauge<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     quarry_base: String,
     base: Pubkey,
@@ -863,19 +767,19 @@ fn gauge_enable<C: Deref<Target = impl Signer> + Clone>(
 
     let builder = program
         .request()
-        .accounts(gauge::accounts::GaugeEnable {
+        .accounts(gauge::accounts::EnableGauge {
             gauge_factory,
             gauge,
             foreman: program.payer(),
         })
-        .args(gauge::instruction::GaugeEnable {});
+        .args(gauge::instruction::EnableGauge {});
 
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())
 }
 
-fn gauge_disable<C: Deref<Target = impl Signer> + Clone>(
+fn disable_gauge<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     token_mint: Pubkey,
     base: Pubkey,
@@ -896,12 +800,12 @@ fn gauge_disable<C: Deref<Target = impl Signer> + Clone>(
 
     let builder = program
         .request()
-        .accounts(gauge::accounts::GaugeDisable {
+        .accounts(gauge::accounts::DisableGauge {
             gauge_factory,
             gauge,
             foreman: program.payer(),
         })
-        .args(gauge::instruction::GaugeDisable {});
+        .args(gauge::instruction::DisableGauge {});
 
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
@@ -964,7 +868,6 @@ fn sync_gauge<C: Deref<Target = impl Signer> + Clone>(
         .accounts(gauge::accounts::SyncGauge {
             gauge_factory,
             gauge,
-            epoch_gauge,
             quarry,
             rewarder,
             quarry_program: quarry::id(),
@@ -1133,7 +1036,7 @@ fn create_bribe<C: Deref<Target = impl Signer> + Clone>(
 
     let builder = program
         .request()
-        .accounts(gauge::accounts::CreateBribeGauge {
+        .accounts(gauge::accounts::CreateGaugeBribe {
             bribe,
             gauge_factory,
             system_program: system_program::id(),
@@ -1144,7 +1047,7 @@ fn create_bribe<C: Deref<Target = impl Signer> + Clone>(
             token_mint,
             token_program: spl_token::id(),
         })
-        .args(gauge::instruction::CreateBribe {
+        .args(gauge::instruction::CreateGaugeBribe {
             reward_each_epoch,
             bribe_epoch_end: reward_end,
         });

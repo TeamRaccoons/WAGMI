@@ -35,7 +35,7 @@ pub struct CreateQuarry<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<CreateQuarry>, amm_type: u64) -> Result<()> {
+pub fn handler(ctx: Context<CreateQuarry>, amm_type: u32) -> Result<()> {
     let amm_type = AmmType::get_amm_type(amm_type).ok_or(TypeCastFailed)?;
     #[cfg(feature = "mainnet")]
     invariant!(amm_type == AmmType::MeteoraAmm || amm_type == AmmType::LbClmm);

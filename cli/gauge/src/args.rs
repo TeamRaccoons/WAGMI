@@ -54,33 +54,31 @@ pub enum CliCommand {
         #[clap(long)]
         token_mint: Pubkey,
     },
-    CreateEpochGauge {
+    PumpGaugeEpoch {
         #[clap(long)]
         token_mint: Pubkey,
-        #[clap(long)]
-        voting_epoch: u32,
     },
-    PrepareEpochGaugeVoter {},
-    ResetEpochGaugeVoter {},
-    GaugeSetVote {
+    PrepareVote {},
+    ResetVote {},
+    SetVote {
         #[clap(long)]
         token_mint: Pubkey,
         #[clap(long)]
         weight: u32,
     },
-    GaugeCommitVote {
+    CommitVote {
         #[clap(long)]
         token_mint: Pubkey,
     },
-    GaugeRevertVote {
+    RevertVote {
         #[clap(long)]
         token_mint: Pubkey,
     },
-    GaugeEnable {
+    EnableGauge {
         #[clap(long)]
         quarry_base: String,
     },
-    GaugeDisable {
+    DisableGauge {
         #[clap(long)]
         token_mint: Pubkey,
     },

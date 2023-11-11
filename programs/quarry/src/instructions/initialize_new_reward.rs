@@ -6,7 +6,7 @@ use crate::*;
 #[instruction(index: u64)]
 pub struct InitializeNewReward<'info> {
     #[account(mut)]
-    pub quarry: Account<'info, Quarry>,
+    pub quarry: Box<Account<'info, Quarry>>,
 
     #[account(
         init,
@@ -21,7 +21,7 @@ pub struct InitializeNewReward<'info> {
     )]
     pub reward_vault: Account<'info, TokenAccount>,
 
-    pub reward_mint: Account<'info, Mint>,
+    pub reward_mint: Box<Account<'info, Mint>>,
 
     /// [Rewarder] authority.
     pub auth: MutableRewarderWithAuthority<'info>,
