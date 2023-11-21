@@ -66,19 +66,17 @@ impl<'info> ClaimGaugeFee<'info> {
             invariant!(gauge_vote.last_claim_a_fee_epoch < to_epoch, InvalidEpoch);
             let fee_amount = gauge_vote.claim_a_fee(to_epoch, &gauge)?;
 
-            gauge.cummulative_claimed_token_a_fee = gauge
+            gauge.cummulative_claimed_token_a_fee = unwrap_int!(gauge
                 .cummulative_claimed_token_a_fee
-                .checked_add(fee_amount as u128)
-                .unwrap();
+                .checked_add(fee_amount as u128));
 
             fee_amount
         } else {
             invariant!(gauge_vote.last_claim_b_fee_epoch < to_epoch, InvalidEpoch);
             let fee_amount = gauge_vote.claim_b_fee(to_epoch, &gauge)?;
-            gauge.cummulative_claimed_token_b_fee = gauge
+            gauge.cummulative_claimed_token_b_fee = unwrap_int!(gauge
                 .cummulative_claimed_token_b_fee
-                .checked_add(fee_amount as u128)
-                .unwrap();
+                .checked_add(fee_amount as u128));
 
             fee_amount
         };

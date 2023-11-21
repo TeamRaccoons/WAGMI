@@ -170,6 +170,8 @@ impl GaugeVote {
     pub fn weightx(&self) -> u32 {
         self.weight
     }
+
+    #[allow(clippy::unwrap_used)]
     pub fn pump_and_get_index_for_lastest_voting_epoch(
         &mut self,
         latest_voting_epoch: u32,
@@ -193,15 +195,14 @@ impl GaugeVote {
         return Err(VotingEpochNotFound.into());
     }
 
-    pub fn reset_voting_epoch(&mut self, current_vote_index: usize) {
+    pub fn reset_voting_epoch(&mut self, current_vote_index: usize) -> Result<()> {
         self.vote_epochs[current_vote_index] = GaugeVoteItem::default();
-        let current_index = current_vote_index
-            .checked_add(MAX_EPOCH_PER_GAUGE)
-            .unwrap()
-            .checked_sub(1)
-            .unwrap()
-            % MAX_EPOCH_PER_GAUGE;
-        self.current_index = u64::try_from(current_index).unwrap();
+        let current_index = unwrap_int!(current_vote_index.checked_add(MAX_EPOCH_PER_GAUGE));
+        let current_index = unwrap_int!(current_index.checked_sub(1)) % MAX_EPOCH_PER_GAUGE;
+
+        self.current_index =
+            u64::try_from(current_index).map_err(|_e| VipersError::IntegerOverflow)?;
+        Ok(())
     }
 
     pub fn claim_a_fee(&mut self, to_epoch: u32, gauge: &Gauge) -> Result<u64> {
@@ -209,9 +210,9 @@ impl GaugeVote {
         for i in self.last_claim_a_fee_epoch..=to_epoch {
             match self.get_index_for_voting_epoch(i) {
                 Ok(index) => {
-                    let fee_amount = gauge
-                        .get_allocated_fee_a(self.vote_epochs[index].allocated_power, i)
-                        .unwrap();
+                    let fee_amount = unwrap_opt!(
+                        gauge.get_allocated_fee_a(self.vote_epochs[index].allocated_power, i)
+                    );
 
                     total_fee_amount = total_fee_amount.safe_add(fee_amount)?;
                 }
@@ -228,9 +229,9 @@ impl GaugeVote {
         for i in self.last_claim_b_fee_epoch..=to_epoch {
             match self.get_index_for_voting_epoch(i) {
                 Ok(index) => {
-                    let fee_amount = gauge
-                        .get_allocated_fee_b(self.vote_epochs[index].allocated_power, i)
-                        .unwrap();
+                    let fee_amount = unwrap_opt!(
+                        gauge.get_allocated_fee_b(self.vote_epochs[index].allocated_power, i)
+                    );
 
                     total_fee_amount = total_fee_amount.safe_add(fee_amount)?;
                 }
@@ -328,6 +329,7 @@ impl Gauge {
         return Err(VotingEpochNotFound.into());
     }
 
+    #[allow(clippy::unwrap_used)]
     pub fn pump_and_get_index_for_lastest_voting_epoch(
         &mut self,
         latest_voting_epoch: u32,
@@ -395,6 +397,7 @@ impl GaugeVoter {
         return Err(VotingEpochNotFound.into());
     }
 
+    #[allow(clippy::unwrap_used)]
     // should return if it not pump
     pub fn pump_and_get_index_for_lastest_voting_epoch(
         &mut self,

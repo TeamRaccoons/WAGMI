@@ -81,10 +81,7 @@ pub fn handler(
     );
 
     invariant!(
-        bribe_rewards_epoch_end
-            .checked_sub(current_voting_epoch)
-            .unwrap()
-            < MAX_BRIBE_EPOCH,
+        unwrap_int!(bribe_rewards_epoch_end.checked_sub(current_voting_epoch)) < MAX_BRIBE_EPOCH,
         BribeEpochEndError
     );
 
