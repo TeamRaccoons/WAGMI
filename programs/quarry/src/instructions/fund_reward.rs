@@ -6,7 +6,7 @@ use crate::*;
 #[instruction(reward_index: u64)]
 pub struct FundReward<'info> {
     #[account(mut)]
-    pub quarry: Account<'info, Quarry>,
+    pub quarry: AccountLoader<'info, Quarry>,
 
     #[account(mut)]
     pub reward_vault: Account<'info, TokenAccount>,
@@ -29,7 +29,7 @@ impl<'info> FundReward<'info> {
             crate::ErrorCode::InvalidRewardIndex
         );
 
-        let reward_info = &self.quarry.reward_infos[reward_index];
+        let reward_info = &self.quarry.load()?.reward_infos[reward_index];
 
         require!(
             reward_info.initialized(),
@@ -67,7 +67,8 @@ pub fn handle(ctx: Context<FundReward>, index: u64, amount: u64) -> Result<()> {
 
     // 2. set new farming rate
     let current_time = Clock::get()?.unix_timestamp;
-    let reward_info = &mut ctx.accounts.quarry.reward_infos[reward_index];
+    let quarry = ctx.accounts.quarry.load_mut()?;
+    let mut reward_info = quarry.reward_infos[reward_index];
     reward_info.update_rate_after_funding(current_time as u64, amount)?;
 
     if amount > 0 {

@@ -5,7 +5,7 @@ use crate::*;
 #[instruction(reward_index: u64)]
 pub struct UpdateRewardFunder<'info> {
     #[account(mut)]
-    pub quarry: Account<'info, Quarry>,
+    pub quarry: AccountLoader<'info, Quarry>,
 
     /// [Rewarder] authority.
     pub auth: MutableRewarderWithAuthority<'info>,
@@ -13,7 +13,8 @@ pub struct UpdateRewardFunder<'info> {
 
 pub fn handle(ctx: Context<UpdateRewardFunder>, index: u64, new_funder: Pubkey) -> Result<()> {
     let reward_index: usize = index.try_into().map_err(|_| TypeCastFailed)?;
-    let reward_info = &mut ctx.accounts.quarry.reward_infos[reward_index];
+    let mut quarry = ctx.accounts.quarry.load_mut()?;
+    let mut reward_info = quarry.reward_infos[reward_index];
 
     require!(
         reward_info.initialized(),
@@ -39,7 +40,7 @@ pub fn handle(ctx: Context<UpdateRewardFunder>, index: u64, new_funder: Pubkey) 
 
 impl<'info> Validate<'info> for UpdateRewardFunder<'info> {
     fn validate(&self) -> Result<()> {
-        assert_keys_eq!(self.quarry.rewarder, self.auth.rewarder);
+        assert_keys_eq!(self.quarry.load()?.rewarder, self.auth.rewarder);
         Ok(())
     }
 }

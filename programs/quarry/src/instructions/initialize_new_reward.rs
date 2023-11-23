@@ -6,7 +6,7 @@ use crate::*;
 #[instruction(index: u64)]
 pub struct InitializeNewReward<'info> {
     #[account(mut)]
-    pub quarry: Box<Account<'info, Quarry>>,
+    pub quarry: AccountLoader<'info, Quarry>,
 
     #[account(
         init,
@@ -53,7 +53,8 @@ pub fn handler(
         crate::ErrorCode::InvalidRewardDuration
     );
 
-    let reward_info = &mut ctx.accounts.quarry.reward_infos[reward_index];
+    let mut quarry = ctx.accounts.quarry.load_mut()?;
+    let mut reward_info = quarry.reward_infos[reward_index];
 
     reward_info.init_reward(
         ctx.accounts.reward_mint.key(),
@@ -75,8 +76,9 @@ pub fn handler(
 impl<'info> Validate<'info> for InitializeNewReward<'info> {
     fn validate(&self) -> Result<()> {
         // only allow to initalize new reward for lp pool, for clmm, admin will need to initalize directly in program
-        invariant!(self.quarry.is_lp_pool());
-        assert_keys_eq!(self.quarry.rewarder, self.auth.rewarder);
+        let quarry = self.quarry.load()?;
+        invariant!(quarry.is_lp_pool());
+        assert_keys_eq!(quarry.rewarder, self.auth.rewarder);
         self.auth.rewarder.assert_not_paused()?;
         Ok(())
     }

@@ -17,7 +17,7 @@ pub struct UserStake<'info> {
 
     /// Quarry to claim from.
     #[account(mut)]
-    pub quarry: Box<Account<'info, Quarry>>,
+    pub quarry: AccountLoader<'info, Quarry>,
 
     /// Vault of the miner.
     #[account(mut)]
@@ -40,7 +40,7 @@ pub fn handler_stake_tokens(ctx: Context<UserStake>, amount: u64) -> Result<()> 
         return Ok(());
     }
 
-    let quarry = &mut ctx.accounts.quarry;
+    let mut quarry = ctx.accounts.quarry.load_mut()?;
     let clock = Clock::get()?;
     quarry.process_stake_action_internal(
         StakeAction::Stake,
@@ -80,7 +80,7 @@ pub fn handler_unstake_tokens(ctx: Context<UserStake>, amount: u64) -> Result<()
     );
 
     let clock = Clock::get()?;
-    let quarry = &mut ctx.accounts.quarry;
+    let mut quarry = ctx.accounts.quarry.load_mut()?;
     quarry.process_stake_action_internal(
         StakeAction::Withdraw,
         clock.unix_timestamp,
@@ -122,7 +122,8 @@ pub fn handler_unstake_tokens(ctx: Context<UserStake>, amount: u64) -> Result<()
 impl<'info> Validate<'info> for UserStake<'info> {
     /// Validates the UserStake.
     fn validate(&self) -> Result<()> {
-        invariant!(self.quarry.is_lp_pool());
+        let quarry = self.quarry.load()?;
+        invariant!(quarry.is_lp_pool());
         self.rewarder.assert_not_paused()?;
 
         // authority
@@ -133,7 +134,7 @@ impl<'info> Validate<'info> for UserStake<'info> {
         assert_keys_eq!(self.miner.quarry, self.quarry);
 
         // miner_vault
-        let staked_mint = self.quarry.token_mint_key;
+        let staked_mint = quarry.token_mint_key;
         assert_keys_eq!(self.miner.token_vault_key, self.miner_vault);
         assert_keys_eq!(self.miner_vault.mint, staked_mint);
         assert_keys_eq!(self.miner_vault.owner, self.miner);
@@ -142,7 +143,7 @@ impl<'info> Validate<'info> for UserStake<'info> {
         assert_keys_eq!(self.token_account.mint, staked_mint);
 
         // rewarder
-        assert_keys_eq!(self.quarry.rewarder, self.rewarder);
+        assert_keys_eq!(quarry.rewarder, self.rewarder);
 
         Ok(())
     }

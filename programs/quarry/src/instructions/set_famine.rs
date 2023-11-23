@@ -7,8 +7,8 @@ pub struct SetFamine<'info> {
     pub auth: ReadOnlyRewarderWithAdmin<'info>,
 
     /// [Quarry] updated.
-    #[account(mut, constraint = quarry.rewarder == auth.rewarder.key())]
-    pub quarry: Account<'info, Quarry>,
+    #[account(mut, constraint = quarry.load()?.rewarder == auth.rewarder.key())]
+    pub quarry: AccountLoader<'info, Quarry>,
 }
 
 /// Read-only [Rewarder] that requires the admin to be a signer.
@@ -23,7 +23,7 @@ pub struct ReadOnlyRewarderWithAdmin<'info> {
 }
 
 pub fn handler(ctx: Context<SetFamine>, famine_ts: i64) -> Result<()> {
-    let quarry = &mut ctx.accounts.quarry;
+    let mut quarry = ctx.accounts.quarry.load_mut()?;
     quarry.famine_ts = famine_ts;
 
     Ok(())

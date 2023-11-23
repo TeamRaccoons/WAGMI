@@ -2957,6 +2957,7 @@ dependencies = [
  "amm",
  "anchor-lang",
  "anchor-spl",
+ "bytemuck",
  "math",
  "minter",
  "num-traits",

@@ -1209,13 +1209,6 @@ export type Quarry = {
             "type": "publicKey"
           },
           {
-            "name": "ammType",
-            "docs": [
-              "Amm type, can be Meteora or LbClmm"
-            ],
-            "type": "u32"
-          },
-          {
             "name": "tokenMintKey",
             "docs": [
               "LP token this quarry is designated to"
@@ -1223,23 +1216,15 @@ export type Quarry = {
             "type": "publicKey"
           },
           {
-            "name": "bump",
+            "name": "rewardsPerTokenStored",
             "docs": [
-              "Bump."
+              "Rewards per token stored in the quarry"
             ],
-            "type": "u8"
-          },
-          {
-            "name": "index",
-            "docs": [
-              "Index of the [Quarry]."
-            ],
-            "type": "u16"
+            "type": "u128"
           },
           {
             "name": "famineTs",
             "docs": [
-              "Decimals on the token [Mint].",
               "Timestamp when quarry rewards cease"
             ],
             "type": "i64"
@@ -1250,13 +1235,6 @@ export type Quarry = {
               "Timestamp of last checkpoint"
             ],
             "type": "i64"
-          },
-          {
-            "name": "rewardsPerTokenStored",
-            "docs": [
-              "Rewards per token stored in the quarry"
-            ],
-            "type": "u128"
           },
           {
             "name": "annualRewardsRate",
@@ -1287,8 +1265,34 @@ export type Quarry = {
             "type": "u64"
           },
           {
+            "name": "ammType",
+            "docs": [
+              "Amm type, can be Meteora or LbClmm"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "index",
+            "docs": [
+              "Index of the [Quarry]."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "Bump."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "padding",
+            "type": "u8"
+          },
+          {
             "name": "rewardInfos",
             "docs": [
+              "Decimals on the token [Mint].",
               "Other reward info, possibly from partners"
             ],
             "type": {
@@ -1299,6 +1303,77 @@ export type Quarry = {
                 3
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "rewardInfo",
+      "docs": [
+        "Other rewards beside main token"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "docs": [
+              "Reward token mint."
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "vault",
+            "docs": [
+              "Reward vault token account."
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "funder",
+            "docs": [
+              "Authority account that allows to fund rewards"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "rewardRate",
+            "docs": [
+              "Reward rate"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "rewardPerTokenStored",
+            "docs": [
+              "reward per token stored"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "rewardDuration",
+            "docs": [
+              "Reward duration"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "rewardDurationEnd",
+            "docs": [
+              "Reward duration end"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "lastUpdateTime",
+            "docs": [
+              "The last time reward states were updated."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "padding",
+            "type": "u64"
           }
         ]
       }
@@ -1395,73 +1470,6 @@ export type Quarry = {
     }
   ],
   "types": [
-    {
-      "name": "RewardInfo",
-      "docs": [
-        "Other rewards beside main token"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "mint",
-            "docs": [
-              "Reward token mint."
-            ],
-            "type": "publicKey"
-          },
-          {
-            "name": "vault",
-            "docs": [
-              "Reward vault token account."
-            ],
-            "type": "publicKey"
-          },
-          {
-            "name": "funder",
-            "docs": [
-              "Authority account that allows to fund rewards"
-            ],
-            "type": "publicKey"
-          },
-          {
-            "name": "rewardDuration",
-            "docs": [
-              "Reward duration"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "rewardDurationEnd",
-            "docs": [
-              "Reward duration end"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "rewardRate",
-            "docs": [
-              "Reward rate"
-            ],
-            "type": "u128"
-          },
-          {
-            "name": "lastUpdateTime",
-            "docs": [
-              "The last time reward states were updated."
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "rewardPerTokenStored",
-            "docs": [
-              "reward per token stored"
-            ],
-            "type": "u128"
-          }
-        ]
-      }
-    },
     {
       "name": "UserRewardInfo",
       "type": {
@@ -3158,13 +3166,6 @@ export const IDL: Quarry = {
             "type": "publicKey"
           },
           {
-            "name": "ammType",
-            "docs": [
-              "Amm type, can be Meteora or LbClmm"
-            ],
-            "type": "u32"
-          },
-          {
             "name": "tokenMintKey",
             "docs": [
               "LP token this quarry is designated to"
@@ -3172,23 +3173,15 @@ export const IDL: Quarry = {
             "type": "publicKey"
           },
           {
-            "name": "bump",
+            "name": "rewardsPerTokenStored",
             "docs": [
-              "Bump."
+              "Rewards per token stored in the quarry"
             ],
-            "type": "u8"
-          },
-          {
-            "name": "index",
-            "docs": [
-              "Index of the [Quarry]."
-            ],
-            "type": "u16"
+            "type": "u128"
           },
           {
             "name": "famineTs",
             "docs": [
-              "Decimals on the token [Mint].",
               "Timestamp when quarry rewards cease"
             ],
             "type": "i64"
@@ -3199,13 +3192,6 @@ export const IDL: Quarry = {
               "Timestamp of last checkpoint"
             ],
             "type": "i64"
-          },
-          {
-            "name": "rewardsPerTokenStored",
-            "docs": [
-              "Rewards per token stored in the quarry"
-            ],
-            "type": "u128"
           },
           {
             "name": "annualRewardsRate",
@@ -3236,8 +3222,34 @@ export const IDL: Quarry = {
             "type": "u64"
           },
           {
+            "name": "ammType",
+            "docs": [
+              "Amm type, can be Meteora or LbClmm"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "index",
+            "docs": [
+              "Index of the [Quarry]."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "Bump."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "padding",
+            "type": "u8"
+          },
+          {
             "name": "rewardInfos",
             "docs": [
+              "Decimals on the token [Mint].",
               "Other reward info, possibly from partners"
             ],
             "type": {
@@ -3248,6 +3260,77 @@ export const IDL: Quarry = {
                 3
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "rewardInfo",
+      "docs": [
+        "Other rewards beside main token"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "docs": [
+              "Reward token mint."
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "vault",
+            "docs": [
+              "Reward vault token account."
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "funder",
+            "docs": [
+              "Authority account that allows to fund rewards"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "rewardRate",
+            "docs": [
+              "Reward rate"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "rewardPerTokenStored",
+            "docs": [
+              "reward per token stored"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "rewardDuration",
+            "docs": [
+              "Reward duration"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "rewardDurationEnd",
+            "docs": [
+              "Reward duration end"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "lastUpdateTime",
+            "docs": [
+              "The last time reward states were updated."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "padding",
+            "type": "u64"
           }
         ]
       }
@@ -3344,73 +3427,6 @@ export const IDL: Quarry = {
     }
   ],
   "types": [
-    {
-      "name": "RewardInfo",
-      "docs": [
-        "Other rewards beside main token"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "mint",
-            "docs": [
-              "Reward token mint."
-            ],
-            "type": "publicKey"
-          },
-          {
-            "name": "vault",
-            "docs": [
-              "Reward vault token account."
-            ],
-            "type": "publicKey"
-          },
-          {
-            "name": "funder",
-            "docs": [
-              "Authority account that allows to fund rewards"
-            ],
-            "type": "publicKey"
-          },
-          {
-            "name": "rewardDuration",
-            "docs": [
-              "Reward duration"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "rewardDurationEnd",
-            "docs": [
-              "Reward duration end"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "rewardRate",
-            "docs": [
-              "Reward rate"
-            ],
-            "type": "u128"
-          },
-          {
-            "name": "lastUpdateTime",
-            "docs": [
-              "The last time reward states were updated."
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "rewardPerTokenStored",
-            "docs": [
-              "reward per token stored"
-            ],
-            "type": "u128"
-          }
-        ]
-      }
-    },
     {
       "name": "UserRewardInfo",
       "type": {

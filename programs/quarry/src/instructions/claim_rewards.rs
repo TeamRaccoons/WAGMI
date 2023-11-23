@@ -41,7 +41,7 @@ pub struct UserClaim<'info> {
 
     /// Quarry to claim from.
     #[account(mut)]
-    pub quarry: Account<'info, Quarry>,
+    pub quarry: AccountLoader<'info, Quarry>,
 
     /// Token program
     pub token_program: Program<'info, Token>,
@@ -54,8 +54,10 @@ pub fn handler(ctx: Context<ClaimRewards>) -> Result<()> {
     let miner = &mut ctx.accounts.claim.miner;
 
     let now = Clock::get()?.unix_timestamp;
-    let quarry = &mut ctx.accounts.claim.quarry;
-    quarry.update_rewards_and_miner(miner, &ctx.accounts.claim.rewarder, now)?;
+    {
+        let mut quarry = ctx.accounts.claim.quarry.load_mut()?;
+        quarry.update_rewards_and_miner(miner, &ctx.accounts.claim.rewarder, now)?;
+    }
 
     ctx.accounts.calculate_and_claim_rewards()?;
 
@@ -66,6 +68,7 @@ impl<'info> ClaimRewards<'info> {
     /// Calculates rewards and claims them.
     pub fn calculate_and_claim_rewards(&mut self) -> Result<()> {
         let miner = &mut self.claim.miner;
+        let quarry = self.claim.quarry.load()?;
         let amount_claimable = miner.rewards_earned;
         if amount_claimable == 0 {
             // 0 claimable -- skip all logic
@@ -81,7 +84,7 @@ impl<'info> ClaimRewards<'info> {
         let now = Clock::get()?.unix_timestamp;
         emit!(ClaimEvent {
             authority: self.claim.authority.key(),
-            staked_token: self.claim.quarry.token_mint_key,
+            staked_token: quarry.token_mint_key,
             timestamp: now,
             rewards_token: self.rewards_token_mint.key(),
             amount: amount_claimable,
@@ -130,7 +133,8 @@ impl<'info> ClaimRewards<'info> {
 impl<'info> Validate<'info> for ClaimRewards<'info> {
     /// Validates a [ClaimRewards] accounts struct.
     fn validate(&self) -> Result<()> {
-        invariant!(self.claim.quarry.is_lp_pool());
+        let quarry = self.claim.quarry.load()?;
+        invariant!(quarry.is_lp_pool());
         self.claim.validate()?;
         self.claim.rewarder.assert_not_paused()?;
 
@@ -159,6 +163,7 @@ impl<'info> Validate<'info> for ClaimRewards<'info> {
 
 impl<'info> Validate<'info> for UserClaim<'info> {
     fn validate(&self) -> Result<()> {
+        let quarry = self.quarry.load()?;
         invariant!(!self.rewarder.is_paused, Paused);
         // authority
         invariant!(self.authority.is_signer, Unauthorized);
@@ -168,7 +173,7 @@ impl<'info> Validate<'info> for UserClaim<'info> {
         assert_keys_eq!(self.miner.quarry, self.quarry);
 
         // rewarder
-        assert_keys_eq!(self.quarry.rewarder, self.rewarder);
+        assert_keys_eq!(quarry.rewarder, self.rewarder);
 
         Ok(())
     }
