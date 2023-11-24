@@ -1308,77 +1308,6 @@ export type Quarry = {
       }
     },
     {
-      "name": "rewardInfo",
-      "docs": [
-        "Other rewards beside main token"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "mint",
-            "docs": [
-              "Reward token mint."
-            ],
-            "type": "publicKey"
-          },
-          {
-            "name": "vault",
-            "docs": [
-              "Reward vault token account."
-            ],
-            "type": "publicKey"
-          },
-          {
-            "name": "funder",
-            "docs": [
-              "Authority account that allows to fund rewards"
-            ],
-            "type": "publicKey"
-          },
-          {
-            "name": "rewardRate",
-            "docs": [
-              "Reward rate"
-            ],
-            "type": "u128"
-          },
-          {
-            "name": "rewardPerTokenStored",
-            "docs": [
-              "reward per token stored"
-            ],
-            "type": "u128"
-          },
-          {
-            "name": "rewardDuration",
-            "docs": [
-              "Reward duration"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "rewardDurationEnd",
-            "docs": [
-              "Reward duration end"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "lastUpdateTime",
-            "docs": [
-              "The last time reward states were updated."
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "padding",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
       "name": "miner",
       "docs": [
         "An account that has staked tokens into a [Quarry]."
@@ -1470,6 +1399,77 @@ export type Quarry = {
     }
   ],
   "types": [
+    {
+      "name": "RewardInfo",
+      "docs": [
+        "Other rewards beside main token"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "docs": [
+              "Reward token mint."
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "vault",
+            "docs": [
+              "Reward vault token account."
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "funder",
+            "docs": [
+              "Authority account that allows to fund rewards"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "rewardRate",
+            "docs": [
+              "Reward rate"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "rewardPerTokenStored",
+            "docs": [
+              "reward per token stored"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "rewardDuration",
+            "docs": [
+              "Reward duration"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "rewardDurationEnd",
+            "docs": [
+              "Reward duration end"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "lastUpdateTime",
+            "docs": [
+              "The last time reward states were updated."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "padding",
+            "type": "u64"
+          }
+        ]
+      }
+    },
     {
       "name": "UserRewardInfo",
       "type": {
@@ -3265,77 +3265,6 @@ export const IDL: Quarry = {
       }
     },
     {
-      "name": "rewardInfo",
-      "docs": [
-        "Other rewards beside main token"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "mint",
-            "docs": [
-              "Reward token mint."
-            ],
-            "type": "publicKey"
-          },
-          {
-            "name": "vault",
-            "docs": [
-              "Reward vault token account."
-            ],
-            "type": "publicKey"
-          },
-          {
-            "name": "funder",
-            "docs": [
-              "Authority account that allows to fund rewards"
-            ],
-            "type": "publicKey"
-          },
-          {
-            "name": "rewardRate",
-            "docs": [
-              "Reward rate"
-            ],
-            "type": "u128"
-          },
-          {
-            "name": "rewardPerTokenStored",
-            "docs": [
-              "reward per token stored"
-            ],
-            "type": "u128"
-          },
-          {
-            "name": "rewardDuration",
-            "docs": [
-              "Reward duration"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "rewardDurationEnd",
-            "docs": [
-              "Reward duration end"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "lastUpdateTime",
-            "docs": [
-              "The last time reward states were updated."
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "padding",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
       "name": "miner",
       "docs": [
         "An account that has staked tokens into a [Quarry]."
@@ -3427,6 +3356,77 @@ export const IDL: Quarry = {
     }
   ],
   "types": [
+    {
+      "name": "RewardInfo",
+      "docs": [
+        "Other rewards beside main token"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "docs": [
+              "Reward token mint."
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "vault",
+            "docs": [
+              "Reward vault token account."
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "funder",
+            "docs": [
+              "Authority account that allows to fund rewards"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "rewardRate",
+            "docs": [
+              "Reward rate"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "rewardPerTokenStored",
+            "docs": [
+              "reward per token stored"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "rewardDuration",
+            "docs": [
+              "Reward duration"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "rewardDurationEnd",
+            "docs": [
+              "Reward duration end"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "lastUpdateTime",
+            "docs": [
+              "The last time reward states were updated."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "padding",
+            "type": "u64"
+          }
+        ]
+      }
+    },
     {
       "name": "UserRewardInfo",
       "type": {

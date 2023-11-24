@@ -89,7 +89,7 @@ pub struct Quarry {
 }
 
 /// Other rewards beside main token
-#[account(zero_copy)]
+#[zero_copy]
 // #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default)]
 #[derive(Debug, Default, InitSpace)]
 pub struct RewardInfo {
