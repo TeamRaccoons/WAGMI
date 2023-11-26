@@ -1,5 +1,6 @@
 //! Struct definitions for accounts that hold state.
 
+use math::errors::ErrorCode::TypeCastFailed;
 use math::safe_math::SafeMath;
 
 use crate::constants::MAX_EPOCH_PER_GAUGE;
@@ -42,18 +43,16 @@ pub struct GaugeFactory {
 impl GaugeFactory {
     /// Fetches the current rewards epoch (for set rewards share in quarry). This is always the epoch before [Self::current_voting_epoch].
     pub fn rewards_epoch(&self) -> Result<u32> {
-        let voting_epoch = unwrap_int!(self.current_voting_epoch.checked_sub(1));
-        Ok(voting_epoch)
+        self.current_voting_epoch.safe_sub(1).map_err(Into::into)
     }
 
     /// Fetches the current distribute rewards epoch (for claim fee and bribe). This is always the epoch after [Self::current_voting_epoch].
     pub fn distribute_rewards_epoch(&self) -> Result<u32> {
-        let distribute_rewards_epoch = unwrap_int!(self.current_voting_epoch.checked_add(1));
-        Ok(distribute_rewards_epoch)
+        self.current_voting_epoch.safe_add(1).map_err(Into::into)
     }
 
     pub fn inc_bribe_index(&mut self) -> Result<()> {
-        self.bribe_index = unwrap_int!(self.bribe_index.checked_add(1));
+        self.bribe_index = self.bribe_index.safe_add(1)?;
         Ok(())
     }
 }
@@ -175,15 +174,17 @@ impl GaugeVote {
     pub fn pump_and_get_index_for_lastest_voting_epoch(
         &mut self,
         latest_voting_epoch: u32,
-    ) -> usize {
-        let current_index: usize = self.current_index.try_into().unwrap();
+    ) -> Result<usize> {
+        let current_index: usize = self.current_index.try_into().map_err(|_| TypeCastFailed)?;
         if self.vote_epochs[current_index].voting_epoch == latest_voting_epoch {
-            return current_index;
+            return Ok(current_index);
         }
-        let current_index = current_index.checked_add(1).unwrap() % MAX_EPOCH_PER_GAUGE;
-        self.current_index = u64::try_from(current_index).unwrap();
+        let current_index = current_index.safe_add(1)? % MAX_EPOCH_PER_GAUGE;
+        self.current_index = u64::try_from(current_index).map_err(|_| TypeCastFailed)?;
         self.vote_epochs[current_index].voting_epoch = latest_voting_epoch;
-        self.current_index.try_into().unwrap()
+        self.current_index
+            .try_into()
+            .map_err(|_| TypeCastFailed.into())
     }
 
     pub fn get_index_for_voting_epoch(&self, voting_epoch: u32) -> Result<usize> {
@@ -197,8 +198,8 @@ impl GaugeVote {
 
     pub fn reset_voting_epoch(&mut self, current_vote_index: usize) -> Result<()> {
         self.vote_epochs[current_vote_index] = GaugeVoteItem::default();
-        let current_index = unwrap_int!(current_vote_index.checked_add(MAX_EPOCH_PER_GAUGE));
-        let current_index = unwrap_int!(current_index.checked_sub(1)) % MAX_EPOCH_PER_GAUGE;
+        let current_index = current_vote_index.safe_add(MAX_EPOCH_PER_GAUGE)?;
+        let current_index = current_index.safe_sub(1)? % MAX_EPOCH_PER_GAUGE;
 
         self.current_index =
             u64::try_from(current_index).map_err(|_e| VipersError::IntegerOverflow)?;
@@ -333,14 +334,16 @@ impl Gauge {
     pub fn pump_and_get_index_for_lastest_voting_epoch(
         &mut self,
         latest_voting_epoch: u32,
-    ) -> usize {
-        let current_index: usize = self.current_index.try_into().unwrap();
+    ) -> Result<usize> {
+        let current_index: usize = self.current_index.try_into().map_err(|_| TypeCastFailed)?;
         if self.vote_epochs[current_index].voting_epoch == latest_voting_epoch {
-            return current_index;
+            return Ok(current_index);
         }
-        let current_index = current_index.checked_add(1).unwrap() % MAX_EPOCH_PER_GAUGE;
-        self.current_index = u64::try_from(current_index).unwrap();
-        self.current_index.try_into().unwrap()
+        let current_index = current_index.safe_add(1)? % MAX_EPOCH_PER_GAUGE;
+        self.current_index = u64::try_from(current_index).map_err(|_| TypeCastFailed)?;
+        self.current_index
+            .try_into()
+            .map_err(|_| TypeCastFailed.into())
     }
 
     pub fn total_power(&self, voting_epoch: u32) -> u64 {
@@ -360,8 +363,10 @@ impl Gauge {
 
                 return u64::try_from(
                     token_fee
-                        .checked_mul(allocated_power)?
-                        .checked_div(total_power)?,
+                        .safe_mul(allocated_power)
+                        .ok()?
+                        .safe_div(total_power)
+                        .ok()?,
                 )
                 .ok();
             }
@@ -377,8 +382,10 @@ impl Gauge {
 
                 return u64::try_from(
                     token_fee
-                        .checked_mul(allocated_power)?
-                        .checked_div(total_power)?,
+                        .safe_mul(allocated_power)
+                        .ok()?
+                        .safe_div(total_power)
+                        .ok()?,
                 )
                 .ok();
             }
@@ -402,15 +409,16 @@ impl GaugeVoter {
     pub fn pump_and_get_index_for_lastest_voting_epoch(
         &mut self,
         latest_voting_epoch: u32,
-    ) -> usize {
-        let current_index: usize = self.current_index.try_into().unwrap();
+    ) -> Result<usize> {
+        let current_index: usize = self.current_index.try_into().map_err(|_| TypeCastFailed)?;
         if self.vote_epochs[current_index].voting_epoch == latest_voting_epoch {
-            return current_index;
+            return Ok(current_index);
         }
-        let current_index = current_index.checked_add(1).unwrap() % MAX_EPOCH_PER_GAUGE;
-        self.current_index = u32::try_from(current_index).unwrap();
-        // self.vote_epochs[current_index].voting_epoch = latest_voting_epoch;
-        self.current_index.try_into().unwrap()
+        let current_index = current_index.safe_add(1)? % MAX_EPOCH_PER_GAUGE;
+        self.current_index = u32::try_from(current_index).map_err(|_| TypeCastFailed)?;
+        self.current_index
+            .try_into()
+            .map_err(|_| TypeCastFailed.into())
     }
 
     pub fn get_allocated_power(&self, voting_epoch: u32) -> u64 {
@@ -468,8 +476,10 @@ impl Bribe {
         let allocated_power = u128::from(allocated_power);
         let total_power = u128::from(total_power);
         let rewards = reward_each_epoch
-            .checked_mul(allocated_power)?
-            .checked_div(total_power)?;
+            .safe_mul(allocated_power)
+            .ok()?
+            .safe_div(total_power)
+            .ok()?;
         u64::try_from(rewards).ok()
     }
 }

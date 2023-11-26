@@ -64,7 +64,8 @@ pub fn handler(ctx: Context<CommitVote>) -> Result<()> {
     let weight_change_seqno = gauge_voter.weight_change_seqno;
     let total_weight = gauge_voter.total_weight;
 
-    let current_vote_index = gauge_vote.pump_and_get_index_for_lastest_voting_epoch(voting_epoch);
+    let current_vote_index =
+        gauge_vote.pump_and_get_index_for_lastest_voting_epoch(voting_epoch)?;
 
     let gauge_vote_item = &mut gauge_vote.vote_epochs[current_vote_index];
 
