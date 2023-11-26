@@ -176,11 +176,7 @@ impl GaugeVote {
     ) -> Result<usize> {
         let max_epoch_per_gauge: u32 =
             u32::try_from(MAX_EPOCH_PER_GAUGE).map_err(|_| TypeCastFailed)?;
-        let index = if latest_voting_epoch == max_epoch_per_gauge {
-            max_epoch_per_gauge - 1
-        } else {
-            latest_voting_epoch % max_epoch_per_gauge - 1
-        };
+        let index = latest_voting_epoch % max_epoch_per_gauge;
         usize::try_from(index).map_err(|_| TypeCastFailed.into())
     }
 
@@ -326,11 +322,7 @@ impl Gauge {
     ) -> Result<usize> {
         let max_epoch_per_gauge: u32 =
             u32::try_from(MAX_EPOCH_PER_GAUGE).map_err(|_| TypeCastFailed)?;
-        let index = if latest_voting_epoch == max_epoch_per_gauge {
-            max_epoch_per_gauge - 1
-        } else {
-            latest_voting_epoch % max_epoch_per_gauge - 1
-        };
+        let index = latest_voting_epoch % max_epoch_per_gauge;
         usize::try_from(index).map_err(|_| TypeCastFailed.into())
     }
 
@@ -392,11 +384,7 @@ impl GaugeVoter {
     ) -> Result<usize> {
         let max_epoch_per_gauge: u32 =
             u32::try_from(MAX_EPOCH_PER_GAUGE).map_err(|_| TypeCastFailed)?;
-        let index = if latest_voting_epoch == max_epoch_per_gauge {
-            max_epoch_per_gauge - 1
-        } else {
-            latest_voting_epoch % max_epoch_per_gauge - 1
-        };
+        let index = latest_voting_epoch % max_epoch_per_gauge;
         usize::try_from(index).map_err(|_| TypeCastFailed.into())
     }
 
