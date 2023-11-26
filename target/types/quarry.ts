@@ -1479,20 +1479,6 @@ export type Quarry = {
       }
     },
     {
-      "name": "Rounding",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Up"
-          },
-          {
-            "name": "Down"
-          }
-        ]
-      }
-    },
-    {
       "name": "StakeAction",
       "docs": [
         "An action for a user to take on the staking pool."
@@ -3437,20 +3423,6 @@ export const IDL: Quarry = {
           {
             "name": "rewardPending",
             "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "Rounding",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Up"
-          },
-          {
-            "name": "Down"
           }
         ]
       }

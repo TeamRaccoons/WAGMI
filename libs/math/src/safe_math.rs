@@ -1,4 +1,4 @@
-use crate::ErrorCode;
+use crate::errors::ErrorCode;
 use anchor_lang::solana_program::msg;
 use std::panic::Location;
 

@@ -1,6 +1,6 @@
 //! ClaimFee
 
-use crate::ErrorCode::TypeCastFailed;
+use math::errors::ErrorCode::TypeCastFailed;
 
 use crate::*;
 

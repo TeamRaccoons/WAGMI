@@ -3,11 +3,10 @@
 use anchor_lang::prelude::*;
 use vipers::prelude::*;
 
-use crate::math::safe_math::SafeMath;
-use crate::ErrorCode::TypeCastFailed;
 use crate::MAX_REWARD;
 use crate::{payroll::Payroll, Miner, Quarry, Rewarder};
 use amm::AmmType;
+use math::errors::ErrorCode::TypeCastFailed;
 use num_traits::cast::ToPrimitive;
 use std::cmp;
 /// An action for a user to take on the staking pool.

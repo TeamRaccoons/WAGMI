@@ -1,5 +1,5 @@
 use super::u128x128_math::{mul_div, mul_shr, shl_div, Rounding};
-use crate::ErrorCode;
+use crate::errors::ErrorCode;
 use anchor_lang::prelude::Result;
 use num_traits::cast::FromPrimitive;
 

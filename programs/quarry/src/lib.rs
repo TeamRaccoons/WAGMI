@@ -23,7 +23,6 @@ pub use state::*;
 use vipers::prelude::*;
 
 mod instructions;
-pub mod math;
 pub mod payroll;
 pub mod quarry_state;
 pub mod rewarder;

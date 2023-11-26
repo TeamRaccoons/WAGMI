@@ -1,6 +1,6 @@
 //! Struct definitions for accounts that hold state.
 
-use quarry::math::safe_math::SafeMath;
+use math::safe_math::SafeMath;
 
 use crate::constants::MAX_EPOCH_PER_GAUGE;
 use crate::ErrorCode::VotingEpochNotFound;
