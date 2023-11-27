@@ -176,7 +176,12 @@ impl GaugeVote {
     ) -> Result<usize> {
         let max_epoch_per_gauge: u32 =
             u32::try_from(MAX_EPOCH_PER_GAUGE).map_err(|_| TypeCastFailed)?;
-        let index = latest_voting_epoch % max_epoch_per_gauge;
+        let index = (latest_voting_epoch % max_epoch_per_gauge) as usize;
+
+        if self.vote_epochs[index].voting_epoch == latest_voting_epoch {
+            return Ok(index);
+        }
+        self.vote_epochs[index].voting_epoch = latest_voting_epoch;
         usize::try_from(index).map_err(|_| TypeCastFailed.into())
     }
 
@@ -322,7 +327,12 @@ impl Gauge {
     ) -> Result<usize> {
         let max_epoch_per_gauge: u32 =
             u32::try_from(MAX_EPOCH_PER_GAUGE).map_err(|_| TypeCastFailed)?;
-        let index = latest_voting_epoch % max_epoch_per_gauge;
+        let index = (latest_voting_epoch % max_epoch_per_gauge) as usize;
+
+        if self.vote_epochs[index].voting_epoch == latest_voting_epoch {
+            return Ok(index);
+        }
+        self.vote_epochs[index].voting_epoch = latest_voting_epoch;
         usize::try_from(index).map_err(|_| TypeCastFailed.into())
     }
 
@@ -384,7 +394,12 @@ impl GaugeVoter {
     ) -> Result<usize> {
         let max_epoch_per_gauge: u32 =
             u32::try_from(MAX_EPOCH_PER_GAUGE).map_err(|_| TypeCastFailed)?;
-        let index = latest_voting_epoch % max_epoch_per_gauge;
+        let index = (latest_voting_epoch % max_epoch_per_gauge) as usize;
+
+        if self.vote_epochs[index].voting_epoch == latest_voting_epoch {
+            return Ok(index);
+        }
+        // self.vote_epochs[index].voting_epoch = latest_voting_epoch;
         usize::try_from(index).map_err(|_| TypeCastFailed.into())
     }
 
@@ -482,9 +497,16 @@ impl EpochBribeVoter {
         gauge_voter: &GaugeVote,
         gauge: &Gauge,
     ) -> Result<u64> {
+        msg!(
+            "from epoch {} last epoch {} rewards_epoch {}",
+            from_epoch,
+            last_epoch,
+            rewards_epoch_epoch
+        );
         let mut rewards = 0u64;
         for i in from_epoch..=last_epoch {
             let allocated_power = gauge_voter.get_allocated_power(i);
+            msg!("allocated power {}", allocated_power);
             let total_power = gauge.total_power(i);
 
             rewards = rewards.safe_add(

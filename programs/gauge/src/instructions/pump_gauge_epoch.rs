@@ -50,10 +50,10 @@ pub fn handler(ctx: Context<PumpGaugeEpoch>) -> Result<()> {
     let index = gauge.pump_and_get_index_for_lastest_voting_epoch(voting_epoch)?;
     let vote_epoch = &mut gauge.vote_epochs[index];
 
-    require!(
-        vote_epoch.voting_epoch != voting_epoch,
-        crate::ErrorCode::RecreatedVotingEpoch
-    );
+    // require!(
+    //     vote_epoch.voting_epoch != voting_epoch,
+    //     crate::ErrorCode::RecreatedVotingEpoch
+    // );
 
     vote_epoch.voting_epoch = voting_epoch;
     vote_epoch.token_a_fee = token_a_fee;

@@ -52,6 +52,7 @@ pub fn handler(ctx: Context<ClaimGaugeBribe>) -> Result<()> {
     let bribe = &mut ctx.accounts.bribe;
     let epoch_bribe_voter = &mut ctx.accounts.epoch_bribe_voter;
     let gauge_factory = &ctx.accounts.gauge_factory;
+    msg!("bribe {:#?}", bribe);
 
     let gauge_vote = ctx.accounts.gauge_vote.load()?;
     let gauge = ctx.accounts.gauge.load()?;
@@ -76,6 +77,8 @@ pub fn handler(ctx: Context<ClaimGaugeBribe>) -> Result<()> {
         &gauge_vote,
         &gauge,
     )?;
+
+    msg!("reward {}", rewards);
 
     if rewards > 0 {
         let signer_seeds: &[&[&[u8]]] = gauge_factory_seeds!(ctx.accounts.gauge_factory);
