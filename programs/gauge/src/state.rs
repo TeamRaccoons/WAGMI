@@ -211,9 +211,8 @@ impl GaugeVote {
         for i in self.last_claim_a_fee_epoch..=to_epoch {
             match self.get_index_for_voting_epoch(i) {
                 Ok(index) => {
-                    let fee_amount = unwrap_opt!(
-                        gauge.get_allocated_fee_a(self.vote_epochs[index].allocated_power, i)
-                    );
+                    let fee_amount =
+                        gauge.get_allocated_fee_a(self.vote_epochs[index].allocated_power, i)?;
 
                     total_fee_amount = total_fee_amount.safe_add(fee_amount)?;
                 }
@@ -230,9 +229,8 @@ impl GaugeVote {
         for i in self.last_claim_b_fee_epoch..=to_epoch {
             match self.get_index_for_voting_epoch(i) {
                 Ok(index) => {
-                    let fee_amount = unwrap_opt!(
-                        gauge.get_allocated_fee_b(self.vote_epochs[index].allocated_power, i)
-                    );
+                    let fee_amount =
+                        gauge.get_allocated_fee_b(self.vote_epochs[index].allocated_power, i)?;
 
                     total_fee_amount = total_fee_amount.safe_add(fee_amount)?;
                 }
@@ -354,43 +352,33 @@ impl Gauge {
         }
         return 0;
     }
-    pub fn get_allocated_fee_a(&self, allocated_power: u64, voting_epoch: u32) -> Option<u64> {
+    pub fn get_allocated_fee_a(&self, allocated_power: u64, voting_epoch: u32) -> Result<u64> {
         for (i, vote_epoch) in self.vote_epochs.iter().enumerate() {
             if vote_epoch.voting_epoch == voting_epoch {
                 let token_fee = vote_epoch.token_a_fee;
                 let allocated_power = allocated_power.into();
                 let total_power = vote_epoch.total_power as u128;
 
-                return u64::try_from(
-                    token_fee
-                        .safe_mul(allocated_power)
-                        .ok()?
-                        .safe_div(total_power)
-                        .ok()?,
-                )
-                .ok();
+                return u64::try_from(token_fee.safe_mul(allocated_power)?.safe_div(total_power)?)
+                    .map_err(|_| TypeCastFailed.into());
             }
         }
-        return Some(0);
+
+        Err(VotingEpochNotFound.into())
     }
-    pub fn get_allocated_fee_b(&self, allocated_power: u64, voting_epoch: u32) -> Option<u64> {
+
+    pub fn get_allocated_fee_b(&self, allocated_power: u64, voting_epoch: u32) -> Result<u64> {
         for (i, vote_epoch) in self.vote_epochs.iter().enumerate() {
             if vote_epoch.voting_epoch == voting_epoch {
                 let token_fee = vote_epoch.token_b_fee;
                 let allocated_power = allocated_power.into();
                 let total_power = vote_epoch.total_power as u128;
 
-                return u64::try_from(
-                    token_fee
-                        .safe_mul(allocated_power)
-                        .ok()?
-                        .safe_div(total_power)
-                        .ok()?,
-                )
-                .ok();
+                return u64::try_from(token_fee.safe_mul(allocated_power)?.safe_div(total_power)?)
+                    .map_err(|_| TypeCastFailed.into());
             }
         }
-        return Some(0);
+        Err(VotingEpochNotFound.into())
     }
 }
 
