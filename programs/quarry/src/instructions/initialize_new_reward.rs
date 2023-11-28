@@ -54,7 +54,10 @@ pub fn handler(
     );
 
     let mut quarry = ctx.accounts.quarry.load_mut()?;
-    let mut reward_info = quarry.reward_infos[reward_index];
+    let reward_info = quarry
+        .reward_infos
+        .get_mut(reward_index)
+        .ok_or(InvalidRewardIndex)?;
 
     reward_info.init_reward(
         ctx.accounts.reward_mint.key(),

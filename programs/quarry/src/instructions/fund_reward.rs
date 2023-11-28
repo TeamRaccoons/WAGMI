@@ -67,8 +67,11 @@ pub fn handle(ctx: Context<FundReward>, index: u64, amount: u64) -> Result<()> {
 
     // 2. set new farming rate
     let current_time = Clock::get()?.unix_timestamp;
-    let quarry = ctx.accounts.quarry.load_mut()?;
-    let mut reward_info = quarry.reward_infos[reward_index];
+    let mut quarry = ctx.accounts.quarry.load_mut()?;
+    let reward_info = quarry
+        .reward_infos
+        .get_mut(reward_index)
+        .ok_or(InvalidRewardIndex)?;
     reward_info.update_rate_after_funding(current_time as u64, amount)?;
 
     if amount > 0 {

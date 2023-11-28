@@ -80,7 +80,6 @@ pub fn handler(ctx: Context<CreateGauge>) -> Result<()> {
 impl<'info> Validate<'info> for CreateGauge<'info> {
     fn validate(&self) -> Result<()> {
         let quarry = self.quarry.load()?;
-        assert_keys_eq!(quarry.amm_pool, self.amm_pool);
         assert_keys_eq!(self.gauge_factory.rewarder, quarry.rewarder);
         Ok(())
     }

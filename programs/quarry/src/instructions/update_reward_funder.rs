@@ -14,7 +14,10 @@ pub struct UpdateRewardFunder<'info> {
 pub fn handle(ctx: Context<UpdateRewardFunder>, index: u64, new_funder: Pubkey) -> Result<()> {
     let reward_index: usize = index.try_into().map_err(|_| TypeCastFailed)?;
     let mut quarry = ctx.accounts.quarry.load_mut()?;
-    let mut reward_info = quarry.reward_infos[reward_index];
+    let reward_info = quarry
+        .reward_infos
+        .get_mut(reward_index)
+        .ok_or(InvalidRewardIndex)?;
 
     require!(
         reward_info.initialized(),

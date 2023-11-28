@@ -24,7 +24,10 @@ pub fn handle(ctx: Context<UpdateRewardDuration>, index: u64, reward_duration: u
     );
 
     let mut quarry = ctx.accounts.quarry.load_mut()?;
-    let mut reward_info = quarry.reward_infos[reward_index];
+    let reward_info = quarry
+        .reward_infos
+        .get_mut(reward_index)
+        .ok_or(InvalidRewardIndex)?;
 
     require!(
         reward_info.initialized(),
