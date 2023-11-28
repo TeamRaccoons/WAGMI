@@ -169,7 +169,7 @@ impl GaugeVote {
         self.weight
     }
 
-    #[allow(clippy::unwrap_used)]
+    /// Return index for voting_epoch, or if it isn't existed, we set the the voting epoch at the specific index
     pub fn pump_and_get_index_for_lastest_voting_epoch(
         &mut self,
         latest_voting_epoch: u32,
@@ -181,7 +181,12 @@ impl GaugeVote {
         if self.vote_epochs[index].voting_epoch == latest_voting_epoch {
             return Ok(index);
         }
-        self.vote_epochs[index].voting_epoch = latest_voting_epoch;
+
+        let new_gauge_vote_item = GaugeVoteItem {
+            voting_epoch: latest_voting_epoch,
+            ..Default::default()
+        };
+        self.vote_epochs[index] = new_gauge_vote_item;
         usize::try_from(index).map_err(|_| TypeCastFailed.into())
     }
 
@@ -320,11 +325,8 @@ impl Gauge {
         return Err(VotingEpochNotFound.into());
     }
 
-    #[allow(clippy::unwrap_used)]
-    pub fn pump_and_get_index_for_lastest_voting_epoch(
-        &mut self,
-        latest_voting_epoch: u32,
-    ) -> Result<usize> {
+    /// Get the index for voting_epoch, we don't modify the gauge state here
+    pub fn get_index_for_lastest_voting_epoch(&self, latest_voting_epoch: u32) -> Result<usize> {
         let max_epoch_per_gauge: u32 =
             u32::try_from(MAX_EPOCH_PER_GAUGE).map_err(|_| TypeCastFailed)?;
         let index = (latest_voting_epoch % max_epoch_per_gauge) as usize;
@@ -332,7 +334,6 @@ impl Gauge {
         if self.vote_epochs[index].voting_epoch == latest_voting_epoch {
             return Ok(index);
         }
-        self.vote_epochs[index].voting_epoch = latest_voting_epoch;
         usize::try_from(index).map_err(|_| TypeCastFailed.into())
     }
 
@@ -384,14 +385,8 @@ impl GaugeVoter {
         return Err(VotingEpochNotFound.into());
     }
 
-    /// voting epoch start from 1
-    /// max index that we can store voting epoch is MAX_EPOCH_PER_GAUGE
-    /// so index_for_latest_voting_epoch = latest_voting_epoch % MAX_EPOCH_PER_GAUGE - 1 if latest_voting_epoch != MAX_EPOCH_PER_GAUGE
-    /// else index_for_latest_voting_epoch = MAX_EPOCH_PER_GAUGE - 1
-    pub fn pump_and_get_index_for_lastest_voting_epoch(
-        &mut self,
-        latest_voting_epoch: u32,
-    ) -> Result<usize> {
+    /// Return index for voting epoch
+    pub fn get_index_for_lastest_voting_epoch(&self, latest_voting_epoch: u32) -> Result<usize> {
         let max_epoch_per_gauge: u32 =
             u32::try_from(MAX_EPOCH_PER_GAUGE).map_err(|_| TypeCastFailed)?;
         let index = (latest_voting_epoch % max_epoch_per_gauge) as usize;
@@ -399,7 +394,6 @@ impl GaugeVoter {
         if self.vote_epochs[index].voting_epoch == latest_voting_epoch {
             return Ok(index);
         }
-        // self.vote_epochs[index].voting_epoch = latest_voting_epoch;
         usize::try_from(index).map_err(|_| TypeCastFailed.into())
     }
 
