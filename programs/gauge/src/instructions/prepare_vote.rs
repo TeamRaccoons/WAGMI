@@ -36,7 +36,7 @@ pub fn handler(ctx: Context<PrepareVote>) -> Result<()> {
 
     let mut gauge_voter = ctx.accounts.gauge_voter.load_mut()?;
     let weight_change_seqno = gauge_voter.weight_change_seqno;
-    let index = gauge_voter.pump_and_get_index_for_lastest_voting_epoch(voting_epoch);
+    let index = gauge_voter.pump_and_get_index_for_lastest_voting_epoch(voting_epoch)?;
     let vote_epoch = &mut gauge_voter.vote_epochs[index];
 
     require!(

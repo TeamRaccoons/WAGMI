@@ -1,6 +1,6 @@
 //! ClaimFee
-
-use crate::ErrorCode::TypeCastFailed;
+use math::errors::ErrorCode::TypeCastFailed;
+use math::safe_math::SafeMath;
 
 use crate::*;
 
@@ -68,17 +68,14 @@ impl<'info> ClaimGaugeFee<'info> {
 
             gauge.cummulative_claimed_token_a_fee = gauge
                 .cummulative_claimed_token_a_fee
-                .checked_add(fee_amount as u128)
-                .unwrap();
-
+                .safe_add(fee_amount as u128)?;
             fee_amount
         } else {
             invariant!(gauge_vote.last_claim_b_fee_epoch < to_epoch, InvalidEpoch);
             let fee_amount = gauge_vote.claim_b_fee(to_epoch, &gauge)?;
             gauge.cummulative_claimed_token_b_fee = gauge
                 .cummulative_claimed_token_b_fee
-                .checked_add(fee_amount as u128)
-                .unwrap();
+                .safe_add(fee_amount as u128)?;
 
             fee_amount
         };

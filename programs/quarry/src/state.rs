@@ -1,9 +1,9 @@
 //! State structs.
 
-use crate::math::safe_math::SafeMath;
-use crate::math::u128x128_math::{Rounding, SCALE_OFFSET};
-use crate::math::utils_math::{safe_mul_div_cast, safe_mul_shr_cast, safe_shl_div_cast};
 use crate::*;
+use math::safe_math::SafeMath;
+use math::u128x128_math::{Rounding, SCALE_OFFSET};
+use math::utils_math::{safe_mul_div_cast, safe_mul_shr_cast, safe_shl_div_cast};
 pub const MAX_REWARD: usize = 3;
 
 /// Controls token rewards distribution to all [Quarry]s.

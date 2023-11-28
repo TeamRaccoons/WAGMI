@@ -1,6 +1,7 @@
 //! Pump an [EpochGauge].
 
 use crate::*;
+use math::safe_math::SafeMath;
 
 /// Accounts for [gauge::pump_gauge_epoch].
 #[derive(Accounts)]
@@ -31,35 +32,22 @@ pub fn handler(ctx: Context<PumpGaugeEpoch>) -> Result<()> {
     let current_b_fee = ctx.accounts.token_b_fee.amount as u128;
 
     // TODO handle the case the previous epoch is not voted
-    let token_a_fee = current_a_fee
-        .checked_sub(
-            gauge
-                .cummulative_token_a_fee
-                .checked_sub(gauge.cummulative_claimed_token_a_fee)
-                .unwrap(),
-        )
-        .unwrap();
-    let token_b_fee = current_b_fee
-        .checked_sub(
-            gauge
-                .cummulative_token_b_fee
-                .checked_sub(gauge.cummulative_claimed_token_b_fee)
-                .unwrap(),
-        )
-        .unwrap();
-
-    gauge.cummulative_token_a_fee = gauge
+    let cummulative_unclaimed_token_a_fee = gauge
         .cummulative_token_a_fee
-        .checked_add(token_a_fee)
-        .unwrap();
-    gauge.cummulative_token_b_fee = gauge
+        .safe_sub(gauge.cummulative_claimed_token_a_fee)?;
+    let token_a_fee = current_a_fee.safe_sub(cummulative_unclaimed_token_a_fee)?;
+
+    let cummulative_unclaimed_token_b_fee = gauge
         .cummulative_token_b_fee
-        .checked_add(token_b_fee)
-        .unwrap();
+        .safe_sub(gauge.cummulative_claimed_token_b_fee)?;
+    let token_b_fee = current_b_fee.safe_sub(cummulative_unclaimed_token_b_fee)?;
+
+    gauge.cummulative_token_a_fee = gauge.cummulative_token_a_fee.safe_add(token_a_fee)?;
+    gauge.cummulative_token_b_fee = gauge.cummulative_token_b_fee.safe_add(token_b_fee)?;
 
     // update vote epoch
 
-    let index = gauge.pump_and_get_index_for_lastest_voting_epoch(voting_epoch);
+    let index = gauge.pump_and_get_index_for_lastest_voting_epoch(voting_epoch)?;
     let vote_epoch = &mut gauge.vote_epochs[index];
 
     require!(

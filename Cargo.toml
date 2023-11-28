@@ -16,7 +16,11 @@ members = [
     "cli/smartwallet",
     "cli/voter",
     "cli/moc_amm",
+    "libs/*/"
 ]
+
+[workspace.dependencies]
+math = { path = "libs/math"}
 
 [profile.release]
 overflow-checks = true

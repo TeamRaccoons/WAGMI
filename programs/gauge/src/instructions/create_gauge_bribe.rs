@@ -3,6 +3,7 @@
 use crate::constants::MAX_BRIBE_EPOCH;
 use crate::ErrorCode::MathOverflow;
 use crate::*;
+use math::safe_math::SafeMath;
 
 /// Accounts for [gauge::create_gauge_bribe].
 #[derive(Accounts)]
@@ -81,10 +82,7 @@ pub fn handler(
     );
 
     invariant!(
-        bribe_rewards_epoch_end
-            .checked_sub(current_voting_epoch)
-            .unwrap()
-            < MAX_BRIBE_EPOCH,
+        bribe_rewards_epoch_end.safe_sub(current_voting_epoch)? < MAX_BRIBE_EPOCH,
         BribeEpochEndError
     );
 

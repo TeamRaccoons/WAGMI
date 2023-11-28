@@ -1,6 +1,6 @@
-use crate::ErrorCode::TypeCastFailed;
 use crate::*;
 use amm::AmmType;
+use math::errors::ErrorCode::TypeCastFailed;
 
 /// Accounts for [quarry::create_quarry].
 #[derive(Accounts)]
