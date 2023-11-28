@@ -187,7 +187,7 @@ impl GaugeVote {
             ..Default::default()
         };
         self.vote_epochs[index] = new_gauge_vote_item;
-        usize::try_from(index).map_err(|_| TypeCastFailed.into())
+        Ok(index)
     }
 
     pub fn get_index_for_voting_epoch(&self, voting_epoch: u32) -> Result<usize> {
@@ -196,7 +196,7 @@ impl GaugeVote {
                 return Ok(i);
             }
         }
-        return Err(VotingEpochNotFound.into());
+        Err(VotingEpochNotFound.into())
     }
 
     pub fn reset_voting_epoch(&mut self, current_vote_index: usize) -> Result<()> {
@@ -322,7 +322,7 @@ impl Gauge {
                 return Ok(i);
             }
         }
-        return Err(VotingEpochNotFound.into());
+        Err(VotingEpochNotFound.into())
     }
 
     /// Get the index for voting_epoch, we don't modify the gauge state here
@@ -331,10 +331,7 @@ impl Gauge {
             u32::try_from(MAX_EPOCH_PER_GAUGE).map_err(|_| TypeCastFailed)?;
         let index = (latest_voting_epoch % max_epoch_per_gauge) as usize;
 
-        if self.vote_epochs[index].voting_epoch == latest_voting_epoch {
-            return Ok(index);
-        }
-        usize::try_from(index).map_err(|_| TypeCastFailed.into())
+        Ok(index)
     }
 
     pub fn total_power(&self, voting_epoch: u32) -> u64 {
@@ -391,10 +388,7 @@ impl GaugeVoter {
             u32::try_from(MAX_EPOCH_PER_GAUGE).map_err(|_| TypeCastFailed)?;
         let index = (latest_voting_epoch % max_epoch_per_gauge) as usize;
 
-        if self.vote_epochs[index].voting_epoch == latest_voting_epoch {
-            return Ok(index);
-        }
-        usize::try_from(index).map_err(|_| TypeCastFailed.into())
+        Ok(index)
     }
 
     pub fn get_allocated_power(&self, voting_epoch: u32) -> u64 {
