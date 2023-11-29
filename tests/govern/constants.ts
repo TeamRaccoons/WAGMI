@@ -1,6 +1,6 @@
 
 
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 const BN = anchor.BN;
 type BN = anchor.BN;
 

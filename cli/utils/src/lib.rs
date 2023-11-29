@@ -8,6 +8,8 @@ use anchor_client::{
 };
 use anchor_lang::prelude::Pubkey;
 use regex::Regex;
+pub mod token;
+use std::ops::Deref;
 
 pub fn parse_event_log<
     T: anchor_lang::AnchorDeserialize + anchor_lang::AnchorSerialize + anchor_lang::Discriminator,
@@ -44,9 +46,9 @@ pub fn parse_event_log<
     None
 }
 
-pub fn simulate_transaction(
-    builder: &RequestBuilder,
-    program: &Program,
+pub fn simulate_transaction<C: Deref<Target = impl Signer> + Clone>(
+    builder: &RequestBuilder<C>,
+    program: &Program<C>,
     signers: &Vec<&dyn Signer>,
 ) -> Result<Response<RpcSimulateTransactionResult>, Box<dyn std::error::Error>> {
     let instructions = builder.instructions()?;

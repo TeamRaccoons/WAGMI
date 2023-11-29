@@ -13,8 +13,10 @@ use anchor_lang::ToAccountMetas;
 use anchor_spl::associated_token::get_associated_token_address;
 use clap::*;
 use solana_program::instruction::Instruction;
+use std::ops::Deref;
 use std::rc::Rc;
 use std::str::FromStr;
+use utils_cli::token::get_or_create_ata;
 
 fn main() -> Result<()> {
     let opts = Opts::parse();
@@ -39,7 +41,7 @@ fn main() -> Result<()> {
         None => Keypair::new(),
     };
 
-    let program = client.program(program_id);
+    let program = client.program(program_id)?;
     match opts.command {
         CliCommand::NewLocker {
             token_mint,
@@ -125,8 +127,8 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn new_locker(
-    program: &Program,
+fn new_locker<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
     base_keypair: Keypair,
     token_mint: Pubkey,
     expiration: i64,
@@ -168,7 +170,10 @@ fn new_locker(
     Ok(())
 }
 
-fn new_escrow(program: &Program, locker: Pubkey) -> Result<()> {
+fn new_escrow<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    locker: Pubkey,
+) -> Result<()> {
     let (escrow, _bump) = Pubkey::find_program_address(
         &[
             b"Escrow".as_ref(),
@@ -193,8 +198,13 @@ fn new_escrow(program: &Program, locker: Pubkey) -> Result<()> {
     Ok(())
 }
 
-fn increase_locked_amount(program: &Program, locker: Pubkey, amount: u64) -> Result<()> {
+fn increase_locked_amount<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    locker: Pubkey,
+    amount: u64,
+) -> Result<()> {
     let locker_state: voter::Locker = program.account(locker)?;
+    println!("{:?}", locker_state);
     let (escrow, _bump) = Pubkey::find_program_address(
         &[
             b"Escrow".as_ref(),
@@ -203,27 +213,58 @@ fn increase_locked_amount(program: &Program, locker: Pubkey, amount: u64) -> Res
         ],
         &voter::id(),
     );
-    let escrow_tokens = get_associated_token_address(&escrow, &locker_state.token_mint);
 
-    let source_tokens = get_associated_token_address(&program.payer(), &locker_state.token_mint);
-
-    let builder = program
-        .request()
-        .accounts(voter::accounts::IncreaseLockedAmount {
+    let mut instructions = vec![];
+    let escrow_info = program.rpc().get_account(&escrow);
+    if escrow_info.is_err() {
+        instructions = vec![Instruction {
+            accounts: voter::accounts::NewEscrow {
+                locker,
+                escrow,
+                escrow_owner: program.payer(),
+                payer: program.payer(),
+                system_program: solana_program::system_program::ID,
+            }
+            .to_account_metas(None),
+            data: voter::instruction::NewEscrow {}.data(),
+            program_id: voter::id(),
+        }];
+    }
+    let escrow_tokens = get_or_create_ata(program, locker_state.token_mint, escrow)?;
+    let source_tokens = get_or_create_ata(program, locker_state.token_mint, program.payer())?;
+    instructions.push(Instruction {
+        accounts: voter::accounts::IncreaseLockedAmount {
             locker,
             escrow,
             escrow_tokens,
             source_tokens,
             payer: program.payer(),
             token_program: anchor_spl::token::ID,
-        })
-        .args(voter::instruction::IncreaseLockedAmount { amount });
+        }
+        .to_account_metas(None),
+        data: voter::instruction::IncreaseLockedAmount { amount }.data(),
+        program_id: voter::id(),
+    });
+
+    let builder = program.request();
+    let builder = instructions
+        .into_iter()
+        .fold(builder, |bld, ix| bld.instruction(ix));
+
+    // let result = simulate_transaction(&builder, program, &vec![&default_keypair()]).unwrap();
+    // println!("{:?}", result);
+    // return Ok(());
+
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())
 }
 
-fn extend_locked_duration(program: &Program, locker: Pubkey, duration: i64) -> Result<()> {
+fn extend_locked_duration<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    locker: Pubkey,
+    duration: i64,
+) -> Result<()> {
     let (escrow, _bump) = Pubkey::find_program_address(
         &[
             b"Escrow".as_ref(),
@@ -246,7 +287,11 @@ fn extend_locked_duration(program: &Program, locker: Pubkey, duration: i64) -> R
     Ok(())
 }
 
-fn toggle_max_lock(program: &Program, locker: Pubkey, is_max_lock: i64) -> Result<()> {
+fn toggle_max_lock<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    locker: Pubkey,
+    is_max_lock: i64,
+) -> Result<()> {
     let (escrow, _bump) = Pubkey::find_program_address(
         &[
             b"Escrow".as_ref(),
@@ -270,7 +315,10 @@ fn toggle_max_lock(program: &Program, locker: Pubkey, is_max_lock: i64) -> Resul
     Ok(())
 }
 
-fn withdraw(program: &Program, locker: Pubkey) -> Result<()> {
+fn withdraw<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    locker: Pubkey,
+) -> Result<()> {
     let locker_state: voter::Locker = program.account(locker)?;
     let (escrow, _bump) = Pubkey::find_program_address(
         &[
@@ -302,7 +350,11 @@ fn withdraw(program: &Program, locker: Pubkey) -> Result<()> {
     Ok(())
 }
 
-fn active_proposal(program: &Program, locker: Pubkey, proposal: Pubkey) -> Result<()> {
+fn active_proposal<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    locker: Pubkey,
+    proposal: Pubkey,
+) -> Result<()> {
     let locker_state: voter::Locker = program.account(locker)?;
     let (escrow, _bump) = Pubkey::find_program_address(
         &[
@@ -329,7 +381,12 @@ fn active_proposal(program: &Program, locker: Pubkey, proposal: Pubkey) -> Resul
     Ok(())
 }
 
-fn cast_vote(program: &Program, locker: Pubkey, proposal: Pubkey, side: u8) -> Result<()> {
+fn cast_vote<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    locker: Pubkey,
+    proposal: Pubkey,
+    side: u8,
+) -> Result<()> {
     let locker_state: voter::Locker = program.account(locker)?;
     let (escrow, _bump) = Pubkey::find_program_address(
         &[
@@ -394,7 +451,11 @@ fn cast_vote(program: &Program, locker: Pubkey, proposal: Pubkey, side: u8) -> R
     Ok(())
 }
 
-fn set_vote_delegate(program: &Program, locker: Pubkey, new_delegate: Pubkey) -> Result<()> {
+fn set_vote_delegate<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    locker: Pubkey,
+    new_delegate: Pubkey,
+) -> Result<()> {
     let (escrow, _bump) = Pubkey::find_program_address(
         &[
             b"Escrow".as_ref(),

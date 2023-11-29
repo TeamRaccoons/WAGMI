@@ -1,0 +1,18 @@
+[package]
+name = "amm"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+doctest = false
+
+[features]
+no-idl = []
+default = []
+
+[dependencies]
+anchor-lang = "0.28.0"
+anchor-spl = "0.28.0"
+vipers = {path = "../../libs/vipers"}
+moc-amm = {path = "../../programs/moc-amm", features=["no-entrypoint", "cpi"]}
+meteora-amm = { git="https://github.com/mercurial-finance/mercurial-dynamic-amm-sdk", package="mercurial-amm", features= ["cpi" , "no-entrypoint"], rev = "cab30c9b9114291129bb73688210293790893fa9" }

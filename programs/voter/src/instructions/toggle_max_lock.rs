@@ -1,4 +1,5 @@
 use crate::*;
+use vipers::prelude::VipersError;
 
 /// Accounts for [voter::toggle_max_lock].
 #[derive(Accounts)]
@@ -26,8 +27,14 @@ impl<'info> ToggleMaxLock<'info> {
         if !is_max_lock {
             let locker = &self.locker;
             let next_escrow_started_at = Clock::get()?.unix_timestamp;
-            let next_escrow_ends_at = unwrap_int!(next_escrow_started_at
-                .checked_add(locker.params.max_stake_duration.try_into().unwrap()));
+            let max_stake_duration: i64 = locker
+                .params
+                .max_stake_duration
+                .try_into()
+                .map_err(|_e| VipersError::IntegerOverflow)?;
+
+            let next_escrow_ends_at =
+                unwrap_int!(next_escrow_started_at.checked_add(max_stake_duration));
             escrow
                 .record_extend_lock_duration_event(next_escrow_started_at, next_escrow_ends_at)?;
         }

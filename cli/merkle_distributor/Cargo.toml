@@ -10,11 +10,11 @@ clap = { version = "3.1.8", features = ["derive"] }
 merkle-distributor = { path = "../../programs/merkle-distributor" }
 voter = { path = "../../programs/voter" }
 shellexpand = "2.1.0"
-anchor-lang = "0.26.0"
-anchor-spl = "0.26.0"
-anchor-client = "0.26.0"
+anchor-lang = "0.28.0"
+anchor-spl = "0.28.0"
+anchor-client = "0.28.0"
 anyhow = "1.0.57"
-solana-program = "1.14.12"
+solana-program = "1.16.1"
 serde = { version = "1.0.104", features = ["derive"] }
 serde_json = "1.0.48"
 spl-associated-token-account = "1.1.2"

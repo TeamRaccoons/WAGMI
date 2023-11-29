@@ -15,6 +15,7 @@ use anchor_lang::ToAccountMetas;
 use anchor_spl::associated_token::get_associated_token_address;
 use clap::*;
 use solana_program::instruction::Instruction;
+use std::ops::Deref;
 use std::rc::Rc;
 use std::str::FromStr;
 
@@ -40,7 +41,7 @@ fn main() -> Result<()> {
         }
         None => Keypair::new(),
     };
-    let program = client.program(program_id);
+    let program = client.program(program_id)?;
     match opts.command {
         CliCommand::NewDistributor {
             token_mint,
@@ -97,8 +98,8 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn new_distributor(
-    program: &Program,
+fn new_distributor<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
     base_keypair: Keypair,
     token_mint: Pubkey,
     path_to_snapshot: String,
@@ -138,7 +139,11 @@ fn new_distributor(
     Ok(())
 }
 
-fn fund(program: &Program, base_keypair: Keypair, path_to_snapshot: String) -> Result<()> {
+fn fund<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base_keypair: Keypair,
+    path_to_snapshot: String,
+) -> Result<()> {
     let snapshot = read_snapshot(path_to_snapshot);
     let (max_num_nodes, max_total_claim, root) = build_tree(&snapshot);
 
@@ -190,8 +195,8 @@ fn fund(program: &Program, base_keypair: Keypair, path_to_snapshot: String) -> R
     Ok(())
 }
 
-fn claim(
-    program: &Program,
+fn claim<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
     base: Pubkey,
     claimant: Pubkey,
     path_to_snapshot: String,
@@ -199,7 +204,6 @@ fn claim(
     let snapshot = read_snapshot(path_to_snapshot);
 
     let (index, amount, proof) = snapshot.get_user_claim_info(claimant)?;
-
     let (distributor, _bump) = Pubkey::find_program_address(
         &[b"MerkleDistributor".as_ref(), base.as_ref()],
         &merkle_distributor::id(),

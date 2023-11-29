@@ -1,5 +1,5 @@
-anchor_version = "0.26.0"
-solana_version = "1.14.12"
+anchor_version = "0.28.0"
+solana_version = "1.16.1"
 
 [features]
 seeds = false
@@ -12,8 +12,22 @@ url = "https://api.apr.dev"
 cluster = "localnet"
 wallet = "./tests/test-key.json"
 
+[test.validator]
+
+[[test.genesis]]
+address = "24Uqj9JCLxUeoC3hGfh5W3s9FM9uCHDS2SG3LYwBpyTi"
+program = "tests/deps/mercurial_vault.so"
+
+[[test.genesis]]
+address = "Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB"
+program = "tests/deps/amm.so"
+
 [programs.localnet]
 smart_wallet = "smaK3fwkA7ubbxEhsimp1iqPTzfS4MBsNL77QLABZP6"
 govern = "GovaE4iu227srtG2s3tZzB4RmWBzw8sTwrCLZz7kN7rY"
 voter = "voteXZxajNhmCGpqzBhVArCANMKra5nwqtaaLA6v9CX"
 merkle_distributor = "MRKgRBL5XCCT5rwUGnim4yioq9wR4c6rj2EZkw8KdyZ"
+gauge = "gauKNF863wSNX1arJ1bAzc8Q2twYd99AaiDd2cpMoE3"
+minter = "MintpueFHs8fQMvd6uwuCBHhSGw3Wi7KtoMyEmjP29G"
+moc_amm = "mocJyKP7XPfSHs9q55ycWDfuWzQiqPAkoNXdabiW2Dc"
+quarry = "quaJeeoTrxSszHnpzNQrtFoF1kcnfMiSWuYpk8ddobB"

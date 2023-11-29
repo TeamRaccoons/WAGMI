@@ -1,11 +1,26 @@
 [workspace]
 members = [
-    "programs/*",
+    "programs/merkle-distributor",
+    "programs/govern",
+    "programs/smart-wallet",
+    "programs/voter",
+    "programs/gauge",
+    "programs/quarry",
+    "programs/minter",
+    "programs/moc-amm",
+    "cli/gauge",
     "cli/govern",
     "cli/merkle_distributor",
-    "cli/voter",
+    "cli/minter",
+    "cli/quarry",
     "cli/smartwallet",
+    "cli/voter",
+    "cli/moc_amm",
+    "libs/*/"
 ]
+
+[workspace.dependencies]
+math = { path = "libs/math"}
 
 [profile.release]
 overflow-checks = true

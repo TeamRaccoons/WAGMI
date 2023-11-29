@@ -8,6 +8,7 @@ use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signer::keypair::*;
 use anchor_client::solana_sdk::signer::Signer;
 use anchor_client::{Client, Program};
+use std::ops::Deref;
 use std::rc::Rc;
 use std::str::FromStr;
 
@@ -36,7 +37,7 @@ fn main() -> Result<()> {
         None => Keypair::new(),
     };
 
-    let program = client.program(program_id);
+    let program = client.program(program_id)?;
     match opts.command {
         CliCommand::CreateGovernor {
             voting_delay,
@@ -94,8 +95,8 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn create_governor(
-    program: &Program,
+fn create_governor<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
     base_keypair: Keypair,
     voting_delay: u64,
     voting_period: u64,
@@ -141,7 +142,10 @@ fn create_governor(
     Ok(())
 }
 
-fn create_dummy_proposal(program: &Program, base: Pubkey) -> Result<()> {
+fn create_dummy_proposal<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+) -> Result<()> {
     let (governor, bump) =
         Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
 
@@ -175,7 +179,10 @@ fn create_dummy_proposal(program: &Program, base: Pubkey) -> Result<()> {
     Ok(())
 }
 
-fn cancel_proposal(program: &Program, proposal: Pubkey) -> Result<()> {
+fn cancel_proposal<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    proposal: Pubkey,
+) -> Result<()> {
     let proposal_state: govern::Proposal = program.account(proposal)?;
 
     let builder = program
@@ -191,7 +198,10 @@ fn cancel_proposal(program: &Program, proposal: Pubkey) -> Result<()> {
     Ok(())
 }
 
-fn queue_proposal(program: &Program, proposal: Pubkey) -> Result<()> {
+fn queue_proposal<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    proposal: Pubkey,
+) -> Result<()> {
     let proposal_state: govern::Proposal = program.account(proposal)?;
     let governor_state: govern::Governor = program.account(proposal_state.governor)?;
     let smart_wallet_state: smart_wallet::SmartWallet =
@@ -221,7 +231,10 @@ fn queue_proposal(program: &Program, proposal: Pubkey) -> Result<()> {
     Ok(())
 }
 
-fn new_vote(program: &Program, proposal: Pubkey) -> Result<()> {
+fn new_vote<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    proposal: Pubkey,
+) -> Result<()> {
     let (vote, _bump) = Pubkey::find_program_address(
         &[
             b"MeteoraVote".as_ref(),
@@ -246,8 +259,8 @@ fn new_vote(program: &Program, proposal: Pubkey) -> Result<()> {
     Ok(())
 }
 
-fn create_proposal_meta(
-    program: &Program,
+fn create_proposal_meta<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
     proposal: Pubkey,
     title: String,
     description_link: String,
@@ -275,7 +288,10 @@ fn create_proposal_meta(
     Ok(())
 }
 
-fn view_governor(program: &Program, base: Pubkey) -> Result<()> {
+fn view_governor<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+) -> Result<()> {
     let (governor, bump) =
         Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
     println!("governor address {}", governor);
@@ -284,12 +300,18 @@ fn view_governor(program: &Program, base: Pubkey) -> Result<()> {
     println!("{:?}", state);
     Ok(())
 }
-fn view_proposal(program: &Program, proposal: Pubkey) -> Result<()> {
+fn view_proposal<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    proposal: Pubkey,
+) -> Result<()> {
     let state: govern::Proposal = program.account(proposal)?;
     println!("{:?}", state);
     Ok(())
 }
-fn view_proposal_meta(program: &Program, proposal: Pubkey) -> Result<()> {
+fn view_proposal_meta<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    proposal: Pubkey,
+) -> Result<()> {
     let (proposal_meta, _bump) = Pubkey::find_program_address(
         &[b"MeteoraProposalMeta".as_ref(), proposal.as_ref()],
         &govern::id(),
