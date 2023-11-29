@@ -1265,13 +1265,6 @@ export type Gauge = {
             "type": "publicKey"
           },
           {
-            "name": "currentIndex",
-            "docs": [
-              "ring buffer to store vote for all epochs"
-            ],
-            "type": "u64"
-          },
-          {
             "name": "isDisabled",
             "docs": [
               "If true, this Gauge cannot receive any more votes",
@@ -1288,6 +1281,9 @@ export type Gauge = {
           },
           {
             "name": "voteEpochs",
+            "docs": [
+              "ring buffer to store vote for all epochs"
+            ],
             "type": {
               "array": [
                 {
@@ -1350,18 +1346,14 @@ export type Gauge = {
             "type": "u32"
           },
           {
-            "name": "currentIndex",
-            "docs": [
-              "ring buffer to store epochgaugeVoter"
-            ],
+            "name": "padding",
             "type": "u32"
           },
           {
-            "name": "padding",
-            "type": "u64"
-          },
-          {
             "name": "voteEpochs",
+            "docs": [
+              "ring buffer to store epochgaugeVoter"
+            ],
             "type": {
               "array": [
                 {
@@ -1427,13 +1419,6 @@ export type Gauge = {
             "type": "u128"
           },
           {
-            "name": "currentIndex",
-            "docs": [
-              "ring buffer to store vote for all epochs"
-            ],
-            "type": "u64"
-          },
-          {
             "name": "lastClaimAFeeEpoch",
             "type": "u32"
           },
@@ -1443,6 +1428,9 @@ export type Gauge = {
           },
           {
             "name": "voteEpochs",
+            "docs": [
+              "ring buffer to store vote for all epochs"
+            ],
             "type": {
               "array": [
                 {
@@ -3628,13 +3616,6 @@ export const IDL: Gauge = {
             "type": "publicKey"
           },
           {
-            "name": "currentIndex",
-            "docs": [
-              "ring buffer to store vote for all epochs"
-            ],
-            "type": "u64"
-          },
-          {
             "name": "isDisabled",
             "docs": [
               "If true, this Gauge cannot receive any more votes",
@@ -3651,6 +3632,9 @@ export const IDL: Gauge = {
           },
           {
             "name": "voteEpochs",
+            "docs": [
+              "ring buffer to store vote for all epochs"
+            ],
             "type": {
               "array": [
                 {
@@ -3713,18 +3697,14 @@ export const IDL: Gauge = {
             "type": "u32"
           },
           {
-            "name": "currentIndex",
-            "docs": [
-              "ring buffer to store epochgaugeVoter"
-            ],
+            "name": "padding",
             "type": "u32"
           },
           {
-            "name": "padding",
-            "type": "u64"
-          },
-          {
             "name": "voteEpochs",
+            "docs": [
+              "ring buffer to store epochgaugeVoter"
+            ],
             "type": {
               "array": [
                 {
@@ -3790,13 +3770,6 @@ export const IDL: Gauge = {
             "type": "u128"
           },
           {
-            "name": "currentIndex",
-            "docs": [
-              "ring buffer to store vote for all epochs"
-            ],
-            "type": "u64"
-          },
-          {
             "name": "lastClaimAFeeEpoch",
             "type": "u32"
           },
@@ -3806,6 +3779,9 @@ export const IDL: Gauge = {
           },
           {
             "name": "voteEpochs",
+            "docs": [
+              "ring buffer to store vote for all epochs"
+            ],
             "type": {
               "array": [
                 {

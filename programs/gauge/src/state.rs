@@ -89,13 +89,12 @@ pub struct Gauge {
     /// token_b_fee_mint of amm pool, only used for tracking
     pub token_b_mint: Pubkey,
 
-    /// ring buffer to store vote for all epochs
-    pub current_index: u64,
     /// If true, this Gauge cannot receive any more votes
     /// and rewards shares cannot be synchronized from it.
     pub is_disabled: u32,
     /// Gauge type
     pub amm_type: u32,
+    /// ring buffer to store vote for all epochs
     pub vote_epochs: [EpochGauge; MAX_EPOCH_PER_GAUGE],
 }
 
@@ -123,9 +122,9 @@ pub struct GaugeVoter {
     /// Total number of parts that the voter has distributed.
     pub total_weight: u32,
 
+    pub _padding: u32,
+
     /// ring buffer to store epochgaugeVoter
-    pub current_index: u32,
-    pub _padding: u64,
     pub vote_epochs: [EpochGaugeVoter; MAX_EPOCH_PER_GAUGE],
 }
 
@@ -147,10 +146,10 @@ pub struct GaugeVote {
     /// stats to track how many fee user has claimed
     pub claimed_token_b_fee: u128,
 
-    /// ring buffer to store vote for all epochs
-    pub current_index: u64,
     pub last_claim_a_fee_epoch: u32,
     pub last_claim_b_fee_epoch: u32,
+
+    /// ring buffer to store vote for all epochs
     pub vote_epochs: [GaugeVoteItem; MAX_EPOCH_PER_GAUGE],
 }
 
@@ -170,21 +169,25 @@ impl GaugeVote {
         self.weight
     }
 
-    #[allow(clippy::unwrap_used)]
+    /// Return index for voting_epoch, or if it isn't existed, we set the the voting epoch at the specific index
     pub fn pump_and_get_index_for_lastest_voting_epoch(
         &mut self,
         latest_voting_epoch: u32,
     ) -> Result<usize> {
-        let current_index: usize = self.current_index.try_into().map_err(|_| TypeCastFailed)?;
-        if self.vote_epochs[current_index].voting_epoch == latest_voting_epoch {
-            return Ok(current_index);
+        let max_epoch_per_gauge: u32 =
+            u32::try_from(MAX_EPOCH_PER_GAUGE).map_err(|_| TypeCastFailed)?;
+        let index = (latest_voting_epoch % max_epoch_per_gauge) as usize;
+
+        if self.vote_epochs[index].voting_epoch == latest_voting_epoch {
+            return Ok(index);
         }
-        let current_index = current_index.safe_add(1)? % MAX_EPOCH_PER_GAUGE;
-        self.current_index = u64::try_from(current_index).map_err(|_| TypeCastFailed)?;
-        self.vote_epochs[current_index].voting_epoch = latest_voting_epoch;
-        self.current_index
-            .try_into()
-            .map_err(|_| TypeCastFailed.into())
+
+        let new_gauge_vote_item = GaugeVoteItem {
+            voting_epoch: latest_voting_epoch,
+            ..Default::default()
+        };
+        self.vote_epochs[index] = new_gauge_vote_item;
+        Ok(index)
     }
 
     pub fn get_index_for_voting_epoch(&self, voting_epoch: u32) -> Result<usize> {
@@ -193,16 +196,11 @@ impl GaugeVote {
                 return Ok(i);
             }
         }
-        return Err(VotingEpochNotFound.into());
+        Err(VotingEpochNotFound.into())
     }
 
     pub fn reset_voting_epoch(&mut self, current_vote_index: usize) -> Result<()> {
         self.vote_epochs[current_vote_index] = GaugeVoteItem::default();
-        let current_index = current_vote_index.safe_add(MAX_EPOCH_PER_GAUGE)?;
-        let current_index = current_index.safe_sub(1)? % MAX_EPOCH_PER_GAUGE;
-
-        self.current_index =
-            u64::try_from(current_index).map_err(|_e| VipersError::IntegerOverflow)?;
         Ok(())
     }
 
@@ -261,7 +259,6 @@ impl Default for GaugeVote {
             _padding_1: [0u8; 12],
             claimed_token_a_fee: 0,
             claimed_token_b_fee: 0,
-            current_index: 0,
             last_claim_a_fee_epoch: 0,
             last_claim_b_fee_epoch: 0,
             // _padding_2: 0u,
@@ -325,23 +322,16 @@ impl Gauge {
                 return Ok(i);
             }
         }
-        return Err(VotingEpochNotFound.into());
+        Err(VotingEpochNotFound.into())
     }
 
-    #[allow(clippy::unwrap_used)]
-    pub fn pump_and_get_index_for_lastest_voting_epoch(
-        &mut self,
-        latest_voting_epoch: u32,
-    ) -> Result<usize> {
-        let current_index: usize = self.current_index.try_into().map_err(|_| TypeCastFailed)?;
-        if self.vote_epochs[current_index].voting_epoch == latest_voting_epoch {
-            return Ok(current_index);
-        }
-        let current_index = current_index.safe_add(1)? % MAX_EPOCH_PER_GAUGE;
-        self.current_index = u64::try_from(current_index).map_err(|_| TypeCastFailed)?;
-        self.current_index
-            .try_into()
-            .map_err(|_| TypeCastFailed.into())
+    /// Get the index for voting_epoch, we don't modify the gauge state here
+    pub fn get_index_for_lastest_voting_epoch(&self, latest_voting_epoch: u32) -> Result<usize> {
+        let max_epoch_per_gauge: u32 =
+            u32::try_from(MAX_EPOCH_PER_GAUGE).map_err(|_| TypeCastFailed)?;
+        let index = (latest_voting_epoch % max_epoch_per_gauge) as usize;
+
+        Ok(index)
     }
 
     pub fn total_power(&self, voting_epoch: u32) -> u64 {
@@ -392,21 +382,13 @@ impl GaugeVoter {
         return Err(VotingEpochNotFound.into());
     }
 
-    #[allow(clippy::unwrap_used)]
-    // should return if it not pump
-    pub fn pump_and_get_index_for_lastest_voting_epoch(
-        &mut self,
-        latest_voting_epoch: u32,
-    ) -> Result<usize> {
-        let current_index: usize = self.current_index.try_into().map_err(|_| TypeCastFailed)?;
-        if self.vote_epochs[current_index].voting_epoch == latest_voting_epoch {
-            return Ok(current_index);
-        }
-        let current_index = current_index.safe_add(1)? % MAX_EPOCH_PER_GAUGE;
-        self.current_index = u32::try_from(current_index).map_err(|_| TypeCastFailed)?;
-        self.current_index
-            .try_into()
-            .map_err(|_| TypeCastFailed.into())
+    /// Return index for voting epoch
+    pub fn get_index_for_lastest_voting_epoch(&self, latest_voting_epoch: u32) -> Result<usize> {
+        let max_epoch_per_gauge: u32 =
+            u32::try_from(MAX_EPOCH_PER_GAUGE).map_err(|_| TypeCastFailed)?;
+        let index = (latest_voting_epoch % max_epoch_per_gauge) as usize;
+
+        Ok(index)
     }
 
     pub fn get_allocated_power(&self, voting_epoch: u32) -> u64 {

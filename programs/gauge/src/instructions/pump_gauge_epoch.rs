@@ -46,8 +46,7 @@ pub fn handler(ctx: Context<PumpGaugeEpoch>) -> Result<()> {
     gauge.cummulative_token_b_fee = gauge.cummulative_token_b_fee.safe_add(token_b_fee)?;
 
     // update vote epoch
-
-    let index = gauge.pump_and_get_index_for_lastest_voting_epoch(voting_epoch)?;
+    let index = gauge.get_index_for_lastest_voting_epoch(voting_epoch)?;
     let vote_epoch = &mut gauge.vote_epochs[index];
 
     require!(
