@@ -1,12 +1,12 @@
-name: Merkle Distributor
+name: Quarry
 
 on:
   pull_request:
 
 env:
-  SOLANA_CLI_VERSION: 1.16.1
+  SOLANA_CLI_VERSION: 1.17.5
   NODE_VERSION: 18.14.2
-  ANCHOR_CLI_VERSION: 0.28.0
+  ANCHOR_CLI_VERSION: 0.29.0
 
 jobs:
   changed_files:
@@ -22,9 +22,9 @@ jobs:
         uses: tj-actions/changed-files@v18.6
         with:
           files: |
-            programs/merkle-distributor
+            programs/quarry
 
-  merkle_distributor_test:
+  gauge_test:
     runs-on: ubuntu-latest
     needs: changed_files
     if: needs.changed_files.outputs.program == 'true'
@@ -39,7 +39,7 @@ jobs:
           toolchain: stable
           components: clippy
       # Cache rust, cargo
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       # Cache node_modules
       - uses: actions/cache@v2
         id: cache-node-modules
@@ -47,12 +47,12 @@ jobs:
           path: ./node_modules
           key: ${{ runner.os }}-${{ hashFiles('./package-lock.json') }}
       # Build CLI
-      - run: cargo build --package merkle-distributor-cli
+      - run: cargo build --package quarry-cli
         shell: bash
       # Testing
-      - run: cargo test --package merkle-distributor -- --nocapture
+      - run: cargo test --package quarry -- --nocapture
         shell: bash
       - run: npm install
         shell: bash
-      - run: anchor test --run ./tests/merkle-distributor
+      - run: anchor test --run ./tests/quarry -- --features test-bpf
         shell: bash
