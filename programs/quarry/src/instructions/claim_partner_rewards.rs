@@ -7,7 +7,7 @@ use crate::*;
 pub struct ClaimPartnerRewards<'info> {
     /// Quarry to claim from.
     #[account(mut)]
-    pub quarry: Account<'info, Quarry>,
+    pub quarry: AccountLoader<'info, Quarry>,
 
     /// Token program
     pub token_program: Program<'info, Token>,
@@ -36,8 +36,10 @@ pub fn handler(ctx: Context<ClaimPartnerRewards>, reward_index: u64) -> Result<(
     let miner = &mut ctx.accounts.miner;
 
     let now = Clock::get()?.unix_timestamp;
-    let quarry = &mut ctx.accounts.quarry;
-    quarry.update_rewards_and_miner(miner, &ctx.accounts.rewarder, now)?;
+    {
+        let mut quarry = ctx.accounts.quarry.load_mut()?;
+        quarry.update_rewards_and_miner(miner, &ctx.accounts.rewarder, now)?;
+    }
 
     ctx.accounts.calculate_and_claim_rewards(reward_index)?;
 
@@ -46,20 +48,21 @@ pub fn handler(ctx: Context<ClaimPartnerRewards>, reward_index: u64) -> Result<(
 
 impl<'info> ClaimPartnerRewards<'info> {
     pub fn validate(&self, reward_index: usize) -> Result<()> {
+        let quarry = self.quarry.load()?;
         assert_keys_eq!(self.authority, self.miner.authority);
         // quarry
-        assert_keys_eq!(self.miner.quarry, self.quarry);
+        assert_keys_eq!(self.miner.quarry, *self.quarry.as_key_ref());
         // rewarder
-        assert_keys_eq!(self.quarry.rewarder, self.rewarder);
+        assert_keys_eq!(quarry.rewarder, self.rewarder);
 
-        invariant!(self.quarry.is_lp_pool());
+        invariant!(quarry.is_lp_pool());
 
         require!(
             reward_index < MAX_REWARD,
             crate::ErrorCode::InvalidRewardIndex
         );
 
-        let reward_info = &self.quarry.reward_infos[reward_index];
+        let reward_info = &quarry.reward_infos[reward_index];
 
         require!(
             reward_info.initialized(),
@@ -74,6 +77,7 @@ impl<'info> ClaimPartnerRewards<'info> {
 
     /// Calculates rewards and claims them.
     pub fn calculate_and_claim_rewards(&mut self, reward_index: usize) -> Result<()> {
+        let quarry = self.quarry.load()?;
         // let miner: &mut Account<'_, Miner> = &mut self.miner;
         let mut reward_info = &mut self.miner.reward_infos[reward_index];
         let amount_claimable = reward_info.reward_pending;
@@ -104,7 +108,7 @@ impl<'info> ClaimPartnerRewards<'info> {
             quarry: self.quarry.key(),
             reward_index: reward_index as u64,
             authority: self.authority.key(),
-            staked_token: self.quarry.token_mint_key,
+            staked_token: quarry.token_mint_key,
             timestamp: now,
             rewards_token: self.reward_vault.mint,
             amount: amount_claimable,

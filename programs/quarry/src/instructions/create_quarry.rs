@@ -15,9 +15,9 @@ pub struct CreateQuarry<'info> {
         ],
         bump,
         payer = payer,
-        space = 8 + std::mem::size_of::<Quarry>()
+        space = 8 + Quarry::INIT_SPACE
     )]
-    pub quarry: Account<'info, Quarry>,
+    pub quarry: AccountLoader<'info, Quarry>,
 
     /// CHECK:
     pub amm_pool: UncheckedAccount<'info>,
@@ -45,7 +45,7 @@ pub fn handler(ctx: Context<CreateQuarry>, amm_type: u32) -> Result<()> {
     let index = rewarder.num_quarries;
     rewarder.num_quarries = unwrap_int!(rewarder.num_quarries.checked_add(1));
 
-    let quarry = &mut ctx.accounts.quarry;
+    let quarry = &mut ctx.accounts.quarry.load_init()?;
     quarry.bump = unwrap_bump!(ctx, "quarry");
 
     let amm_pool = amm_type.get_amm(ctx.accounts.amm_pool.to_account_info())?;

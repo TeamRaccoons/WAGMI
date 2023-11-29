@@ -28,7 +28,7 @@ pub struct CreateGauge<'info> {
 
     /// [quarry::Quarry].
     #[account(has_one = amm_pool)]
-    pub quarry: Account<'info, quarry::Quarry>,
+    pub quarry: AccountLoader<'info, quarry::Quarry>,
 
     /// [amm::Amm].
     /// CHECK:
@@ -44,7 +44,7 @@ pub struct CreateGauge<'info> {
 
 pub fn handler(ctx: Context<CreateGauge>) -> Result<()> {
     let mut gauge = ctx.accounts.gauge.load_init()?;
-    let quarry = &ctx.accounts.quarry;
+    let quarry = ctx.accounts.quarry.load()?;
     gauge.gauge_factory = ctx.accounts.gauge_factory.key();
     gauge.quarry = ctx.accounts.quarry.key();
 
@@ -79,8 +79,8 @@ pub fn handler(ctx: Context<CreateGauge>) -> Result<()> {
 
 impl<'info> Validate<'info> for CreateGauge<'info> {
     fn validate(&self) -> Result<()> {
-        assert_keys_eq!(self.quarry.amm_pool, self.amm_pool);
-        assert_keys_eq!(self.gauge_factory.rewarder, self.quarry.rewarder);
+        let quarry = self.quarry.load()?;
+        assert_keys_eq!(self.gauge_factory.rewarder, quarry.rewarder);
         Ok(())
     }
 }

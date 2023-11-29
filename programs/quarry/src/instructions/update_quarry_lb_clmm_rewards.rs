@@ -5,7 +5,7 @@ use crate::*;
 pub struct UpdateQuarryLbClmmRewards<'info> {
     /// [Quarry].
     #[account(mut, has_one = rewarder)]
-    pub quarry: Account<'info, Quarry>,
+    pub quarry: AccountLoader<'info, Quarry>,
 
     /// [Rewarder].
     pub rewarder: Account<'info, Rewarder>,
@@ -14,8 +14,9 @@ pub struct UpdateQuarryLbClmmRewards<'info> {
 pub fn handler(ctx: Context<UpdateQuarryLbClmmRewards>) -> Result<()> {
     let current_ts = Clock::get()?.unix_timestamp;
     let rewarder = &ctx.accounts.rewarder;
-    let payroll: Payroll = (*ctx.accounts.quarry).into();
-    let quarry = &mut ctx.accounts.quarry;
+    let quarry = ctx.accounts.quarry.load()?;
+    let payroll: Payroll = quarry.clone().into();
+    let mut quarry = ctx.accounts.quarry.load_mut()?;
     let emission =
         quarry.get_and_update_lb_clmm_rewards_internal(current_ts, rewarder, &payroll)?;
 
@@ -23,7 +24,7 @@ pub fn handler(ctx: Context<UpdateQuarryLbClmmRewards>) -> Result<()> {
 
     emit!(QuarryLbClmmRewardsUpdateEvent {
         amm_pool: quarry.amm_pool,
-        emission: emission,
+        emission,
         annual_rewards_rate: quarry.annual_rewards_rate,
         rewards_share: quarry.rewards_share,
         timestamp: current_ts,
@@ -33,7 +34,7 @@ pub fn handler(ctx: Context<UpdateQuarryLbClmmRewards>) -> Result<()> {
 }
 impl<'info> Validate<'info> for UpdateQuarryLbClmmRewards<'info> {
     fn validate(&self) -> Result<()> {
-        invariant!(self.quarry.is_lb_clmm_pool());
+        invariant!(self.quarry.load()?.is_lb_clmm_pool());
         self.rewarder.assert_not_paused()?;
         Ok(())
     }

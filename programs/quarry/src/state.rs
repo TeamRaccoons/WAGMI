@@ -52,30 +52,21 @@ impl Rewarder {
 }
 
 /// A pool which distributes tokens to its [Miner]s.
-#[account]
-#[derive(Copy, Default)]
+#[account(zero_copy)]
+#[derive(Default, InitSpace)]
 pub struct Quarry {
     /// Rewarder which manages this quarry
     pub rewarder: Pubkey,
     /// Amm pool this quarry is designated to
     pub amm_pool: Pubkey,
-    /// Amm type, can be Meteora or LbClmm
-    pub amm_type: u32,
     /// LP token this quarry is designated to
     pub token_mint_key: Pubkey,
-    /// Bump.
-    pub bump: u8,
-
-    /// Index of the [Quarry].
-    pub index: u16,
-    /// Decimals on the token [Mint].
-    // pub token_mint_decimals: u8, // This field is never used.
+    /// Rewards per token stored in the quarry
+    pub rewards_per_token_stored: u128,
     /// Timestamp when quarry rewards cease
     pub famine_ts: i64,
     /// Timestamp of last checkpoint
     pub last_update_ts: i64,
-    /// Rewards per token stored in the quarry
-    pub rewards_per_token_stored: u128,
     /// Amount of rewards distributed to the quarry per year.
     pub annual_rewards_rate: u64,
     /// Rewards shared allocated to this quarry
@@ -84,12 +75,23 @@ pub struct Quarry {
     pub total_tokens_deposited: u64,
     /// Number of [Miner]s.
     pub num_miners: u64,
+    /// Amm type, can be Meteora or LbClmm
+    pub amm_type: u32,
+    /// Index of the [Quarry].
+    pub index: u16,
+    /// Bump.
+    pub bump: u8,
+    pub _padding: u8,
+    /// Decimals on the token [Mint].
+    // pub token_mint_decimals: u8, // This field is never used.
     /// Other reward info, possibly from partners
     pub reward_infos: [RewardInfo; 3],
 }
 
 /// Other rewards beside main token
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default)]
+#[zero_copy]
+// #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default)]
+#[derive(Debug, Default, InitSpace)]
 pub struct RewardInfo {
     /// Reward token mint.
     pub mint: Pubkey,
@@ -97,16 +99,17 @@ pub struct RewardInfo {
     pub vault: Pubkey,
     /// Authority account that allows to fund rewards
     pub funder: Pubkey,
+    /// Reward rate
+    pub reward_rate: u128, // 8
+    /// reward per token stored
+    pub reward_per_token_stored: u128,
     /// Reward duration
     pub reward_duration: u64, // 8
     /// Reward duration end
     pub reward_duration_end: u64, // 8
-    /// Reward rate
-    pub reward_rate: u128, // 8
     /// The last time reward states were updated.
     pub last_update_time: u64, // 8
-    /// reward per token stored
-    pub reward_per_token_stored: u128,
+    pub _padding: u64,
 }
 
 impl RewardInfo {

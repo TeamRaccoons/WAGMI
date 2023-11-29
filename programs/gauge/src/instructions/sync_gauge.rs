@@ -18,7 +18,7 @@ pub struct SyncGauge<'info> {
     // pub epoch_gauge: AccountLoader<'info, EpochGauge>,
     /// [quarry::Quarry].
     #[account(mut, has_one = rewarder)]
-    pub quarry: Account<'info, quarry::Quarry>,
+    pub quarry: AccountLoader<'info, quarry::Quarry>,
 
     /// [GaugeFactory::rewarder].
     /// CHECK: validated by key, not deserialized to save CU's.
@@ -33,8 +33,9 @@ impl<'info> SyncGauge<'info> {
     fn set_rewards_share(&self) -> Result<()> {
         // Only call CPI if the rewards share actually changed.
         let gauge = self.gauge.load()?;
+        let quarry = self.quarry.load()?;
         let total_power = gauge.total_power(self.gauge_factory.rewards_epoch()?);
-        if self.quarry.rewards_share != total_power {
+        if quarry.rewards_share != total_power {
             let signer_seeds: &[&[&[u8]]] = gauge_factory_seeds!(self.gauge_factory);
 
             quarry::cpi::set_rewards_share(
@@ -56,7 +57,7 @@ impl<'info> SyncGauge<'info> {
             gauge_factory: self.gauge_factory.key(),
             gauge: self.gauge.key(),
             epoch: self.gauge_factory.rewards_epoch()?,
-            previous_share: self.quarry.rewards_share,
+            previous_share: quarry.rewards_share,
             new_share: total_power,
         });
 

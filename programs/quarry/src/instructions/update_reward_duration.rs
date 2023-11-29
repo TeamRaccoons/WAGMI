@@ -5,7 +5,7 @@ use crate::*;
 #[instruction(reward_index: u64)]
 pub struct UpdateRewardDuration<'info> {
     #[account(mut)]
-    pub quarry: Account<'info, Quarry>,
+    pub quarry: AccountLoader<'info, Quarry>,
 
     /// [Rewarder] authority.
     pub auth: MutableRewarderWithAuthority<'info>,
@@ -23,7 +23,11 @@ pub fn handle(ctx: Context<UpdateRewardDuration>, index: u64, reward_duration: u
         crate::ErrorCode::InvalidRewardDuration
     );
 
-    let reward_info = &mut ctx.accounts.quarry.reward_infos[reward_index];
+    let mut quarry = ctx.accounts.quarry.load_mut()?;
+    let reward_info = quarry
+        .reward_infos
+        .get_mut(reward_index)
+        .ok_or(InvalidRewardIndex)?;
 
     require!(
         reward_info.initialized(),
@@ -52,7 +56,7 @@ pub fn handle(ctx: Context<UpdateRewardDuration>, index: u64, reward_duration: u
 
 impl<'info> Validate<'info> for UpdateRewardDuration<'info> {
     fn validate(&self) -> Result<()> {
-        assert_keys_eq!(self.quarry.rewarder, self.auth.rewarder);
+        assert_keys_eq!(self.quarry.load()?.rewarder, self.auth.rewarder);
         self.auth.rewarder.assert_not_paused()?;
         Ok(())
     }

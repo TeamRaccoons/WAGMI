@@ -5,7 +5,7 @@ use crate::*;
 pub struct UpdateQuarryRewards<'info> {
     /// [Quarry].
     #[account(mut, has_one = rewarder)]
-    pub quarry: Account<'info, Quarry>,
+    pub quarry: AccountLoader<'info, Quarry>,
 
     /// [Rewarder].
     pub rewarder: Account<'info, Rewarder>,
@@ -15,7 +15,7 @@ pub fn handler(ctx: Context<UpdateQuarryRewards>) -> Result<()> {
     let current_ts = Clock::get()?.unix_timestamp;
     let rewarder = &ctx.accounts.rewarder;
     // let payroll: Payroll = (*ctx.accounts.quarry).into();
-    let quarry = &mut ctx.accounts.quarry;
+    let mut quarry = ctx.accounts.quarry.load_mut()?;
     quarry.update_rewards_internal(current_ts, rewarder)?;
 
     emit!(QuarryRewardsUpdateEvent {
@@ -29,7 +29,7 @@ pub fn handler(ctx: Context<UpdateQuarryRewards>) -> Result<()> {
 }
 impl<'info> Validate<'info> for UpdateQuarryRewards<'info> {
     fn validate(&self) -> Result<()> {
-        invariant!(self.quarry.is_lp_pool());
+        invariant!(self.quarry.load()?.is_lp_pool());
         self.rewarder.assert_not_paused()?;
         Ok(())
     }

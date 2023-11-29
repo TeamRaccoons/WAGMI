@@ -15,7 +15,7 @@ pub struct SyncDisabledGauge<'info> {
 
     /// [quarry::Quarry].
     #[account(mut, has_one = rewarder)]
-    pub quarry: Account<'info, quarry::Quarry>,
+    pub quarry: AccountLoader<'info, quarry::Quarry>,
 
     /// [GaugeFactory::rewarder].
     /// CHECK: validated by key, not deserialized to save CU's.
@@ -29,7 +29,8 @@ pub struct SyncDisabledGauge<'info> {
 impl<'info> SyncDisabledGauge<'info> {
     fn disable_rewards(&self) -> Result<()> {
         // Only call CPI if the rewards share actually changed.
-        if self.quarry.rewards_share != 0 {
+        let quarry = self.quarry.load()?;
+        if quarry.rewards_share != 0 {
             let signer_seeds: &[&[&[u8]]] = gauge_factory_seeds!(self.gauge_factory);
             quarry::cpi::set_rewards_share(
                 CpiContext::new_with_signer(

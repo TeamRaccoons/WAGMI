@@ -3,7 +3,7 @@
 use crate::{Miner, Quarry};
 use anchor_lang::prelude::*;
 use spl_math::uint::U192;
-use std::cmp;
+use std::{cell::Ref, cmp};
 use vipers::prelude::*;
 
 /// Number of seconds in a year.

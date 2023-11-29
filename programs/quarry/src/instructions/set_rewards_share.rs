@@ -12,12 +12,12 @@ pub struct SetRewardsShare<'info> {
 
     /// [Quarry] updated.
     #[account(mut)]
-    pub quarry: Account<'info, Quarry>,
+    pub quarry: AccountLoader<'info, Quarry>,
 }
 
 pub fn handler(ctx: Context<SetRewardsShare>, new_share: u64) -> Result<()> {
     let rewarder = &mut ctx.accounts.rewarder;
-    let quarry = &mut ctx.accounts.quarry;
+    let mut quarry = ctx.accounts.quarry.load_mut()?;
     rewarder.total_rewards_shares = unwrap_int!(rewarder
         .total_rewards_shares
         .checked_add(new_share)
@@ -38,7 +38,7 @@ pub fn handler(ctx: Context<SetRewardsShare>, new_share: u64) -> Result<()> {
 }
 impl<'info> Validate<'info> for SetRewardsShare<'info> {
     fn validate(&self) -> Result<()> {
-        assert_keys_eq!(self.quarry.rewarder, self.rewarder);
+        assert_keys_eq!(self.quarry.load()?.rewarder, self.rewarder);
         self.rewarder.assert_not_paused()?;
 
         invariant!(
