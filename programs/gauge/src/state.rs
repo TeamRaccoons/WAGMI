@@ -485,16 +485,9 @@ impl EpochBribeVoter {
         gauge_voter: &GaugeVote,
         gauge: &Gauge,
     ) -> Result<u64> {
-        msg!(
-            "from epoch {} last epoch {} rewards_epoch {}",
-            from_epoch,
-            last_epoch,
-            rewards_epoch_epoch
-        );
         let mut rewards = 0u64;
         for i in from_epoch..=last_epoch {
             let allocated_power = gauge_voter.get_allocated_power(i);
-            msg!("allocated power {}", allocated_power);
             let total_power = gauge.total_power(i);
 
             rewards = rewards.safe_add(
