@@ -1,5 +1,5 @@
-import { web3, Wallet, BN } from "@project-serum/anchor";
-import * as anchor from "@project-serum/anchor";
+import { web3, Wallet, BN } from "@coral-xyz/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import {
   BalanceTree,
   GOVERN_PROGRAM_ID,

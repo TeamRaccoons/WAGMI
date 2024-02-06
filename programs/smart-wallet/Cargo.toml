@@ -16,5 +16,5 @@ default = []
 test-bpf = []
 
 [dependencies]
-anchor-lang = "0.26.0"
+anchor-lang = "0.28.0"
 vipers = {path = "../../libs/vipers"}

@@ -13,13 +13,24 @@
 //! # License
 //!
 //! The Merkle distributor program and SDK is distributed under the GPL v3.0 license.
-
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Mint, Token, TokenAccount};
+use anchor_lang::solana_program::hash::hashv;
+use anchor_spl::token::{self, Mint, Token, TokenAccount};
 use vipers::prelude::*;
-
 pub mod merkle_proof;
+use anchor_spl::associated_token::AssociatedToken;
 
+// We need to discern between leaf and intermediate nodes to prevent trivial second
+// pre-image attacks.
+// https://flawed.net.nz/2018/02/21/attacking-merkle-trees-with-a-second-preimage-attack
+pub const LEAF_PREFIX: &[u8] = &[0];
+const SECONDS_PER_HOUR: i64 = 3600; // 60 minutes * 60 seconds
+const HOURS_PER_DAY: i64 = 24;
+const SECONDS_PER_DAY: i64 = SECONDS_PER_HOUR * HOURS_PER_DAY; // 24 hours * 3600 seconds
+
+pub mod error;
+pub mod instructions;
+use instructions::*;
 declare_id!("MRKgRBL5XCCT5rwUGnim4yioq9wR4c6rj2EZkw8KdyZ");
 
 /// The [merkle_distributor] program.
@@ -35,196 +46,42 @@ pub mod merkle_distributor {
         root: [u8; 32],
         max_total_claim: u64,
         max_num_nodes: u64,
+        clawback_start_ts: i64,
     ) -> Result<()> {
-        let distributor = &mut ctx.accounts.distributor;
+        handle_new_distributor(
+            ctx,
+            locker,
+            root,
+            max_total_claim,
+            max_num_nodes,
+            clawback_start_ts,
+        )
+    }
 
-        distributor.base = ctx.accounts.base.key();
-        distributor.bump = unwrap_bump!(ctx, "distributor");
+    /// Sets new clawback receiver token account
+    pub fn set_clawback_receiver(ctx: Context<SetClawbackReceiver>) -> Result<()> {
+        handle_set_clawback_receiver(ctx)
+    }
 
-        distributor.root = root;
-        distributor.mint = ctx.accounts.mint.key();
+    /// Sets new admin account
+    pub fn set_admin(ctx: Context<SetAdmin>) -> Result<()> {
+        handle_set_admin(ctx)
+    }
 
-        distributor.max_total_claim = max_total_claim;
-        distributor.max_num_nodes = max_num_nodes;
-        distributor.total_amount_claimed = 0;
-        distributor.num_nodes_claimed = 0;
-
-        distributor.admin = ctx.accounts.payer.key();
-        distributor.locker = locker;
-
-        Ok(())
+    /// Claws back unclaimed tokens by:
+    /// 1. Checking that the lockup has expired
+    /// 2. Transferring remaining funds from the vault to the clawback receiver
+    /// 3. Marking the distributor as clawed back
+    /// CHECK:
+    ///     1. The distributor has not already been clawed back
+    pub fn clawback(ctx: Context<Clawback>) -> Result<()> {
+        handle_clawback(ctx)
     }
 
     /// Claims tokens from the [MerkleDistributor].
     pub fn claim(ctx: Context<Claim>, index: u64, amount: u64, proof: Vec<[u8; 32]>) -> Result<()> {
-        let claim_status = &mut ctx.accounts.claim_status;
-        invariant!(
-            // This check is redundant, we should not be able to initialize a claim status account at the same key.
-            !claim_status.is_claimed && claim_status.claimed_at == 0,
-            DropAlreadyClaimed
-        );
-        let claimant_account = &ctx.accounts.claimant;
-        let distributor = &ctx.accounts.distributor;
-        // Verify the merkle proof.
-        let node = anchor_lang::solana_program::keccak::hashv(&[
-            &index.to_le_bytes(),
-            &claimant_account.key().as_ref(),
-            &amount.to_le_bytes(),
-        ]);
-        invariant!(
-            merkle_proof::verify(proof, distributor.root, node.0),
-            InvalidProof
-        );
-        // Mark it claimed and send the tokens.
-        claim_status.amount = amount;
-        claim_status.is_claimed = true;
-        let clock = Clock::get()?;
-        claim_status.claimed_at = clock.unix_timestamp;
-        claim_status.claimant = claimant_account.key();
-
-        let seeds = [
-            b"MerkleDistributor".as_ref(),
-            &distributor.base.as_ref(),
-            &[ctx.accounts.distributor.bump],
-        ];
-        let seeds = &[&seeds[..]];
-
-        // assert_keys_eq!(ctx.accounts.to.owner, claimant_account.key(), OwnerMismatch);
-
-        // CPI to voter
-        let cpi_ctx = CpiContext::new(
-            ctx.accounts.voter_program.to_account_info(),
-            voter::cpi::accounts::IncreaseLockedAmount {
-                locker: ctx.accounts.locker.to_account_info(),
-                escrow: ctx.accounts.escrow.to_account_info(),
-                escrow_tokens: ctx.accounts.escrow_tokens.to_account_info(),
-                payer: ctx.accounts.distributor.to_account_info(),
-                source_tokens: ctx.accounts.from.to_account_info(),
-                token_program: ctx.accounts.token_program.to_account_info(),
-            },
-        )
-        .with_signer(seeds);
-
-        voter::cpi::increase_locked_amount(cpi_ctx, amount)?;
-
-        let distributor = &mut ctx.accounts.distributor;
-        distributor.total_amount_claimed =
-            unwrap_int!(distributor.total_amount_claimed.checked_add(amount));
-        invariant!(
-            distributor.total_amount_claimed <= distributor.max_total_claim,
-            ExceededMaxClaim
-        );
-        distributor.num_nodes_claimed = unwrap_int!(distributor.num_nodes_claimed.checked_add(1));
-        invariant!(
-            distributor.num_nodes_claimed <= distributor.max_num_nodes,
-            ExceededMaxNumNodes
-        );
-
-        emit!(ClaimedEvent {
-            index,
-            claimant: claimant_account.key(),
-            amount
-        });
-        Ok(())
+        handle_claim(ctx, index, amount, proof)
     }
-}
-
-/// Accounts for [merkle_distributor::new_distributor].
-#[derive(Accounts)]
-pub struct NewDistributor<'info> {
-    /// Base key of the distributor.
-    pub base: Signer<'info>,
-
-    /// [MerkleDistributor].
-    #[account(
-        init,
-        seeds = [
-            b"MerkleDistributor".as_ref(),
-            base.key().as_ref()
-        ],
-        bump,
-        space = 8 + std::mem::size_of::<MerkleDistributor>(),
-        payer = payer
-    )]
-    pub distributor: Account<'info, MerkleDistributor>,
-
-    /// The mint to distribute.
-    pub mint: Account<'info, Mint>,
-
-    /// Payer to create the distributor.
-    #[account(mut)]
-    pub payer: Signer<'info>,
-
-    /// The [System] program.
-    pub system_program: Program<'info, System>,
-}
-
-/// [merkle_distributor::claim] accounts.
-#[derive(Accounts)]
-#[instruction(index: u64)]
-pub struct Claim<'info> {
-    /// The [MerkleDistributor].
-    #[account(
-        mut,
-        address = from.owner,
-        has_one = locker,
-    )]
-    pub distributor: Account<'info, MerkleDistributor>,
-
-    /// Status of the claim.
-    #[account(
-        init,
-        seeds = [
-            b"ClaimStatus".as_ref(),
-            index.to_le_bytes().as_ref(),
-            distributor.key().as_ref()
-        ],
-        bump,
-        space = 8 + std::mem::size_of::<ClaimStatus>(),
-        payer = payer
-    )]
-    pub claim_status: Account<'info, ClaimStatus>,
-
-    /// Distributor ATA containing the tokens to distribute.
-    #[account(mut, constraint = from.mint == distributor.mint @ ErrorCode::MintMismatch)]
-    pub from: Account<'info, TokenAccount>,
-
-    /// CHECK: Who is claiming the tokens.
-    // #[account(address = to.owner @ ErrorCode::OwnerMismatch)]
-    pub claimant: UncheckedAccount<'info>,
-
-    /// Payer of the claim, must be claimant or admin
-    #[account(mut, constraint = payer.key() == claimant.key() || payer.key() == distributor.admin @ ErrorCode::PayerMismatch)]
-    pub payer: Signer<'info>,
-
-    /// The [System] program.
-    pub system_program: Program<'info, System>,
-
-    /// SPL [Token] program.
-    pub token_program: Program<'info, Token>,
-
-    /// Voter program
-    pub voter_program: Program<'info, voter::program::Voter>,
-
-    /// CHECK: Locker
-    #[account(mut)]
-    pub locker: UncheckedAccount<'info>,
-
-    /// CHECK: escrow
-    #[account(mut,
-        seeds = [
-            b"Escrow".as_ref(),
-            locker.key().as_ref(),
-            claimant.key().as_ref()
-        ],
-        seeds::program = voter_program.key(),
-        bump
-    )]
-    pub escrow: AccountInfo<'info>,
-
-    /// CHECK: escrow_tokens
-    #[account(mut)]
-    pub escrow_tokens: UncheckedAccount<'info>,
 }
 
 /// State for the account which distributes tokens.
@@ -235,6 +92,8 @@ pub struct MerkleDistributor {
     pub base: Pubkey,
     /// Bump seed.
     pub bump: u8,
+
+    pub token_vault: Pubkey,
 
     /// The 256-bit merkle root.
     pub root: [u8; 32],
@@ -255,6 +114,20 @@ pub struct MerkleDistributor {
 
     /// admin
     pub admin: Pubkey,
+
+    /// Clawback start (Unix Timestamp)
+    pub clawback_start_ts: i64,
+    /// Clawback receiver
+    pub clawback_receiver: Pubkey,
+    /// Whether or not the distributor has been clawed back
+    pub clawed_back: bool,
+
+    /// Buffer 0
+    pub buffer_0: [u8; 32],
+    /// Buffer 1
+    pub buffer_1: [u8; 32],
+    /// Buffer 2
+    pub buffer_2: [u8; 32],
 }
 
 /// Holds whether or not a claimant has claimed tokens.
@@ -271,11 +144,9 @@ pub struct ClaimStatus {
     pub claimed_at: i64,
     /// Amount of tokens claimed.
     pub amount: u64,
+    /// Buffer 0
+    pub buffer_0: [u8; 32],
 }
-
-// impl ClaimStatus {
-//     pub const LEN: usize = 1 + PUBKEY_BYTES + 8 + 8;
-// }
 
 /// Emitted when tokens are claimed.
 #[event]
@@ -286,25 +157,4 @@ pub struct ClaimedEvent {
     pub claimant: Pubkey,
     /// Amount of tokens to distribute.
     pub amount: u64,
-}
-
-/// Error codes.
-#[error_code]
-pub enum ErrorCode {
-    #[msg("Invalid Merkle proof")]
-    InvalidProof,
-    #[msg("Drop already claimed")]
-    DropAlreadyClaimed,
-    #[msg("Exceeded maximum claim amount")]
-    ExceededMaxClaim,
-    #[msg("Exceeded maximum number of claimed nodes")]
-    ExceededMaxNumNodes,
-    #[msg("Account is not authorized to execute this instruction")]
-    Unauthorized,
-    #[msg("Token mint did not match intended mint")]
-    MintMismatch,
-    #[msg("Token account owner did not match intended owner")]
-    OwnerMismatch,
-    #[msg("Payer did not match intended payer")]
-    PayerMismatch,
 }

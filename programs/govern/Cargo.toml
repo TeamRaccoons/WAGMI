@@ -16,9 +16,9 @@ default = []
 test-bpf = []
 
 [dependencies]
-anchor-lang = "0.26.0"
-anchor-spl = "0.26.0"
-num-traits = "0.2"
+anchor-lang = "0.28.0"
+anchor-spl = "0.28.0"
+num-traits = "0.2.16"
 vipers = {path = "../../libs/vipers"}
 smart-wallet = { path = "../smart-wallet", features = ["cpi"] }
 

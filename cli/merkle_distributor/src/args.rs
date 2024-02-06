@@ -42,13 +42,15 @@ pub enum CliCommand {
         #[clap(long)]
         token_mint: Pubkey,
         #[clap(long)]
+        clawback_owner: Pubkey,
+        #[clap(long)]
         path_to_snapshot: String,
+        #[clap(long)]
+        clawback_start_ts: u64,
     },
     Claim {
         #[clap(long)]
         base: Pubkey,
-        #[clap(long)]
-        claimant: Pubkey,
         #[clap(long)]
         path_to_snapshot: String,
     },

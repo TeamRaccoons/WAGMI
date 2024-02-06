@@ -1,11 +1,6 @@
 mod args;
 
 use crate::args::*;
-use anchor_lang::Key;
-use anyhow::Ok;
-use anyhow::Result;
-use utils_cli::*;
-
 use anchor_client::anchor_lang::InstructionData;
 use anchor_client::anchor_lang::ToAccountMetas;
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
@@ -13,9 +8,14 @@ use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signer::keypair::*;
 use anchor_client::solana_sdk::signer::Signer;
 use anchor_client::{Client, Program};
+use anchor_lang::Key;
+use anyhow::Ok;
+use anyhow::Result;
 use solana_program::instruction::AccountMeta;
+use std::ops::Deref;
 use std::rc::Rc;
 use std::str::FromStr;
+use utils_cli::*;
 
 use clap::*;
 
@@ -40,7 +40,7 @@ fn main() -> Result<()> {
         }
         None => Keypair::new(),
     };
-    let program = client.program(program_id);
+    let program = client.program(program_id)?;
     match opts.command {
         CliCommand::CreateSmartWallet {
             max_owners,
@@ -108,8 +108,8 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn create_smart_wallet(
-    program: &Program,
+fn create_smart_wallet<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
     base_keypair: Keypair,
     max_owners: u8,
     threshold: u64,
@@ -155,7 +155,11 @@ fn create_smart_wallet(
     Ok(())
 }
 
-fn create_set_owners_tx(program: &Program, base: Pubkey, owners: Vec<Pubkey>) -> Result<()> {
+fn create_set_owners_tx<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+    owners: Vec<Pubkey>,
+) -> Result<()> {
     println!("new owners {:?}", owners);
     let (smart_wallet, bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
@@ -175,7 +179,11 @@ fn create_set_owners_tx(program: &Program, base: Pubkey, owners: Vec<Pubkey>) ->
     create_transaction(program, base, vec![instruction])
 }
 
-fn create_add_new_owner_tx(program: &Program, base: Pubkey, new_owner: Pubkey) -> Result<()> {
+fn create_add_new_owner_tx<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+    new_owner: Pubkey,
+) -> Result<()> {
     let (smart_wallet, bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
@@ -200,7 +208,11 @@ fn create_add_new_owner_tx(program: &Program, base: Pubkey, new_owner: Pubkey) -
     create_set_owners_tx(program, base, owners)
 }
 
-fn create_remove_owner_tx(program: &Program, base: Pubkey, owner: Pubkey) -> Result<()> {
+fn create_remove_owner_tx<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+    owner: Pubkey,
+) -> Result<()> {
     let (smart_wallet, bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
@@ -225,7 +237,11 @@ fn create_remove_owner_tx(program: &Program, base: Pubkey, owner: Pubkey) -> Res
     create_set_owners_tx(program, base, owners)
 }
 
-fn create_change_threshold_tx(program: &Program, base: Pubkey, threshold: u64) -> Result<()> {
+fn create_change_threshold_tx<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+    threshold: u64,
+) -> Result<()> {
     let (smart_wallet, bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
@@ -245,8 +261,8 @@ fn create_change_threshold_tx(program: &Program, base: Pubkey, threshold: u64) -
     create_transaction(program, base, vec![instruction])
 }
 
-fn create_set_governance_params_tx(
-    program: &Program,
+fn create_set_governance_params_tx<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
     base: Pubkey,
     voting_delay: u64,
     voting_period: u64,
@@ -290,7 +306,11 @@ fn create_set_governance_params_tx(
     create_transaction(program, base, vec![instruction])
 }
 
-fn create_activate_proposal_tx(program: &Program, base: Pubkey, proposal: Pubkey) -> Result<()> {
+fn create_activate_proposal_tx<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+    proposal: Pubkey,
+) -> Result<()> {
     let (smart_wallet, bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
@@ -334,7 +354,11 @@ fn create_activate_proposal_tx(program: &Program, base: Pubkey, proposal: Pubkey
     create_transaction(program, base, vec![instruction])
 }
 
-fn approve_transaction(program: &Program, base: Pubkey, transaction: Pubkey) -> Result<()> {
+fn approve_transaction<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+    transaction: Pubkey,
+) -> Result<()> {
     let (smart_wallet, bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
@@ -353,7 +377,11 @@ fn approve_transaction(program: &Program, base: Pubkey, transaction: Pubkey) -> 
     println!("Signature {:?}", signature);
     Ok(())
 }
-fn unapprove_transaction(program: &Program, base: Pubkey, transaction: Pubkey) -> Result<()> {
+fn unapprove_transaction<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+    transaction: Pubkey,
+) -> Result<()> {
     let (smart_wallet, _bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
@@ -372,7 +400,11 @@ fn unapprove_transaction(program: &Program, base: Pubkey, transaction: Pubkey) -
     Ok(())
 }
 
-fn remove_transaction(program: &Program, base: Pubkey, transaction: Pubkey) -> Result<()> {
+fn remove_transaction<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+    transaction: Pubkey,
+) -> Result<()> {
     let (smart_wallet, _bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
@@ -391,7 +423,11 @@ fn remove_transaction(program: &Program, base: Pubkey, transaction: Pubkey) -> R
     Ok(())
 }
 
-fn execute_transaction(program: &Program, base: Pubkey, transaction: Pubkey) -> Result<()> {
+fn execute_transaction<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+    transaction: Pubkey,
+) -> Result<()> {
     let (smart_wallet, bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
@@ -434,12 +470,18 @@ fn execute_transaction(program: &Program, base: Pubkey, transaction: Pubkey) -> 
     Ok(())
 }
 
-fn view_transaction(program: &Program, transaction: Pubkey) -> Result<()> {
+fn view_transaction<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    transaction: Pubkey,
+) -> Result<()> {
     let state: smart_wallet::Transaction = program.account(transaction)?;
     println!("{:?}", state);
     Ok(())
 }
-fn view_smartwallet(program: &Program, base: Pubkey) -> Result<()> {
+fn view_smartwallet<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+) -> Result<()> {
     let (smart_wallet, bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
@@ -450,12 +492,15 @@ fn view_smartwallet(program: &Program, base: Pubkey) -> Result<()> {
     Ok(())
 }
 
-fn create_dummy_transaction(program: &Program, base: Pubkey) -> Result<()> {
+fn create_dummy_transaction<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+) -> Result<()> {
     create_transaction(program, base, vec![])
 }
 
-fn create_transaction(
-    program: &Program,
+fn create_transaction<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
     base: Pubkey,
     instructions: Vec<smart_wallet::TXInstruction>,
 ) -> Result<()> {
