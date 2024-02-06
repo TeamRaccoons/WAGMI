@@ -1,5 +1,5 @@
-import * as anchor from "@project-serum/anchor";
-import { AnchorError, Program } from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
+import { AnchorError, Program } from "@coral-xyz/anchor";
 import {
   Keypair,
   LAMPORTS_PER_SOL,

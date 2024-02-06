@@ -1,4 +1,4 @@
-import { AnchorError, BN, Program, Wallet, web3 } from "@project-serum/anchor";
+import { AnchorError, BN, Program, Wallet, web3 } from "@coral-xyz/anchor";
 import { Govern } from "../../target/types/govern";
 import { SmartWallet } from "../../target/types/smart_wallet";
 import { Voter } from "../../target/types/voter";
@@ -11,6 +11,8 @@ import {
 import {
   createAssociatedTokenAccountInstruction,
   getAssociatedTokenAddressSync,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { expect } from "chai";
 import { MerkleDistributor } from "../../target/types/merkle_distributor";
@@ -186,7 +188,8 @@ export async function createDistributor(
   mdProgram: Program<MerkleDistributor>
 ) {
   const [distributor, _bump] = deriveDistributor(baseKeypair.publicKey);
-
+  const tokenVault = getAssociatedTokenAddressSync(rewardMint, distributor, true);
+  const clawbackReceiver = await getOrCreateATA(rewardMint, baseKeypair.publicKey, baseKeypair, mdProgram.provider.connection);
   console.log("Creating distributor", distributor.toBase58());
 
   const tx = await mdProgram.methods
@@ -194,14 +197,19 @@ export async function createDistributor(
       locker,
       Array.from(new Uint8Array(root)),
       maxTotalClaim,
-      maxNodesClaimed
+      maxNodesClaimed,
+      new BN(999999999999),
     )
     .accounts({
       base: baseKeypair.publicKey,
       distributor,
       mint: rewardMint,
-      payer: mdProgram.provider.publicKey,
+      tokenVault,
+      admin: mdProgram.provider.publicKey,
       systemProgram: web3.SystemProgram.programId,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      clawbackReceiver,
     })
     .signers([baseKeypair])
     .rpc();

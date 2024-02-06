@@ -1,6 +1,6 @@
-import * as anchor from "@project-serum/anchor";
-import { Wallet, web3 } from "@project-serum/anchor";
-import { TOKEN_PROGRAM_ID, createMint, mintTo } from "@solana/spl-token";
+import * as anchor from "@coral-xyz/anchor";
+import { Wallet, web3 } from "@coral-xyz/anchor";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, createMint, mintTo, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { BN } from "bn.js";
 import { expect } from "chai";
 import { ONE_DAY } from "../govern/constants";
@@ -44,6 +44,9 @@ describe("merkle-distributor", () => {
   let governor: web3.PublicKey;
   let locker: web3.PublicKey;
   let distributor: web3.PublicKey;
+  let clawbackReceiver: web3.PublicKey;
+
+  let clawbackStartTs = new BN(999999999999);
 
   let mdATA: web3.PublicKey;
 
@@ -146,6 +149,9 @@ describe("merkle-distributor", () => {
     const [distributorPda, _dBump] = deriveDistributor(keypair.publicKey);
     distributor = distributorPda;
 
+    mdATA = getAssociatedTokenAddressSync(rewardMint, distributorPda, true);
+    clawbackReceiver = await getOrCreateATA(rewardMint, keypair.publicKey, keypair, provider.connection);
+
     const [governorPda, _gBump] = deriveGovern(keypair.publicKey);
     governor = governorPda;
 
@@ -186,14 +192,19 @@ describe("merkle-distributor", () => {
         locker,
         Array.from(new Uint8Array(tree.getRoot())),
         maxTotalClaim,
-        maxNodesClaimed
+        maxNodesClaimed,
+        clawbackStartTs,
       )
       .accounts({
         base: keypair.publicKey,
         distributor,
+        tokenVault: mdATA,
         mint: rewardMint,
-        payer: keypair.publicKey,
+        admin: keypair.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
+        clawbackReceiver,
       })
       .signers([keypair])
       .rpc();
@@ -260,9 +271,8 @@ describe("merkle-distributor", () => {
           .accounts({
             distributor,
             claimStatus,
-            from: mdATA,
+            tokenVault: mdATA,
             claimant: userOneWallet.publicKey,
-            payer: userOneWallet.publicKey,
             escrow,
             locker,
             escrowTokens,
@@ -273,59 +283,6 @@ describe("merkle-distributor", () => {
           .rpc();
       },
       "Invalid Merkle Proof",
-      true
-    );
-  });
-
-  it("user #1 fails to claim for user #2", async () => {
-    const index = new BN(1);
-    const userTwoKeypair = claimerKeypairs[index.toNumber()];
-    const userTwoWallet = new Wallet(userTwoKeypair);
-
-    const proof = tree.getProof(
-      index.toNumber(),
-      userTwoWallet.publicKey,
-      claimAmount
-    );
-
-    const userOneKeypair = claimerKeypairs[0];
-    const userOneWallet = new Wallet(userOneKeypair);
-
-    const mdProgram = createMerkleDistributorProgram(
-      userOneWallet,
-      MERKLE_DISTRIBUTOR_PROGRAM_ID
-    );
-
-    const [claimStatus, _csBump] = deriveClaimStatus(index, distributor);
-
-    const [escrow, _eBump] = deriveEscrow(locker, userTwoWallet.publicKey);
-    const escrowTokens = await getOrCreateATA(
-      rewardMint,
-      escrow,
-      userTwoKeypair,
-      provider.connection
-    );
-
-    await invokeAndAssertError(
-      () => {
-        return mdProgram.methods
-          .claim(index, claimAmount, proof)
-          .accounts({
-            distributor,
-            claimStatus,
-            from: mdATA,
-            claimant: userTwoWallet.publicKey,
-            payer: userOneKeypair.publicKey,
-            escrow,
-            locker,
-            escrowTokens,
-            voterProgram: VOTER_PROGRAM_ID,
-            systemProgram: web3.SystemProgram.programId,
-            tokenProgram: TOKEN_PROGRAM_ID,
-          })
-          .rpc();
-      },
-      "Payer did not match intended payer",
       true
     );
   });
@@ -368,9 +325,8 @@ describe("merkle-distributor", () => {
           .accounts({
             distributor,
             claimStatus,
-            from: mdATA,
+            tokenVault: mdATA,
             claimant: userOneWallet.publicKey,
-            payer: userOneWallet.publicKey,
             escrow,
             locker,
             escrowTokens,
@@ -421,9 +377,8 @@ describe("merkle-distributor", () => {
           .accounts({
             distributor,
             claimStatus,
-            from: mdATA,
+            tokenVault: mdATA,
             claimant: userOneWallet.publicKey,
-            payer: userOneWallet.publicKey,
             escrow,
             locker,
             escrowTokens,
@@ -489,9 +444,8 @@ describe("merkle-distributor", () => {
       .accounts({
         distributor,
         claimStatus,
-        from: mdATA,
+        tokenVault: mdATA,
         claimant: userOneWallet.publicKey,
-        payer: userOneWallet.publicKey,
         escrow,
         locker,
         escrowTokens,
@@ -563,6 +517,7 @@ describe("merkle-distributor", () => {
     expect(lockerSupplyDelta.toString()).to.be.equal(claimAmount.toString());
   });
 
+
   it("user #1 cannot claim anymore", async () => {
     const userOneIndex = new BN(0);
     const userOneKeypair = claimerKeypairs[userOneIndex.toNumber()];
@@ -596,9 +551,8 @@ describe("merkle-distributor", () => {
           .accounts({
             distributor,
             claimStatus,
-            from: mdATA,
+            tokenVault: mdATA,
             claimant: userOneWallet.publicKey,
-            payer: userOneWallet.publicKey,
             escrow,
             locker,
             escrowTokens,
@@ -613,62 +567,41 @@ describe("merkle-distributor", () => {
     );
   });
 
-  it("admin help user #2 to claim", async () => {
-    const userTwoIndex = new BN(1);
-    const userTwoKeypair = claimerKeypairs[userTwoIndex.toNumber()];
-    const userTwoWallet = new Wallet(userTwoKeypair);
+
+  it("user #2 claim successfully", async () => {
+    const userIndex = new BN(1);
+    const userKeypair = claimerKeypairs[userIndex.toNumber()];
+    const userWallet = new Wallet(userKeypair);
 
     const proof = tree.getProof(
-      userTwoIndex.toNumber(),
-      userTwoWallet.publicKey,
+      userIndex.toNumber(),
+      userWallet.publicKey,
       claimAmount
     );
 
-    const adminWallet = wallet;
-
     const mdProgram = createMerkleDistributorProgram(
-      adminWallet,
+      userWallet,
       MERKLE_DISTRIBUTOR_PROGRAM_ID
     );
 
-    const voterProgram = createVoterProgram(userTwoWallet, VOTER_PROGRAM_ID);
 
-    const [claimStatus, _csBump] = deriveClaimStatus(userTwoIndex, distributor);
+    const [claimStatus, _csBump] = deriveClaimStatus(userIndex, distributor);
 
-    const [escrow, _eBump] = deriveEscrow(locker, userTwoWallet.publicKey);
+    const [escrow, _eBump] = deriveEscrow(locker, userWallet.publicKey);
     const escrowTokens = await getOrCreateATA(
       rewardMint,
       escrow,
-      userTwoKeypair,
+      userKeypair,
       provider.connection
     );
 
-    const [
-      beforeDistributor,
-      beforeDistributorBalance,
-      beforeEscrow,
-      beforeEscrowATA,
-      beforeLocker,
-    ] = await Promise.all([
-      mdProgram.account.merkleDistributor.fetch(distributor),
-      provider.connection
-        .getTokenAccountBalance(mdATA)
-        .then((b) => new BN(b.value.amount)),
-      voterProgram.account.escrow.fetch(escrow),
-      provider.connection
-        .getTokenAccountBalance(escrowTokens)
-        .then((b) => new BN(b.value.amount)),
-      voterProgram.account.locker.fetch(locker),
-    ]);
-
     await mdProgram.methods
-      .claim(userTwoIndex, claimAmount, proof)
+      .claim(userIndex, claimAmount, proof)
       .accounts({
         distributor,
         claimStatus,
-        from: mdATA,
-        claimant: userTwoWallet.publicKey,
-        payer: adminWallet.publicKey,
+        tokenVault: mdATA,
+        claimant: userWallet.publicKey,
         escrow,
         locker,
         escrowTokens,
@@ -677,68 +610,8 @@ describe("merkle-distributor", () => {
         tokenProgram: TOKEN_PROGRAM_ID,
       })
       .rpc();
-
-    const [
-      afterDistributor,
-      afterDistributorBalance,
-      afterEscrow,
-      afterEscrowATA,
-      afterLocker,
-    ] = await Promise.all([
-      mdProgram.account.merkleDistributor.fetch(distributor),
-      provider.connection
-        .getTokenAccountBalance(mdATA)
-        .then((b) => new BN(b.value.amount)),
-      voterProgram.account.escrow.fetch(escrow),
-      provider.connection
-        .getTokenAccountBalance(escrowTokens)
-        .then((b) => new BN(b.value.amount)),
-      voterProgram.account.locker.fetch(locker),
-    ]);
-
-    const claimStatusState = await mdProgram.account.claimStatus.fetch(
-      claimStatus
-    );
-
-    expect(claimStatusState.isClaimed).to.be.true;
-    expect(claimStatusState.claimedAt.toString()).not.equal("0");
-    expect(claimStatusState.amount.toString()).to.be.equal(
-      claimAmount.toString()
-    );
-    expect(claimStatusState.claimant.toBase58()).to.be.equal(
-      userTwoWallet.publicKey.toBase58()
-    );
-
-    const totalAmountClaimedDelta = afterDistributor.totalAmountClaimed.sub(
-      beforeDistributor.totalAmountClaimed
-    );
-    const numNodesClaimedDelta = afterDistributor.numNodesClaimed.sub(
-      beforeDistributor.numNodesClaimed
-    );
-    const distributorBalanceDelta = afterDistributorBalance.sub(
-      beforeDistributorBalance
-    );
-
-    expect(totalAmountClaimedDelta.toString()).to.be.equal(
-      claimAmount.toString()
-    );
-    expect(numNodesClaimedDelta.toString()).to.be.equal("1");
-
-    expect(distributorBalanceDelta.toString()).to.be.equal(
-      claimAmount.neg().toString()
-    );
-
-    // After claim, the MET will be locked in Escrow
-    const escrowAmountDelta = afterEscrow.amount.sub(beforeEscrow.amount);
-    const escrowATADelta = afterEscrowATA.sub(beforeEscrowATA);
-    const lockerSupplyDelta = afterLocker.lockedSupply.sub(
-      beforeLocker.lockedSupply
-    );
-
-    expect(escrowAmountDelta.toString()).to.be.equal(claimAmount.toString());
-    expect(escrowATADelta.toString()).to.be.equal(claimAmount.toString());
-    expect(lockerSupplyDelta.toString()).to.be.equal(claimAmount.toString());
   });
+
 
   it("all drops claimed", async () => {
     // user #3 claims the drop
@@ -795,9 +668,8 @@ describe("merkle-distributor", () => {
       .accounts({
         distributor,
         claimStatus,
-        from: mdATA,
+        tokenVault: mdATA,
         claimant: userThreeWallet.publicKey,
-        payer: userThreeWallet.publicKey,
         escrow,
         locker,
         escrowTokens,

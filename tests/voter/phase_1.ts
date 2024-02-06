@@ -1,5 +1,5 @@
-import { web3, Wallet, BN } from "@project-serum/anchor";
-import * as anchor from "@project-serum/anchor";
+import { web3, Wallet, BN } from "@coral-xyz/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import {
   BalanceTree,
   GOVERN_PROGRAM_ID,
@@ -31,7 +31,7 @@ import {
   invokeAndAssertError,
   sleep,
 } from "../utils";
-import { TOKEN_PROGRAM_ID, createMint, mintTo } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, createMint, mintTo, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { expect } from "chai";
 
 const provider = anchor.AnchorProvider.env();
@@ -178,12 +178,7 @@ describe("Locked voter", () => {
     const [mdPda, _mdBump] = deriveDistributor(keypair.publicKey);
     distributor = mdPda;
 
-    mdATA = await getOrCreateATA(
-      rewardMint,
-      mdPda,
-      keypair,
-      provider.connection
-    );
+    mdATA = getAssociatedTokenAddressSync(rewardMint, distributor, true);
 
     await createDistributor(
       keypair,
@@ -240,6 +235,7 @@ describe("Locked voter", () => {
         proposalActivationMinVotes,
       })
       .accounts({
+        base: keypair.publicKey,
         locker,
         tokenMint: rewardMint,
         governor: govern,
@@ -579,9 +575,8 @@ describe("Locked voter", () => {
           distributor,
           escrow,
           escrowTokens: escrowATA,
-          from: mdATA,
+          tokenVault: mdATA,
           locker,
-          payer: mdProgram.provider.publicKey,
           systemProgram: web3.SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
           voterProgram: VOTER_PROGRAM_ID,

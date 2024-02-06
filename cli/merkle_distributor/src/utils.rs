@@ -1,12 +1,12 @@
+use anchor_lang::solana_program::hash::hashv;
 use anyhow::Error;
 use anyhow::Result;
+use merkle_distributor::LEAF_PREFIX;
 use serde::Deserialize;
 use solana_program::example_mocks::solana_sdk::Pubkey;
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::str::FromStr;
-
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct TokenAllocation {
@@ -72,10 +72,10 @@ pub fn get_next_layer(next_layer: Vec<[u8; 32]>) -> Vec<[u8; 32]> {
 }
 
 pub fn combine_hash(first: [u8; 32], second: [u8; 32]) -> [u8; 32] {
-    if first < second {
-        anchor_lang::solana_program::keccak::hashv(&[&first, &second]).to_bytes()
+    if first <= second {
+        hashv(&[&[1u8], &first, &second]).to_bytes()
     } else {
-        anchor_lang::solana_program::keccak::hashv(&[&second, &first]).to_bytes()
+        hashv(&[&[1u8], &second, &first]).to_bytes()
     }
 }
 #[derive(Debug)]
@@ -88,14 +88,15 @@ impl Snapshot {
         for (i, allocation) in self.0.iter().enumerate() {
             let claimant_account = Pubkey::from_str(&allocation.authority).unwrap();
             let amount = u64::from_str(&allocation.amount).unwrap();
-            first_branch.push(
-                anchor_lang::solana_program::keccak::hashv(&[
-                    &i.to_le_bytes(),
-                    &claimant_account.to_bytes(),
-                    &amount.to_le_bytes(),
-                ])
-                .to_bytes(),
-            );
+
+            let node = hashv(&[
+                &(i as u64).to_le_bytes(),
+                &claimant_account.to_bytes(),
+                &amount.to_le_bytes(),
+            ]);
+            let hash = hashv(&[LEAF_PREFIX, &node.to_bytes()]).to_bytes();
+
+            first_branch.push(hash);
         }
         // sort
         first_branch.sort_by(|a, b| a.partial_cmp(b).unwrap());
@@ -123,12 +124,12 @@ impl Snapshot {
                 amount = u64::from_str(&allocation.amount).unwrap();
                 let claimant_account = Pubkey::from_str(&allocation.authority).unwrap();
                 user_index = i as u64;
-                hash = anchor_lang::solana_program::keccak::hashv(&[
+                let node = hashv(&[
                     &user_index.to_le_bytes(),
                     &claimant_account.to_bytes(),
                     &amount.to_le_bytes(),
-                ])
-                .to_bytes();
+                ]);
+                hash = hashv(&[LEAF_PREFIX, &node.to_bytes()]).to_bytes();
                 break;
             }
         }
@@ -175,6 +176,29 @@ pub fn build_tree(snapshot: &Snapshot) -> (u64, u64, [u8; 32]) {
 mod merkle_tree_test {
     use super::*;
     use std::env;
+
+    #[test]
+    fn test_hash() {
+        let index = 1u64;
+        let claimant_account =
+            Pubkey::from_str("smaK3fwkA7ubbxEhsimp1iqPTzfS4MBsNL77QLABZP6").unwrap();
+        let amount = 100u64;
+        // Verify the merkle proof.
+        let node = hashv(&[
+            &index.to_le_bytes(),
+            &claimant_account.as_ref(),
+            &amount.to_le_bytes(),
+        ]);
+
+        // [218, 23, 3, 242, 228, 60, 99, 142, 58, 181, 89, 42, 191, 34, 83, 206, 203, 159, 114, 184, 38, 27, 159, 15, 141, 230, 95, 87, 69, 210, 96, 246]
+        println!("{:?}", node.to_bytes());
+
+        let node = hashv(&[LEAF_PREFIX, &node.to_bytes()]);
+
+        // [248, 208, 112, 90, 193, 59, 124, 34, 13, 180, 140, 59, 69, 0, 249, 121, 194, 99, 15, 37, 58, 87, 127, 119, 232, 73, 62, 85, 52, 213, 212, 216]
+        println!("{:?}", node.to_bytes())
+    }
+
     #[test]
     fn test_get_root() {
         let current_dir = env::current_dir().unwrap();

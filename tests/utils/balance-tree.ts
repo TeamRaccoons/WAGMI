@@ -1,5 +1,5 @@
-import { BN, web3 } from "@project-serum/anchor";
-import { keccak_256 } from "js-sha3";
+import { BN, web3 } from "@coral-xyz/anchor";
+import { sha256 } from "js-sha256";
 
 import { MerkleTree } from "./merkle-tree";
 
@@ -36,7 +36,14 @@ export class BalanceTree {
       account.toBuffer(),
       new BN(amount).toArrayLike(Buffer, "le", 8),
     ]);
-    return Buffer.from(keccak_256(buf), "hex");
+
+    const hashedBuff = Buffer.from(sha256(buf), "hex");
+    const bufWithPrefix = Buffer.concat([
+      Buffer.from([0]),
+      hashedBuff
+    ]);
+
+    return Buffer.from(sha256(bufWithPrefix), "hex");
   }
 
   getHexRoot(): string {

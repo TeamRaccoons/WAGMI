@@ -1,4 +1,4 @@
-import { keccak_256 } from "js-sha3";
+import { sha256 } from "js-sha256";
 import invariant from "tiny-invariant";
 
 function getPairElement(idx: number, layer: Buffer[]): Buffer | null {
@@ -28,7 +28,7 @@ function bufArrToHexArr(arr: Buffer[]): string[] {
 }
 
 function sortAndConcat(...args: Buffer[]): Buffer {
-  return Buffer.concat([...args].sort(Buffer.compare.bind(null)));
+  return Buffer.concat([Buffer.from([1]), Buffer.concat([...args].sort(Buffer.compare.bind(null)))]);
 }
 
 export class MerkleTree {
@@ -96,7 +96,7 @@ export class MerkleTree {
       return first;
     }
 
-    return Buffer.from(keccak_256.digest(sortAndConcat(first, second)));
+    return Buffer.from(sha256(sortAndConcat(first, second)), "hex");
   }
 
   getRoot(): Buffer {

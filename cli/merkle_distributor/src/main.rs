@@ -2,9 +2,6 @@ mod args;
 mod utils;
 use crate::args::*;
 use crate::utils::*;
-use anyhow::Result;
-use utils_cli::*;
-
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signer::keypair::*;
@@ -13,10 +10,13 @@ use anchor_client::{Client, Program};
 use anchor_lang::InstructionData;
 use anchor_lang::ToAccountMetas;
 use anchor_spl::associated_token::get_associated_token_address;
+use anyhow::Result;
 use clap::*;
 use solana_program::instruction::Instruction;
+use std::ops::Deref;
 use std::rc::Rc;
 use std::str::FromStr;
+use utils_cli::*;
 
 fn main() -> Result<()> {
     let opts = Opts::parse();
@@ -40,23 +40,31 @@ fn main() -> Result<()> {
         }
         None => Keypair::new(),
     };
-    let program = client.program(program_id);
+    let program = client.program(program_id)?;
     match opts.command {
         CliCommand::NewDistributor {
             token_mint,
             path_to_snapshot,
+            clawback_owner,
+            clawback_start_ts,
         } => {
-            new_distributor(&program, base, token_mint, path_to_snapshot)?;
+            new_distributor(
+                &program,
+                base,
+                token_mint,
+                path_to_snapshot,
+                clawback_owner,
+                clawback_start_ts,
+            )?;
         }
         CliCommand::Fund { path_to_snapshot } => {
             fund(&program, base, path_to_snapshot)?;
         }
         CliCommand::Claim {
             base,
-            claimant,
             path_to_snapshot,
         } => {
-            claim(&program, base, claimant, path_to_snapshot)?;
+            claim(&program, base, path_to_snapshot)?;
         }
         CliCommand::ViewDistributor { base } => {
             let (distributor, _bump) = Pubkey::find_program_address(
@@ -97,11 +105,13 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn new_distributor(
-    program: &Program,
+fn new_distributor<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
     base_keypair: Keypair,
     token_mint: Pubkey,
     path_to_snapshot: String,
+    clawback_owner: Pubkey,
+    clawback_start_ts: u64,
 ) -> Result<()> {
     let snapshot = read_snapshot(path_to_snapshot);
     let (max_num_nodes, max_total_claim, root) = build_tree(&snapshot);
@@ -115,6 +125,13 @@ fn new_distributor(
         &[b"MerkleDistributor".as_ref(), base.as_ref()],
         &merkle_distributor::id(),
     );
+
+    let token_vault =
+        spl_associated_token_account::get_associated_token_address(&distributor, &token_mint);
+
+    let clawback_receiver =
+        spl_associated_token_account::get_associated_token_address(&clawback_owner, &token_mint);
+
     println!("distributor address {}", distributor);
 
     let builder = program
@@ -123,7 +140,11 @@ fn new_distributor(
             base,
             distributor,
             mint: token_mint,
-            payer: program.payer(),
+            admin: program.payer(),
+            clawback_receiver,
+            token_vault,
+            token_program: anchor_spl::token::ID,
+            associated_token_program: spl_associated_token_account::ID,
             system_program: solana_program::system_program::ID,
         })
         .args(merkle_distributor::instruction::NewDistributor {
@@ -131,6 +152,7 @@ fn new_distributor(
             root,
             max_total_claim,
             max_num_nodes,
+            clawback_start_ts: clawback_start_ts as i64,
         })
         .signer(&base_keypair);
     let signature = builder.send()?;
@@ -138,7 +160,11 @@ fn new_distributor(
     Ok(())
 }
 
-fn fund(program: &Program, base_keypair: Keypair, path_to_snapshot: String) -> Result<()> {
+fn fund<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base_keypair: Keypair,
+    path_to_snapshot: String,
+) -> Result<()> {
     let snapshot = read_snapshot(path_to_snapshot);
     let (max_num_nodes, max_total_claim, root) = build_tree(&snapshot);
 
@@ -155,20 +181,29 @@ fn fund(program: &Program, base_keypair: Keypair, path_to_snapshot: String) -> R
     let destination_pubkey = get_associated_token_address(&distributor, &token_mint);
 
     println!(
-        "distributor {}, distributor ata {} token mint {} total claim {}",
-        distributor, destination_pubkey, token_mint, max_total_claim
+        "distributor {}, distributor ata {} token mint {} total claim {} payer {}",
+        distributor,
+        destination_pubkey,
+        token_mint,
+        max_total_claim,
+        program.payer()
     );
 
+    let admin_ata =
+        spl_associated_token_account::get_associated_token_address(&program.payer(), &token_mint);
+
     let instructions = vec![
-        spl_associated_token_account::instruction::create_associated_token_account(
-            &program.payer(),
-            &distributor,
-            &token_mint,
-            &spl_token::id(),
-        ),
         spl_token::instruction::mint_to(
             &spl_token::id(),
             &token_mint,
+            &admin_ata,
+            &program.payer(),
+            &[],
+            max_total_claim,
+        )?,
+        spl_token::instruction::transfer(
+            &spl_token::id(),
+            &admin_ata,
             &destination_pubkey,
             &program.payer(),
             &[],
@@ -190,13 +225,14 @@ fn fund(program: &Program, base_keypair: Keypair, path_to_snapshot: String) -> R
     Ok(())
 }
 
-fn claim(
-    program: &Program,
+fn claim<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
     base: Pubkey,
-    claimant: Pubkey,
     path_to_snapshot: String,
 ) -> Result<()> {
     let snapshot = read_snapshot(path_to_snapshot);
+
+    let claimant = program.payer();
 
     let (index, amount, proof) = snapshot.get_user_claim_info(claimant)?;
 
@@ -214,8 +250,6 @@ fn claim(
         ],
         &merkle_distributor::id(),
     );
-
-    let from = get_associated_token_address(&distributor, &distributor_state.mint);
 
     let (escrow, _bump) = Pubkey::find_program_address(
         &[
@@ -256,9 +290,8 @@ fn claim(
         accounts: merkle_distributor::accounts::Claim {
             distributor,
             claim_status,
-            from,
+            token_vault: distributor_state.token_vault,
             claimant,
-            payer: program.payer(),
             system_program: solana_program::system_program::ID,
             token_program: anchor_spl::token::ID,
             voter_program: voter::ID,
