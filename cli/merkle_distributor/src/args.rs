@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::Cluster;
 use clap::*;
@@ -44,7 +46,7 @@ pub enum CliCommand {
         #[clap(long)]
         clawback_owner: Pubkey,
         #[clap(long)]
-        path_to_snapshot: String,
+        path_to_snapshot: PathBuf,
         #[clap(long)]
         clawback_start_ts: u64,
     },
@@ -52,11 +54,11 @@ pub enum CliCommand {
         #[clap(long)]
         base: Pubkey,
         #[clap(long)]
-        path_to_snapshot: String,
+        path_to_snapshot: PathBuf,
     },
     Fund {
         #[clap(long)]
-        path_to_snapshot: String,
+        path_to_snapshot: PathBuf,
     },
     ViewDistributor {
         #[clap(long)]
@@ -68,7 +70,7 @@ pub enum CliCommand {
         #[clap(long)]
         claimant: Pubkey,
         #[clap(long)]
-        path_to_snapshot: String,
+        path_to_snapshot: PathBuf,
     },
 }
 

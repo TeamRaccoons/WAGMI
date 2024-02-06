@@ -10,10 +10,12 @@ use anchor_client::{Client, Program};
 use anchor_lang::InstructionData;
 use anchor_lang::ToAccountMetas;
 use anchor_spl::associated_token::get_associated_token_address;
+use anchor_spl::token::Mint;
 use anyhow::Result;
 use clap::*;
 use solana_program::instruction::Instruction;
 use std::ops::Deref;
+use std::path::PathBuf;
 use std::rc::Rc;
 use std::str::FromStr;
 use utils_cli::*;
@@ -86,7 +88,16 @@ fn main() -> Result<()> {
                 &merkle_distributor::id(),
             );
 
-            let snapshot = read_snapshot(path_to_snapshot);
+            let (distributor, _bump) = Pubkey::find_program_address(
+                &[b"MerkleDistributor".as_ref(), base.as_ref()],
+                &merkle_distributor::id(),
+            );
+            let distributor_state: merkle_distributor::MerkleDistributor =
+                program.account(distributor)?;
+
+            let token_mint_state: Mint = program.account(distributor_state.mint)?;
+
+            let snapshot = read_snapshot(path_to_snapshot, token_mint_state.decimals);
             let (index, _amount, _proof) = snapshot.get_user_claim_info(claimant)?;
             let (claim_status, _bump) = Pubkey::find_program_address(
                 &[
@@ -109,11 +120,12 @@ fn new_distributor<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     base_keypair: Keypair,
     token_mint: Pubkey,
-    path_to_snapshot: String,
+    path_to_snapshot: PathBuf,
     clawback_owner: Pubkey,
     clawback_start_ts: u64,
 ) -> Result<()> {
-    let snapshot = read_snapshot(path_to_snapshot);
+    let token_mint_state: Mint = program.account(token_mint)?;
+    let snapshot = read_snapshot(path_to_snapshot, token_mint_state.decimals);
     let (max_num_nodes, max_total_claim, root) = build_tree(&snapshot);
 
     let base = base_keypair.pubkey();
@@ -163,20 +175,19 @@ fn new_distributor<C: Deref<Target = impl Signer> + Clone>(
 fn fund<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     base_keypair: Keypair,
-    path_to_snapshot: String,
+    path_to_snapshot: PathBuf,
 ) -> Result<()> {
-    let snapshot = read_snapshot(path_to_snapshot);
-    let (max_num_nodes, max_total_claim, root) = build_tree(&snapshot);
-
     let base = base_keypair.pubkey();
-
     let (distributor, _bump) = Pubkey::find_program_address(
         &[b"MerkleDistributor".as_ref(), base.as_ref()],
         &merkle_distributor::id(),
     );
-
     let distributor_state: merkle_distributor::MerkleDistributor = program.account(distributor)?;
     let token_mint = distributor_state.mint;
+    let token_mint_state: Mint = program.account(distributor_state.mint)?;
+
+    let snapshot = read_snapshot(path_to_snapshot, token_mint_state.decimals);
+    let (max_num_nodes, max_total_claim, root) = build_tree(&snapshot);
 
     let destination_pubkey = get_associated_token_address(&distributor, &token_mint);
 
@@ -228,19 +239,21 @@ fn fund<C: Deref<Target = impl Signer> + Clone>(
 fn claim<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     base: Pubkey,
-    path_to_snapshot: String,
+    path_to_snapshot: PathBuf,
 ) -> Result<()> {
-    let snapshot = read_snapshot(path_to_snapshot);
-
-    let claimant = program.payer();
-
-    let (index, amount, proof) = snapshot.get_user_claim_info(claimant)?;
-
     let (distributor, _bump) = Pubkey::find_program_address(
         &[b"MerkleDistributor".as_ref(), base.as_ref()],
         &merkle_distributor::id(),
     );
     let distributor_state: merkle_distributor::MerkleDistributor = program.account(distributor)?;
+
+    let token_mint_state: Mint = program.account(distributor_state.mint)?;
+
+    let snapshot = read_snapshot(path_to_snapshot, token_mint_state.decimals);
+
+    let claimant = program.payer();
+
+    let (index, amount, proof) = snapshot.get_user_claim_info(claimant)?;
 
     let (claim_status, _bump) = Pubkey::find_program_address(
         &[

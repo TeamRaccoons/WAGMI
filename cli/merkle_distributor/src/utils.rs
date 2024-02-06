@@ -2,17 +2,36 @@ use anchor_lang::solana_program::hash::hashv;
 use anyhow::Error;
 use anyhow::Result;
 use merkle_distributor::LEAF_PREFIX;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use solana_program::example_mocks::solana_sdk::Pubkey;
-use std::fs::File;
 use std::io::Read;
 use std::str::FromStr;
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "snake_case")]
+use std::{fs::File, path::PathBuf, result};
+
+/// Represents a single entry in a CSV
+#[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct TokenAllocation {
-    pub authority: String,
-    pub amount: String,
+    /// Pubkey of the claimant; will be responsible for signing the claim
+    pub pubkey: String,
+    /// amount unlocked, (ui amount)
+    pub amount: u64,
 }
+
+impl TokenAllocation {
+    pub fn new_from_file(path: &PathBuf) -> Result<Vec<Self>> {
+        let file = File::open(path)?;
+        let mut rdr = csv::Reader::from_reader(file);
+
+        let mut entries = Vec::new();
+        for result in rdr.deserialize() {
+            let record: TokenAllocation = result.unwrap();
+            entries.push(record);
+        }
+
+        Ok(entries)
+    }
+}
+
 #[derive(Debug)]
 pub struct MerkleTree {
     pub tree: Vec<Vec<[u8; 32]>>,
@@ -86,8 +105,8 @@ impl Snapshot {
 
         let mut first_branch = vec![];
         for (i, allocation) in self.0.iter().enumerate() {
-            let claimant_account = Pubkey::from_str(&allocation.authority).unwrap();
-            let amount = u64::from_str(&allocation.amount).unwrap();
+            let claimant_account = Pubkey::from_str(&allocation.pubkey).unwrap();
+            let amount = allocation.amount;
 
             let node = hashv(&[
                 &(i as u64).to_le_bytes(),
@@ -119,10 +138,10 @@ impl Snapshot {
         let mut is_find = false;
         let mut hash: [u8; 32] = [0; 32];
         for (i, allocation) in self.0.iter().enumerate() {
-            if allocation.authority == user.to_string() {
+            if allocation.pubkey == user.to_string() {
                 is_find = true;
-                amount = u64::from_str(&allocation.amount).unwrap();
-                let claimant_account = Pubkey::from_str(&allocation.authority).unwrap();
+                amount = allocation.amount;
+                let claimant_account = Pubkey::from_str(&allocation.pubkey).unwrap();
                 user_index = i as u64;
                 let node = hashv(&[
                     &user_index.to_le_bytes(),
@@ -143,22 +162,27 @@ impl Snapshot {
     }
 }
 
-pub fn read_snapshot(path_to_snapshot: String) -> Snapshot {
-    let mut file = File::open(&path_to_snapshot).unwrap();
-    let mut data = String::new();
-    file.read_to_string(&mut data).unwrap();
-
-    let list: Vec<TokenAllocation> =
-        serde_json::from_str(&data).expect("JSON was not well-formatted");
-
+pub fn read_snapshot(path_to_snapshot: PathBuf, decimals: u8) -> Snapshot {
+    let list = TokenAllocation::new_from_file(&path_to_snapshot).unwrap();
     // make sure we dont have duplicate account
     for (index, item) in list.iter().enumerate() {
+        // ensure it is valid pubkey
+        Pubkey::from_str(&item.pubkey.clone()).unwrap();
         for j in (index + 1..list.len()) {
-            if item.authority == list[j].authority {
-                panic!("duplicate authority");
+            if item.pubkey.clone() == list[j].pubkey.clone() {
+                panic!("duplicate pubkey");
             }
         }
     }
+    // multiple with decimals
+    let list: Vec<TokenAllocation> = list
+        .iter()
+        .map(|x| TokenAllocation {
+            pubkey: x.pubkey.clone(),
+            amount: x.amount * 10u64.pow(decimals as u32),
+        })
+        .collect();
+
     return Snapshot(list);
 }
 
@@ -166,7 +190,7 @@ pub fn build_tree(snapshot: &Snapshot) -> (u64, u64, [u8; 32]) {
     let max_num_nodes = snapshot.0.len();
     let mut max_total_claim = 0u64;
     for token_allocation in snapshot.0.iter() {
-        let amount = u64::from_str(&token_allocation.amount).unwrap();
+        let amount = token_allocation.amount;
         max_total_claim = max_total_claim.checked_add(amount).unwrap();
     }
     return (max_num_nodes as u64, max_total_claim, snapshot.get_root());
@@ -203,11 +227,15 @@ mod merkle_tree_test {
     fn test_get_root() {
         let current_dir = env::current_dir().unwrap();
         let snapshot = read_snapshot(
-            format!(
-                "{}/src/snapshot.json",
-                current_dir.into_os_string().into_string().unwrap()
+            PathBuf::from_str(
+                &format!(
+                    "{}/src/snapshot.csv",
+                    current_dir.into_os_string().into_string().unwrap()
+                )
+                .to_string(),
             )
-            .to_string(),
+            .unwrap(),
+            9,
         );
         let root = snapshot.get_root();
         println!("{:?}", root);
@@ -217,15 +245,19 @@ mod merkle_tree_test {
     fn test_get_proof() {
         let current_dir = env::current_dir().unwrap();
         let snapshot = read_snapshot(
-            format!(
-                "{}/src/snapshot.json",
-                current_dir.into_os_string().into_string().unwrap()
+            PathBuf::from_str(
+                &format!(
+                    "{}/src/snapshot.csv",
+                    current_dir.into_os_string().into_string().unwrap()
+                )
+                .to_string(),
             )
-            .to_string(),
+            .unwrap(),
+            9,
         );
         for allocation in snapshot.0.iter() {
             let (index, _amount, proof) = snapshot
-                .get_user_claim_info(Pubkey::from_str(&allocation.authority).unwrap())
+                .get_user_claim_info(Pubkey::from_str(&allocation.pubkey).unwrap())
                 .unwrap();
             println!("index {} {:?} \n", index, proof);
         }
