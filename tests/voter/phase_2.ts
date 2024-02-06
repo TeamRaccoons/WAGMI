@@ -117,6 +117,7 @@ describe("Locked voter", () => {
         proposalActivationMinVotes,
       })
       .accounts({
+        base: keypair.publicKey,
         locker,
         tokenMint: rewardMint,
         governor: govern,
