@@ -120,8 +120,70 @@ fn main() -> Result<()> {
             let escrow_state: voter::Escrow = program.account(escrow)?;
             println!("{:?}", escrow_state);
         }
+        CliCommand::Verify {
+            base,
+            token_mint,
+            expiration,
+            max_stake_vote_multiplier,
+            min_stake_duration,
+            max_stake_duration,
+            proposal_activation_min_votes,
+        } => {
+            verify(
+                &program,
+                base,
+                token_mint,
+                expiration,
+                max_stake_vote_multiplier,
+                min_stake_duration,
+                max_stake_duration,
+                proposal_activation_min_votes,
+            )
+            .unwrap();
+        }
     }
+    Ok(())
+}
 
+fn verify<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+    token_mint: Pubkey,
+    expiration: i64,
+    max_stake_vote_multiplier: u8,
+    min_stake_duration: u64,
+    max_stake_duration: u64,
+    proposal_activation_min_votes: u64,
+) -> Result<()> {
+    let (locker, _bump) =
+        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
+    let locker_state: voter::Locker = program.account(locker)?;
+
+    println!("verify token mint");
+    assert_eq!(locker_state.token_mint, token_mint);
+
+    println!("verify governor");
+    let (governor, _bump) =
+        Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
+    assert_eq!(locker_state.governor, governor);
+
+    println!("verify expiration");
+    assert_eq!(locker_state.expiration, expiration);
+
+    let params = locker_state.params;
+    println!("verify max_stake_vote_multiplier");
+    assert_eq!(params.max_stake_vote_multiplier, max_stake_vote_multiplier);
+    println!("verify min_stake_duration");
+    assert_eq!(params.min_stake_duration, min_stake_duration);
+
+    println!("verify max_stake_duration");
+    assert_eq!(params.max_stake_duration, max_stake_duration);
+
+    println!("verify proposal_activation_min_votes");
+    assert_eq!(
+        params.proposal_activation_min_votes,
+        proposal_activation_min_votes
+    );
     Ok(())
 }
 

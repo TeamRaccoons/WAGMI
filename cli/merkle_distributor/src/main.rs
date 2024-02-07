@@ -11,6 +11,8 @@ use anchor_lang::InstructionData;
 use anchor_lang::ToAccountMetas;
 use anchor_spl::associated_token::get_associated_token_address;
 use anchor_spl::token::Mint;
+use anchor_spl::token::TokenAccount;
+use anyhow::Ok;
 use anyhow::Result;
 use clap::*;
 use solana_program::instruction::Instruction;
@@ -111,6 +113,87 @@ fn main() -> Result<()> {
                 program.account(claim_status)?;
             println!("{:?}", claim_status_state);
         }
+        CliCommand::Verify {
+            base,
+            clawback_start_ts,
+            clawback_receiver_owner,
+            admin,
+            token_mint,
+            path_to_snapshot,
+            verify_amount,
+        } => {
+            verify(
+                &program,
+                base,
+                token_mint,
+                clawback_start_ts,
+                clawback_receiver_owner,
+                admin,
+                path_to_snapshot,
+                verify_amount,
+            )
+            .unwrap();
+        }
+    }
+
+    Ok(())
+}
+
+fn verify<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+    token_mint: Pubkey,
+    clawback_start_ts: i64,
+    clawback_receiver_owner: Pubkey,
+    admin: Pubkey,
+    path_to_snapshot: PathBuf,
+    verify_amount: bool,
+) -> Result<()> {
+    let (locker, _bump) =
+        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
+
+    let (distributor, _bump) = Pubkey::find_program_address(
+        &[b"MerkleDistributor".as_ref(), base.as_ref()],
+        &merkle_distributor::id(),
+    );
+    let distributor_state: merkle_distributor::MerkleDistributor = program.account(distributor)?;
+
+    println!("verify token mint");
+    assert_eq!(distributor_state.mint, token_mint);
+
+    println!("verify locker");
+    assert_eq!(distributor_state.locker, locker);
+
+    println!("verify admin");
+    assert_eq!(distributor_state.admin, admin);
+
+    println!("verify clawback start");
+    assert_eq!(distributor_state.clawback_start_ts, clawback_start_ts);
+
+    let clawback_receiver = spl_associated_token_account::get_associated_token_address(
+        &clawback_receiver_owner,
+        &distributor_state.mint,
+    );
+    println!("verify clawback receiver");
+    assert_eq!(distributor_state.clawback_receiver, clawback_receiver);
+
+    let token_mint_state: Mint = program.account(token_mint)?;
+    let snapshot = read_snapshot(path_to_snapshot, token_mint_state.decimals);
+    let (max_num_nodes, max_total_claim, root) = build_tree(&snapshot);
+
+    println!("verify root");
+    assert_eq!(distributor_state.root, root);
+
+    println!("verify max_num_nodes");
+    assert_eq!(distributor_state.max_num_nodes, max_num_nodes);
+
+    println!("verify max_total_claim");
+    assert_eq!(distributor_state.max_total_claim, max_total_claim);
+
+    if verify_amount {
+        let token_vault_state: TokenAccount = program.account(distributor_state.token_vault)?;
+        println!("verify amount");
+        assert_eq!(token_vault_state.amount, distributor_state.max_total_claim);
     }
 
     Ok(())

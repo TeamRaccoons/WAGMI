@@ -89,8 +89,60 @@ fn main() -> Result<()> {
             let vote_state: govern::Vote = program.account(vote)?;
             println!("{:?}", vote_state);
         }
+        CliCommand::Verify {
+            base,
+            voting_delay,
+            voting_period,
+            quorum_votes,
+            timelock_delay_seconds,
+        } => {
+            verify(
+                &program,
+                base,
+                voting_delay,
+                voting_period,
+                quorum_votes,
+                timelock_delay_seconds,
+            )
+            .unwrap();
+        }
     }
 
+    Ok(())
+}
+
+fn verify<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+    voting_delay: u64,
+    voting_period: u64,
+    quorum_votes: u64,
+    timelock_delay_seconds: i64,
+) -> Result<()> {
+    let (governor, _bump) =
+        Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
+    let governor_state: govern::Governor = program.account(governor)?;
+
+    let params = governor_state.params;
+    println!("verify voting delay");
+    assert_eq!(params.voting_delay, voting_delay);
+    println!("verify voting period");
+    assert_eq!(params.voting_period, voting_period);
+    println!("verify quorum votes");
+    assert_eq!(params.quorum_votes, quorum_votes);
+    println!("verify timelock_delay_seconds");
+    assert_eq!(params.timelock_delay_seconds, timelock_delay_seconds);
+
+    let (smart_wallet, _bump) = Pubkey::find_program_address(
+        &[b"SmartWallet".as_ref(), base.as_ref()],
+        &smart_wallet::id(),
+    );
+    println!("verify smart wallet");
+    assert_eq!(governor_state.smart_wallet, smart_wallet);
+    println!("verify locker");
+    let (locker, _bump) =
+        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
+    assert_eq!(governor_state.locker, locker);
     Ok(())
 }
 

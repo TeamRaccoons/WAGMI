@@ -50,6 +50,19 @@ pub enum CliCommand {
         owners: Vec<Pubkey>,
     },
 
+    Verify {
+        #[clap(long)]
+        base: Pubkey,
+        #[clap(long)]
+        max_owners: u8,
+        #[clap(long)]
+        threshold: u64,
+        #[clap(long)]
+        minimum_delay: i64,
+        #[clap(long)]
+        owners: Vec<Pubkey>,
+    },
+
     CreateSetOwnersTx {
         #[clap(long)]
         base: Pubkey,

@@ -8,14 +8,12 @@ use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signer::keypair::*;
 use anchor_client::solana_sdk::signer::Signer;
 use anchor_client::{Client, Program};
-use anchor_lang::Key;
 use anyhow::Ok;
 use anyhow::Result;
 use solana_program::instruction::AccountMeta;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::str::FromStr;
-use utils_cli::*;
 
 use clap::*;
 
@@ -103,11 +101,49 @@ fn main() -> Result<()> {
                 timelock_delay_seconds,
             )?;
         }
+        CliCommand::Verify {
+            base,
+            max_owners,
+            threshold,
+            minimum_delay,
+            owners,
+        } => {
+            verify(&program, base, max_owners, threshold, minimum_delay, owners).unwrap();
+        }
     }
 
     Ok(())
 }
 
+fn verify<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    base: Pubkey,
+    max_owners: u8,
+    threshold: u64,
+    minimum_delay: i64,
+    owners: Vec<Pubkey>,
+) -> Result<()> {
+    let (smart_wallet, _bump) = Pubkey::find_program_address(
+        &[b"SmartWallet".as_ref(), base.as_ref()],
+        &smart_wallet::id(),
+    );
+    let smart_wallet_state: smart_wallet::SmartWallet = program.account(smart_wallet)?;
+
+    // verify max_owners
+    println!("verify max owner");
+    assert_eq!(smart_wallet_state.max_owners, max_owners);
+
+    println!("verify threshold");
+    assert_eq!(smart_wallet_state.threshold, threshold);
+
+    println!("verify minimum_delay");
+    assert_eq!(smart_wallet_state.minimum_delay, minimum_delay);
+
+    println!("verify owners");
+    assert_eq!(smart_wallet_state.owners, owners);
+
+    Ok(())
+}
 fn create_smart_wallet<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     base_keypair: Keypair,
@@ -118,14 +154,14 @@ fn create_smart_wallet<C: Deref<Target = impl Signer> + Clone>(
 ) -> Result<()> {
     let base = base_keypair.pubkey();
 
-    let (smart_wallet, bump) = Pubkey::find_program_address(
+    let (smart_wallet, _bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
     );
 
     // push governor in the owner
     let mut owners = owners.to_vec();
-    let (governor, bump) =
+    let (governor, _bump) =
         Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
     owners.push(governor);
     assert_eq!(max_owners >= owners.len() as u8, true);
@@ -161,7 +197,7 @@ fn create_set_owners_tx<C: Deref<Target = impl Signer> + Clone>(
     owners: Vec<Pubkey>,
 ) -> Result<()> {
     println!("new owners {:?}", owners);
-    let (smart_wallet, bump) = Pubkey::find_program_address(
+    let (smart_wallet, _bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
     );
@@ -184,7 +220,7 @@ fn create_add_new_owner_tx<C: Deref<Target = impl Signer> + Clone>(
     base: Pubkey,
     new_owner: Pubkey,
 ) -> Result<()> {
-    let (smart_wallet, bump) = Pubkey::find_program_address(
+    let (smart_wallet, _bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
     );
@@ -213,7 +249,7 @@ fn create_remove_owner_tx<C: Deref<Target = impl Signer> + Clone>(
     base: Pubkey,
     owner: Pubkey,
 ) -> Result<()> {
-    let (smart_wallet, bump) = Pubkey::find_program_address(
+    let (smart_wallet, _bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
     );
@@ -242,7 +278,7 @@ fn create_change_threshold_tx<C: Deref<Target = impl Signer> + Clone>(
     base: Pubkey,
     threshold: u64,
 ) -> Result<()> {
-    let (smart_wallet, bump) = Pubkey::find_program_address(
+    let (smart_wallet, _bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
     );
@@ -269,11 +305,11 @@ fn create_set_governance_params_tx<C: Deref<Target = impl Signer> + Clone>(
     quorum_votes: u64,
     timelock_delay_seconds: i64,
 ) -> Result<()> {
-    let (smart_wallet, bump) = Pubkey::find_program_address(
+    let (smart_wallet, _bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
     );
-    let (governor, bump) =
+    let (governor, _bump) =
         Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
 
     println!("set governance parameters");
@@ -311,7 +347,7 @@ fn create_activate_proposal_tx<C: Deref<Target = impl Signer> + Clone>(
     base: Pubkey,
     proposal: Pubkey,
 ) -> Result<()> {
-    let (smart_wallet, bump) = Pubkey::find_program_address(
+    let (smart_wallet, _bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
     );
@@ -359,7 +395,7 @@ fn approve_transaction<C: Deref<Target = impl Signer> + Clone>(
     base: Pubkey,
     transaction: Pubkey,
 ) -> Result<()> {
-    let (smart_wallet, bump) = Pubkey::find_program_address(
+    let (smart_wallet, _bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
     );
@@ -428,7 +464,7 @@ fn execute_transaction<C: Deref<Target = impl Signer> + Clone>(
     base: Pubkey,
     transaction: Pubkey,
 ) -> Result<()> {
-    let (smart_wallet, bump) = Pubkey::find_program_address(
+    let (smart_wallet, _bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
     );
@@ -482,7 +518,7 @@ fn view_smartwallet<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     base: Pubkey,
 ) -> Result<()> {
-    let (smart_wallet, bump) = Pubkey::find_program_address(
+    let (smart_wallet, _bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
     );
@@ -504,7 +540,7 @@ fn create_transaction<C: Deref<Target = impl Signer> + Clone>(
     base: Pubkey,
     instructions: Vec<smart_wallet::TXInstruction>,
 ) -> Result<()> {
-    let (smart_wallet, bump) = Pubkey::find_program_address(
+    let (smart_wallet, _bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
     );

@@ -56,6 +56,26 @@ pub enum CliCommand {
         #[clap(long)]
         proposal_activation_min_votes: u64,
     },
+    Verify {
+        #[clap(long)]
+        base: Pubkey,
+        #[clap(long)]
+        token_mint: Pubkey,
+        #[clap(long)]
+        expiration: i64,
+        /// For example, veCRV is 10 because 1 CRV locked for 4 years = 10 veCRV.
+        #[clap(long)]
+        max_stake_vote_multiplier: u8,
+        /// Minimum staking duration.
+        #[clap(long)]
+        min_stake_duration: u64,
+        /// Maximum staking duration.
+        #[clap(long)]
+        max_stake_duration: u64,
+        /// Minimum number of votes required to activate a proposal.
+        #[clap(long)]
+        proposal_activation_min_votes: u64,
+    },
     NewEscrow {
         #[clap(long)]
         base: Pubkey,

@@ -64,6 +64,22 @@ pub enum CliCommand {
         #[clap(long)]
         base: Pubkey,
     },
+    Verify {
+        #[clap(long)]
+        base: Pubkey,
+        #[clap(long)]
+        token_mint: Pubkey,
+        #[clap(long)]
+        clawback_start_ts: i64,
+        #[clap(long)]
+        clawback_receiver_owner: Pubkey,
+        #[clap(long)]
+        admin: Pubkey,
+        #[clap(long)]
+        path_to_snapshot: PathBuf,
+        #[clap(long)]
+        verify_amount: bool,
+    },
     ViewClaimStatus {
         #[clap(long)]
         base: Pubkey,
