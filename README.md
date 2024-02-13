@@ -20,12 +20,12 @@ Govern:
 anchor test --run ./tests/govern -- --features test-bpf
 
 Merkle distributor:
-anchor test --run ./tests/merkle-distributor -- --features test-bpf
+anchor test --skip-build  --run ./tests/merkle-distributor -- --features test-bpf 
 
 Smart wallet:
-anchor test --run ./tests/smartwallet -- --features test-bpf
+anchor test --skip-build --run ./tests/smartwallet -- --features test-bpf
 
 Voter:
-anchor test --run ./tests/voter -- --features test-bpf
+anchor test --skip-build --run ./tests/voter -- --features test-bpf
 
 ```
