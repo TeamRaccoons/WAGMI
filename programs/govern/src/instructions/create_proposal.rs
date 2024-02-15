@@ -6,7 +6,7 @@ use crate::*;
 pub struct CreateProposal<'info> {
     /// The [Governor].
     #[account(mut)]
-    pub governor: Account<'info, Governor>,
+    pub governor: Box<Account<'info, Governor>>,
     /// The [Proposal].
     #[account(
         init,

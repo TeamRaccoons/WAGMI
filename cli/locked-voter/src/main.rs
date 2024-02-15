@@ -14,7 +14,6 @@ use solana_program::instruction::Instruction;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::str::FromStr;
-use utils_cli::*;
 
 fn main() -> Result<()> {
     let opts = Opts::parse();
@@ -202,7 +201,7 @@ fn new_locker<C: Deref<Target = impl Signer> + Clone>(
     proposal_activation_min_votes: u64,
 ) -> Result<()> {
     let base = base_keypair.pubkey();
-    let (governor, bump) =
+    let (governor, _bump) =
         Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
 
     let (locker, _bump) =

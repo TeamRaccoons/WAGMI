@@ -156,7 +156,7 @@ fn create_governor<C: Deref<Target = impl Signer> + Clone>(
 ) -> Result<()> {
     let base = base_keypair.pubkey();
 
-    let (smart_wallet, bump) = Pubkey::find_program_address(
+    let (smart_wallet, _bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
     );
@@ -165,7 +165,7 @@ fn create_governor<C: Deref<Target = impl Signer> + Clone>(
     let (locker, _bump) =
         Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &met_voter::id());
 
-    let (governor, bump) =
+    let (governor, _bump) =
         Pubkey::find_program_address(&[b"Governor".as_ref(), base.as_ref()], &govern::id());
     println!("governor address {}", governor);
 
@@ -197,12 +197,12 @@ fn create_dummy_proposal<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     base: Pubkey,
 ) -> Result<()> {
-    let (governor, bump) =
+    let (governor, _bump) =
         Pubkey::find_program_address(&[b"Governor".as_ref(), base.as_ref()], &govern::id());
 
     let governor_state: govern::Governor = program.account(governor)?;
 
-    let (proposal, bump) = Pubkey::find_program_address(
+    let (proposal, _bump) = Pubkey::find_program_address(
         &[
             b"Proposal".as_ref(),
             governor.as_ref(),
@@ -343,7 +343,7 @@ fn view_governor<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     base: Pubkey,
 ) -> Result<()> {
-    let (governor, bump) =
+    let (governor, _bump) =
         Pubkey::find_program_address(&[b"Governor".as_ref(), base.as_ref()], &govern::id());
     println!("governor address {}", governor);
 

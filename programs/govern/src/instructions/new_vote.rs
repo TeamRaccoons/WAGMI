@@ -5,7 +5,7 @@ use crate::*;
 #[instruction(voter: Pubkey)]
 pub struct NewVote<'info> {
     /// Proposal being voted on.
-    pub proposal: Account<'info, Proposal>,
+    pub proposal: Box<Account<'info, Proposal>>,
 
     /// The vote.
     #[account(

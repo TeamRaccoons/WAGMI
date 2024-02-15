@@ -4,7 +4,7 @@ use crate::*;
 #[derive(Accounts)]
 pub struct NewEscrow<'info> {
     /// [Locker].
-    pub locker: Account<'info, Locker>,
+    pub locker: Box<Account<'info, Locker>>,
 
     /// [Escrow].
     #[account(

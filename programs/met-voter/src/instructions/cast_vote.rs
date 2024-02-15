@@ -5,21 +5,21 @@ use govern::ProposalState;
 #[derive(Accounts)]
 pub struct CastVote<'info> {
     /// The [Locker].
-    pub locker: Account<'info, Locker>,
+    pub locker: Box<Account<'info, Locker>>,
     /// The [Escrow] that is voting.
-    pub escrow: Account<'info, Escrow>,
+    pub escrow: Box<Account<'info, Escrow>>,
     /// Vote delegate of the [Escrow].
     pub vote_delegate: Signer<'info>,
 
     /// The [Proposal] being voted on.
     #[account(mut)]
-    pub proposal: Account<'info, Proposal>,
+    pub proposal: Box<Account<'info, Proposal>>,
     /// The [Vote].
     #[account(mut)]
-    pub vote: Account<'info, Vote>,
+    pub vote: Box<Account<'info, Vote>>,
 
     /// The [Governor].
-    pub governor: Account<'info, Governor>,
+    pub governor: Box<Account<'info, Governor>>,
     /// The [govern] program.
     pub govern_program: Program<'info, govern::program::Govern>,
 }

@@ -4,11 +4,11 @@ use crate::*;
 #[derive(Accounts)]
 pub struct ToggleMaxLock<'info> {
     /// [Locker].
-    pub locker: Account<'info, Locker>,
+    pub locker: Box<Account<'info, Locker>>,
 
     /// [Escrow].
     #[account(mut, has_one = locker)]
-    pub escrow: Account<'info, Escrow>,
+    pub escrow: Box<Account<'info, Escrow>>,
 
     /// Authority of the [Escrow] and
     pub escrow_owner: Signer<'info>,

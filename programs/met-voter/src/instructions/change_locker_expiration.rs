@@ -7,9 +7,9 @@ use crate::*;
 pub struct ChangeLockerExpiration<'info> {
     /// The [Locker].
     #[account(mut)]
-    pub locker: Account<'info, Locker>,
+    pub locker: Box<Account<'info, Locker>>,
     /// The [Governor].
-    pub governor: Account<'info, Governor>,
+    pub governor: Box<Account<'info, Governor>>,
     /// The smart wallet on the [Governor].
     pub smart_wallet: Signer<'info>,
 }

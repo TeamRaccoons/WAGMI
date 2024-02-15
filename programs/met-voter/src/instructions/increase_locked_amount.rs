@@ -6,11 +6,11 @@ use anchor_spl::token;
 pub struct IncreaseLockedAmount<'info> {
     /// [Locker].
     #[account(mut)]
-    pub locker: Account<'info, Locker>,
+    pub locker: Box<Account<'info, Locker>>,
 
     /// [Escrow].
     #[account(mut, has_one = locker)]
-    pub escrow: Account<'info, Escrow>,
+    pub escrow: Box<Account<'info, Escrow>>,
 
     /// Token account held by the [Escrow].
     #[account(

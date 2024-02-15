@@ -1,5 +1,5 @@
 use crate::*;
-use anchor_spl::token::{self, Mint, Token, TokenAccount};
+use anchor_spl::token::{self, Token, TokenAccount};
 /// Accounts for [govern::claim_reward].
 #[derive(Accounts)]
 pub struct ClaimReward<'info> {

@@ -6,10 +6,10 @@ pub struct ActivateProposal<'info> {
     /// The [Locker].
     pub locker: Account<'info, Locker>,
     /// The [Governor].
-    pub governor: Account<'info, Governor>,
+    pub governor: Box<Account<'info, Governor>>,
     /// The [Proposal].
     #[account(mut)]
-    pub proposal: Account<'info, Proposal>,
+    pub proposal: Box<Account<'info, Proposal>>,
     /// The [govern] program.
     pub govern_program: Program<'info, govern::program::Govern>,
     /// The smart wallet on the [Governor].

@@ -6,7 +6,7 @@ use crate::*;
 pub struct SetVotingReward<'info> {
     /// The [Governor]
     #[account(mut, has_one=smart_wallet)]
-    pub governor: Account<'info, Governor>,
+    pub governor: Box<Account<'info, Governor>>,
     /// reward mint
     pub reward_mint: Account<'info, Mint>,
     /// The Smart Wallet.

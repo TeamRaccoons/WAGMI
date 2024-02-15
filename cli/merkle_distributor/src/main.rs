@@ -20,7 +20,6 @@ use std::ops::Deref;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::str::FromStr;
-use utils_cli::*;
 
 fn main() -> Result<()> {
     let opts = Opts::parse();
@@ -85,11 +84,6 @@ fn main() -> Result<()> {
             claimant,
             path_to_snapshot,
         } => {
-            let (distributor, _bump) = Pubkey::find_program_address(
-                &[b"MerkleDistributor".as_ref(), base.as_ref()],
-                &merkle_distributor::id(),
-            );
-
             let (distributor, _bump) = Pubkey::find_program_address(
                 &[b"MerkleDistributor".as_ref(), base.as_ref()],
                 &merkle_distributor::id(),
@@ -270,7 +264,7 @@ fn fund<C: Deref<Target = impl Signer> + Clone>(
     let token_mint_state: Mint = program.account(distributor_state.mint)?;
 
     let snapshot = read_snapshot(path_to_snapshot, token_mint_state.decimals);
-    let (max_num_nodes, max_total_claim, root) = build_tree(&snapshot);
+    let (_max_num_nodes, max_total_claim, _root) = build_tree(&snapshot);
 
     let destination_pubkey = get_associated_token_address(&distributor, &token_mint);
 
@@ -375,10 +369,11 @@ fn claim<C: Deref<Target = impl Signer> + Clone>(
     let escrow_tokens = get_associated_token_address(&escrow, &distributor_state.mint);
     if program.rpc().get_account_data(&escrow_tokens).is_err() {
         instructions.push(
-            spl_associated_token_account::create_associated_token_account(
+            spl_associated_token_account::instruction::create_associated_token_account(
                 &program.payer(),
                 &escrow,
                 &distributor_state.mint,
+                &spl_token::id(),
             ),
         );
     }

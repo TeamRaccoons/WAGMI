@@ -23,7 +23,7 @@ pub struct NewLocker<'info> {
     pub token_mint: Account<'info, Mint>,
 
     /// [Governor] associated with the [Locker].
-    pub governor: Account<'info, Governor>,
+    pub governor: Box<Account<'info, Governor>>,
 
     /// Payer of the initialization.
     #[account(mut)]

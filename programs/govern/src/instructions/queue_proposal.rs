@@ -5,10 +5,10 @@ use crate::*;
 pub struct QueueProposal<'info> {
     /// The Governor.
     #[account(has_one = smart_wallet)]
-    pub governor: Account<'info, Governor>,
+    pub governor: Box<Account<'info, Governor>>,
     /// The Proposal to queue.
     #[account(mut)]
-    pub proposal: Account<'info, Proposal>,
+    pub proposal: Box<Account<'info, Proposal>>,
     /// The transaction key of the proposal.
     /// This account is passed to and validated by the Smart Wallet program to be initialized.
     #[account(mut, constraint = transaction.to_account_info().data_is_empty())]

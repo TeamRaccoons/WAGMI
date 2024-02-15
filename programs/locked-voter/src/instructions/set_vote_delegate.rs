@@ -5,7 +5,7 @@ use crate::*;
 pub struct SetVoteDelegate<'info> {
     /// The [Escrow].
     #[account(mut)]
-    pub escrow: Account<'info, Escrow>,
+    pub escrow: Box<Account<'info, Escrow>>,
     /// The owner of the [Escrow].
     pub escrow_owner: Signer<'info>,
 }

@@ -6,11 +6,11 @@ use anchor_spl::token;
 pub struct Withdraw<'info> {
     /// The [Locker] being exited from.
     #[account(mut)]
-    pub locker: Account<'info, Locker>,
+    pub locker: Box<Account<'info, Locker>>,
 
     /// The [Escrow] that is being closed.
     #[account(mut, has_one = locker, close = payer)]
-    pub escrow: Account<'info, Escrow>,
+    pub escrow: Box<Account<'info, Escrow>>,
 
     /// Authority of the [Escrow].
     pub escrow_owner: Signer<'info>,

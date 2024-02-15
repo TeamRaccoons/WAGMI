@@ -4,14 +4,14 @@ use crate::*;
 #[derive(Accounts)]
 pub struct ActivateProposal<'info> {
     /// The [Locker].
-    pub locker: Account<'info, Locker>,
+    pub locker: Box<Account<'info, Locker>>,
     /// The [Governor].
-    pub governor: Account<'info, Governor>,
+    pub governor: Box<Account<'info, Governor>>,
     /// The [Proposal].
     #[account(mut)]
-    pub proposal: Account<'info, Proposal>,
+    pub proposal: Box<Account<'info, Proposal>>,
     /// The user's [Escrow].
-    pub escrow: Account<'info, Escrow>,
+    pub escrow: Box<Account<'info, Escrow>>,
     /// The [Escrow]'s owner.
     pub escrow_owner: Signer<'info>,
     /// The [govern] program.
