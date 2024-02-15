@@ -4,9 +4,8 @@ use anyhow::Result;
 use merkle_distributor::LEAF_PREFIX;
 use serde::{Deserialize, Serialize};
 use solana_program::example_mocks::solana_sdk::Pubkey;
-use std::io::Read;
 use std::str::FromStr;
-use std::{fs::File, path::PathBuf, result};
+use std::{fs::File, path::PathBuf};
 
 /// Represents a single entry in a CSV
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
@@ -51,7 +50,7 @@ impl MerkleTree {
                 break;
             }
         }
-        for (i, layer) in self.tree.iter().enumerate() {
+        for (_i, layer) in self.tree.iter().enumerate() {
             let pair_element = get_pair_element(idx, layer);
 
             // if (pairElement)
@@ -168,7 +167,7 @@ pub fn read_snapshot(path_to_snapshot: PathBuf, decimals: u8) -> Snapshot {
     for (index, item) in list.iter().enumerate() {
         // ensure it is valid pubkey
         Pubkey::from_str(&item.pubkey.clone()).unwrap();
-        for j in (index + 1..list.len()) {
+        for j in (index + 1)..list.len() {
             if item.pubkey.clone() == list[j].pubkey.clone() {
                 panic!("duplicate pubkey");
             }

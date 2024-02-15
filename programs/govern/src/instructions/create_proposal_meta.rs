@@ -12,7 +12,7 @@ pub struct CreateProposalMeta<'info> {
     #[account(
         init,
         seeds = [
-            b"MeteoraProposalMeta".as_ref(),
+            b"ProposalMeta".as_ref(),
             proposal.key().as_ref()
         ],
         bump,

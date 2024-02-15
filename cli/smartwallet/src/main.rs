@@ -354,9 +354,9 @@ fn create_activate_proposal_tx<C: Deref<Target = impl Signer> + Clone>(
     let proposal_state: govern::Proposal = program.account(proposal)?;
     let governor_state: govern::Governor = program.account(proposal_state.governor)?;
 
-    let data = voter::instruction::ActivateProposalInitialPhase {}.data();
+    let data = met_voter::instruction::ActivateProposalInitialPhase {}.data();
     let instruction = smart_wallet::TXInstruction {
-        program_id: voter::id(),
+        program_id: met_voter::id(),
         keys: vec![
             smart_wallet::TXAccountMeta {
                 pubkey: governor_state.locker,

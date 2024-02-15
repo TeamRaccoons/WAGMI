@@ -5,13 +5,13 @@ use crate::*;
 #[instruction(voter: Pubkey)]
 pub struct NewVote<'info> {
     /// Proposal being voted on.
-    pub proposal: Account<'info, Proposal>,
+    pub proposal: Box<Account<'info, Proposal>>,
 
     /// The vote.
     #[account(
         init,
         seeds = [
-            b"MeteoraVote".as_ref(),
+            b"Vote".as_ref(),
             proposal.key().as_ref(),
             voter.as_ref()
         ],

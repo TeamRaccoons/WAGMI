@@ -4,7 +4,7 @@ use crate::*;
 pub struct SetGovernanceParams<'info> {
     /// The [Governor]
     #[account(mut)]
-    pub governor: Account<'info, Governor>,
+    pub governor: Box<Account<'info, Governor>>,
     /// The Smart Wallet.
     pub smart_wallet: Signer<'info>,
 }

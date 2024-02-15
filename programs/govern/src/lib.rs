@@ -67,7 +67,6 @@ pub mod govern {
     #[access_control(ctx.accounts.validate())]
     pub fn queue_proposal(ctx: Context<QueueProposal>) -> Result<()> {
         ctx.accounts.queue_transaction()?;
-
         Ok(())
     }
 
@@ -92,6 +91,22 @@ pub mod govern {
         params: GovernanceParameters,
     ) -> Result<()> {
         ctx.accounts.set_governance_params(params)
+    }
+
+    /// Sets Voting Reward.
+    /// This may only be called by the [Governor::smart_wallet].
+    #[access_control(ctx.accounts.validate())]
+    pub fn set_voting_reward(
+        ctx: Context<SetVotingReward>,
+        reward_per_proposal: u64,
+    ) -> Result<()> {
+        ctx.accounts.set_voting_reward(reward_per_proposal)
+    }
+
+    /// Claim rewards, for voter
+    #[access_control(ctx.accounts.validate())]
+    pub fn claim_reward(ctx: Context<ClaimReward>) -> Result<()> {
+        ctx.accounts.claim_reward()
     }
 
     /// Sets the locker of the [Governor].

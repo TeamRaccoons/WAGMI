@@ -9,7 +9,7 @@ pub struct CreateGovernor<'info> {
     #[account(
         init,
         seeds = [
-            b"MeteoraGovernor".as_ref(),
+            b"Governor".as_ref(),
             base.key().as_ref()
         ],
         bump,

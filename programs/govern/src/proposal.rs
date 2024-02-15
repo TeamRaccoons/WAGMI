@@ -12,7 +12,7 @@ use vipers::{program_err, unwrap_int, unwrap_opt};
 #[derive(Debug, Eq, PartialEq)]
 #[repr(C)]
 pub enum ProposalState {
-    /// Anyone can create a proposal on Meteora. When a governance proposal is created,
+    /// Anyone can create a proposal. When a governance proposal is created,
     /// it is considered a [ProposalState::Draft] and enters a review period, after which voting weights
     /// are recorded and voting begins.
     Draft,
@@ -133,15 +133,19 @@ impl Proposal {
         ))
     }
 
-    /// Checks if the proposal meets quorum; that is,
-    /// enough votes were made on the proposal.
-    pub fn meets_quorum(&self, quorum_votes: u64) -> Option<bool> {
+    /// total votes
+    pub fn total_votes(&self) -> Option<u64> {
         Some(
             self.for_votes
                 .checked_add(self.against_votes)?
-                .checked_add(self.abstain_votes)?
-                >= quorum_votes,
+                .checked_add(self.abstain_votes)?,
         )
+    }
+
+    /// Checks if the proposal meets quorum; that is,
+    /// enough votes were made on the proposal.
+    pub fn meets_quorum(&self) -> Option<bool> {
+        Some(self.total_votes()? >= self.quorum_votes)
     }
 
     /// The state of the proposal. See [ProposalState] for more details.
@@ -153,7 +157,7 @@ impl Proposal {
             return Some(ProposalState::Draft);
         } else if current_time < self.voting_ends_at {
             return Some(ProposalState::Active);
-        } else if self.for_votes <= self.against_votes || !self.meets_quorum(self.quorum_votes)? {
+        } else if self.for_votes <= self.against_votes || !self.meets_quorum()? {
             return Some(ProposalState::Defeated);
         } else if self.queued_at > 0 {
             return Some(ProposalState::Queued);
@@ -384,9 +388,10 @@ mod tests {
                 for_votes,
                 against_votes,
                 abstain_votes,
+                quorum_votes,
                 ..Proposal::default()
             };
-            assert!(!proposal.meets_quorum(quorum_votes).unwrap(), "proposal should fail quorum; for_votes: {}, against_votes: {}, abstain: votes: {}", for_votes, against_votes, abstain_votes);
+            assert!(!proposal.meets_quorum().unwrap(), "proposal should fail quorum; for_votes: {}, against_votes: {}, abstain: votes: {}", for_votes, against_votes, abstain_votes);
             assert_eq!(test_proposal_state(params), ProposalState::Defeated);
         }
     }

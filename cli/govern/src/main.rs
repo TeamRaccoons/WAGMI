@@ -83,7 +83,7 @@ fn main() -> Result<()> {
         }
         CliCommand::ViewVote { proposal, voter } => {
             let (vote, _bump) = Pubkey::find_program_address(
-                &[b"MeteoraVote".as_ref(), proposal.as_ref(), voter.as_ref()],
+                &[b"Vote".as_ref(), proposal.as_ref(), voter.as_ref()],
                 &govern::id(),
             );
             let vote_state: govern::Vote = program.account(vote)?;
@@ -120,7 +120,7 @@ fn verify<C: Deref<Target = impl Signer> + Clone>(
     timelock_delay_seconds: i64,
 ) -> Result<()> {
     let (governor, _bump) =
-        Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
+        Pubkey::find_program_address(&[b"Governor".as_ref(), base.as_ref()], &govern::id());
     let governor_state: govern::Governor = program.account(governor)?;
 
     let params = governor_state.params;
@@ -141,7 +141,7 @@ fn verify<C: Deref<Target = impl Signer> + Clone>(
     assert_eq!(governor_state.smart_wallet, smart_wallet);
     println!("verify locker");
     let (locker, _bump) =
-        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
+        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &met_voter::id());
     assert_eq!(governor_state.locker, locker);
     Ok(())
 }
@@ -156,17 +156,17 @@ fn create_governor<C: Deref<Target = impl Signer> + Clone>(
 ) -> Result<()> {
     let base = base_keypair.pubkey();
 
-    let (smart_wallet, bump) = Pubkey::find_program_address(
+    let (smart_wallet, _bump) = Pubkey::find_program_address(
         &[b"SmartWallet".as_ref(), base.as_ref()],
         &smart_wallet::id(),
     );
 
     // create locker pda
     let (locker, _bump) =
-        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
+        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &met_voter::id());
 
-    let (governor, bump) =
-        Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
+    let (governor, _bump) =
+        Pubkey::find_program_address(&[b"Governor".as_ref(), base.as_ref()], &govern::id());
     println!("governor address {}", governor);
 
     let builder = program
@@ -197,14 +197,14 @@ fn create_dummy_proposal<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     base: Pubkey,
 ) -> Result<()> {
-    let (governor, bump) =
-        Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
+    let (governor, _bump) =
+        Pubkey::find_program_address(&[b"Governor".as_ref(), base.as_ref()], &govern::id());
 
     let governor_state: govern::Governor = program.account(governor)?;
 
-    let (proposal, bump) = Pubkey::find_program_address(
+    let (proposal, _bump) = Pubkey::find_program_address(
         &[
-            b"MeteoraProposal".as_ref(),
+            b"Proposal".as_ref(),
             governor.as_ref(),
             governor_state.proposal_count.to_le_bytes().as_ref(),
         ],
@@ -288,7 +288,7 @@ fn new_vote<C: Deref<Target = impl Signer> + Clone>(
 ) -> Result<()> {
     let (vote, _bump) = Pubkey::find_program_address(
         &[
-            b"MeteoraVote".as_ref(),
+            b"Vote".as_ref(),
             proposal.as_ref(),
             program.payer().as_ref(),
         ],
@@ -317,7 +317,7 @@ fn create_proposal_meta<C: Deref<Target = impl Signer> + Clone>(
     description_link: String,
 ) -> Result<()> {
     let (proposal_meta, _bump) = Pubkey::find_program_address(
-        &[b"MeteoraProposalMeta".as_ref(), proposal.as_ref()],
+        &[b"ProposalMeta".as_ref(), proposal.as_ref()],
         &govern::id(),
     );
     let builder = program
@@ -343,8 +343,8 @@ fn view_governor<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     base: Pubkey,
 ) -> Result<()> {
-    let (governor, bump) =
-        Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
+    let (governor, _bump) =
+        Pubkey::find_program_address(&[b"Governor".as_ref(), base.as_ref()], &govern::id());
     println!("governor address {}", governor);
 
     let state: govern::Governor = program.account(governor)?;
@@ -364,7 +364,7 @@ fn view_proposal_meta<C: Deref<Target = impl Signer> + Clone>(
     proposal: Pubkey,
 ) -> Result<()> {
     let (proposal_meta, _bump) = Pubkey::find_program_address(
-        &[b"MeteoraProposalMeta".as_ref(), proposal.as_ref()],
+        &[b"ProposalMeta".as_ref(), proposal.as_ref()],
         &govern::id(),
     );
     let state: govern::ProposalMeta = program.account(proposal_meta)?;

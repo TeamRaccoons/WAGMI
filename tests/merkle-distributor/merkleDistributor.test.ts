@@ -9,15 +9,15 @@ import {
   GOVERN_PROGRAM_ID,
   MERKLE_DISTRIBUTOR_PROGRAM_ID,
   SMART_WALLET_PROGRAM_ID,
-  VOTER_PROGRAM_ID,
+  MET_VOTER_PROGRAM_ID,
   createAndFundWallet,
   createGovernProgram,
   createGovernor,
-  createLocker,
+  createMetLocker,
   createMerkleDistributorProgram,
   createSmartWallet,
   createSmartWalletProgram,
-  createVoterProgram,
+  createMetVoterProgram,
   deriveClaimStatus,
   deriveDistributor,
   deriveEscrow,
@@ -89,14 +89,15 @@ describe("merkle-distributor", () => {
       timelockDelaySeconds,
       keypair,
       smartWallet,
-      createGovernProgram(wallet, GOVERN_PROGRAM_ID)
+      createGovernProgram(wallet, GOVERN_PROGRAM_ID),
+      MET_VOTER_PROGRAM_ID
     );
   }
 
   async function setupEscrow(wallet: Wallet) {
-    const [escrow, _eBump] = deriveEscrow(locker, wallet.publicKey);
+    const [escrow, _eBump] = deriveEscrow(locker, wallet.publicKey, MET_VOTER_PROGRAM_ID);
 
-    const voterProgram = createVoterProgram(wallet, VOTER_PROGRAM_ID);
+    const voterProgram = createMetVoterProgram(wallet, MET_VOTER_PROGRAM_ID);
 
     await voterProgram.methods
       .newEscrow()
@@ -120,7 +121,7 @@ describe("merkle-distributor", () => {
     // 1 vote can activate the proposal
     const proposalActivationMinVotes = new BN(1);
 
-    return createLocker(
+    return createMetLocker(
       expiration,
       maxStakeDuration,
       maxStakeVoteMultiplier,
@@ -129,7 +130,7 @@ describe("merkle-distributor", () => {
       keypair,
       rewardMint,
       governor,
-      createVoterProgram(wallet, VOTER_PROGRAM_ID)
+      createMetVoterProgram(wallet, MET_VOTER_PROGRAM_ID)
     );
   }
 
@@ -155,7 +156,7 @@ describe("merkle-distributor", () => {
     const [governorPda, _gBump] = deriveGovern(keypair.publicKey);
     governor = governorPda;
 
-    const [lockerPda, _lBump] = deriveLocker(keypair.publicKey);
+    const [lockerPda, _lBump] = deriveLocker(keypair.publicKey, MET_VOTER_PROGRAM_ID);
     locker = lockerPda;
 
     const [smartWalletPda, _swBump] = deriveSmartWallet(keypair.publicKey);
@@ -256,7 +257,7 @@ describe("merkle-distributor", () => {
 
     const [claimStatus, _csBump] = deriveClaimStatus(index, distributor);
 
-    const [escrow, _eBump] = deriveEscrow(locker, userOneWallet.publicKey);
+    const [escrow, _eBump] = deriveEscrow(locker, userOneWallet.publicKey, MET_VOTER_PROGRAM_ID);
     const escrowTokens = await getOrCreateATA(
       rewardMint,
       escrow,
@@ -276,7 +277,7 @@ describe("merkle-distributor", () => {
             escrow,
             locker,
             escrowTokens,
-            voterProgram: VOTER_PROGRAM_ID,
+            voterProgram: MET_VOTER_PROGRAM_ID,
             systemProgram: web3.SystemProgram.programId,
             tokenProgram: TOKEN_PROGRAM_ID,
           })
@@ -309,7 +310,7 @@ describe("merkle-distributor", () => {
 
     const [claimStatus, _csBump] = deriveClaimStatus(userTwoIndex, distributor);
 
-    const [escrow, _eBump] = deriveEscrow(locker, userOneWallet.publicKey);
+    const [escrow, _eBump] = deriveEscrow(locker, userOneWallet.publicKey, MET_VOTER_PROGRAM_ID);
     const escrowTokens = await getOrCreateATA(
       rewardMint,
       escrow,
@@ -330,7 +331,7 @@ describe("merkle-distributor", () => {
             escrow,
             locker,
             escrowTokens,
-            voterProgram: VOTER_PROGRAM_ID,
+            voterProgram: MET_VOTER_PROGRAM_ID,
             systemProgram: web3.SystemProgram.programId,
             tokenProgram: TOKEN_PROGRAM_ID,
           })
@@ -359,7 +360,7 @@ describe("merkle-distributor", () => {
 
     const [claimStatus, _csBump] = deriveClaimStatus(index, distributor);
 
-    const [escrow, _eBump] = deriveEscrow(locker, userOneWallet.publicKey);
+    const [escrow, _eBump] = deriveEscrow(locker, userOneWallet.publicKey, MET_VOTER_PROGRAM_ID);
     const escrowTokens = await getOrCreateATA(
       rewardMint,
       escrow,
@@ -382,7 +383,7 @@ describe("merkle-distributor", () => {
             escrow,
             locker,
             escrowTokens,
-            voterProgram: VOTER_PROGRAM_ID,
+            voterProgram: MET_VOTER_PROGRAM_ID,
             systemProgram: web3.SystemProgram.programId,
             tokenProgram: TOKEN_PROGRAM_ID,
           })
@@ -409,11 +410,11 @@ describe("merkle-distributor", () => {
       MERKLE_DISTRIBUTOR_PROGRAM_ID
     );
 
-    const voterProgram = createVoterProgram(userOneWallet, VOTER_PROGRAM_ID);
+    const voterProgram = createMetVoterProgram(userOneWallet, MET_VOTER_PROGRAM_ID);
 
     const [claimStatus, _csBump] = deriveClaimStatus(userOneIndex, distributor);
 
-    const [escrow, _eBump] = deriveEscrow(locker, userOneWallet.publicKey);
+    const [escrow, _eBump] = deriveEscrow(locker, userOneWallet.publicKey, MET_VOTER_PROGRAM_ID);
     const escrowTokens = await getOrCreateATA(
       rewardMint,
       escrow,
@@ -449,7 +450,7 @@ describe("merkle-distributor", () => {
         escrow,
         locker,
         escrowTokens,
-        voterProgram: VOTER_PROGRAM_ID,
+        voterProgram: MET_VOTER_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
       })
@@ -536,7 +537,7 @@ describe("merkle-distributor", () => {
 
     const [claimStatus, _csBump] = deriveClaimStatus(userOneIndex, distributor);
 
-    const [escrow, _eBump] = deriveEscrow(locker, userOneWallet.publicKey);
+    const [escrow, _eBump] = deriveEscrow(locker, userOneWallet.publicKey, MET_VOTER_PROGRAM_ID);
     const escrowTokens = await getOrCreateATA(
       rewardMint,
       escrow,
@@ -556,7 +557,7 @@ describe("merkle-distributor", () => {
             escrow,
             locker,
             escrowTokens,
-            voterProgram: VOTER_PROGRAM_ID,
+            voterProgram: MET_VOTER_PROGRAM_ID,
             systemProgram: web3.SystemProgram.programId,
             tokenProgram: TOKEN_PROGRAM_ID,
           })
@@ -587,7 +588,7 @@ describe("merkle-distributor", () => {
 
     const [claimStatus, _csBump] = deriveClaimStatus(userIndex, distributor);
 
-    const [escrow, _eBump] = deriveEscrow(locker, userWallet.publicKey);
+    const [escrow, _eBump] = deriveEscrow(locker, userWallet.publicKey, MET_VOTER_PROGRAM_ID);
     const escrowTokens = await getOrCreateATA(
       rewardMint,
       escrow,
@@ -605,7 +606,7 @@ describe("merkle-distributor", () => {
         escrow,
         locker,
         escrowTokens,
-        voterProgram: VOTER_PROGRAM_ID,
+        voterProgram: MET_VOTER_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
       })
@@ -630,14 +631,14 @@ describe("merkle-distributor", () => {
       MERKLE_DISTRIBUTOR_PROGRAM_ID
     );
 
-    const voterProgram = createVoterProgram(userThreeWallet, VOTER_PROGRAM_ID);
+    const voterProgram = createMetVoterProgram(userThreeWallet, MET_VOTER_PROGRAM_ID);
 
     const [claimStatus, _csBump] = deriveClaimStatus(
       userThreeIndex,
       distributor
     );
 
-    const [escrow, _eBump] = deriveEscrow(locker, userThreeWallet.publicKey);
+    const [escrow, _eBump] = deriveEscrow(locker, userThreeWallet.publicKey, MET_VOTER_PROGRAM_ID);
     const escrowTokens = await getOrCreateATA(
       rewardMint,
       escrow,
@@ -673,7 +674,7 @@ describe("merkle-distributor", () => {
         escrow,
         locker,
         escrowTokens,
-        voterProgram: VOTER_PROGRAM_ID,
+        voterProgram: MET_VOTER_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
       })

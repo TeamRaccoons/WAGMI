@@ -1,0 +1,27 @@
+[package]
+name = "met-voter"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "met_voter"
+
+[features]
+no-entrypoint = []
+no-idl = []
+cpi = ["no-entrypoint"]
+default = []
+test-bpf = []
+
+[dependencies]
+anchor-lang = "0.28.0"
+anchor-spl = "0.28.0"
+govern = { path = "../govern", features = ["cpi"] }
+num-traits = "0.2.16"
+vipers = {path = "../../libs/vipers"}
+
+[dev-dependencies]
+proptest = { version = "1.0" }

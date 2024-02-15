@@ -6,12 +6,12 @@ use crate::*;
 pub struct CreateProposal<'info> {
     /// The [Governor].
     #[account(mut)]
-    pub governor: Account<'info, Governor>,
+    pub governor: Box<Account<'info, Governor>>,
     /// The [Proposal].
     #[account(
         init,
         seeds = [
-            b"MeteoraProposal".as_ref(),
+            b"Proposal".as_ref(),
             governor.key().as_ref(),
             governor.proposal_count.to_le_bytes().as_ref()
         ],
@@ -52,6 +52,8 @@ impl<'info> CreateProposal<'info> {
 
         proposal.queued_at = 0;
         proposal.queued_transaction = Pubkey::default();
+
+        proposal.voting_reward = governor.voting_reward;
 
         proposal.instructions = instructions.clone();
 
