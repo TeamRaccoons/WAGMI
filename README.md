@@ -17,7 +17,7 @@ You may run tests belong to specific program by:
 
 ```
 Govern:
-anchor test --run ./tests/govern -- --features test-bpf
+anchor test --skip-build --run ./tests/govern -- --features test-bpf
 
 Merkle distributor:
 anchor test --skip-build  --run ./tests/merkle-distributor -- --features test-bpf 
@@ -25,7 +25,10 @@ anchor test --skip-build  --run ./tests/merkle-distributor -- --features test-bp
 Smart wallet:
 anchor test --skip-build --run ./tests/smartwallet -- --features test-bpf
 
-Voter:
-anchor test --skip-build --run ./tests/voter -- --features test-bpf
+Met-Voter:
+anchor test --skip-build --run ./tests/met-voter -- --features test-bpf
+
+Locked-Voter:
+anchor test --skip-build --run ./tests/locked-voter -- --features test-bpf
 
 ```

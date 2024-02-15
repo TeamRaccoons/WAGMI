@@ -15,5 +15,5 @@ anchor-client = "0.28.0"
 anyhow = "1.0.57"
 solana-program = "1.16.12"
 govern = { path = "../../programs/govern" }
-voter = { path = "../../programs/voter" }
+met-voter = { path = "../../programs/met-voter" }
 utils-cli = {path="../utils"}

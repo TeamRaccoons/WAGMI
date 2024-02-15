@@ -1,4 +1,4 @@
-name: Voter
+name: LockedVoter
 
 on:
   pull_request:
@@ -24,7 +24,7 @@ jobs:
         uses: tj-actions/changed-files@v18.6
         with:
           files: |
-            programs/voter
+            programs/locked-voter
 
   voter_test:
     runs-on: ubuntu-latest
@@ -49,12 +49,12 @@ jobs:
           path: ./node_modules
           key: ${{ runner.os }}-${{ hashFiles('./package-lock.json') }}
       # Build CLI
-      - run: cargo build --package voter-cli
+      - run: cargo build --package locked-voter-cli
         shell: bash
       # Testing
-      - run: cargo test --package voter -- --nocapture
+      - run: cargo test --package locked-voter -- --nocapture
         shell: bash
       - run: npm install
         shell: bash
-      - run: anchor test --run ./tests/voter -- --features test-bpf
+      - run: anchor test --run ./tests/locked-voter -- --features test-bpf
         shell: bash

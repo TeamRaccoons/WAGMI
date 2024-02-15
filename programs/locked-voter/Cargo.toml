@@ -1,13 +1,13 @@
 [package]
-name = "merkle-distributor"
-version = "0.0.1"
-description = "A Solana program for distributing tokens according to a Merkle root."
+name = "locked-voter"
+version = "0.1.0"
+description = "Created with Anchor"
 edition = "2021"
+
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "merkle_distributor"
-path = "src/lib.rs"
+name = "locked_voter"
 
 [features]
 no-entrypoint = []
@@ -19,5 +19,9 @@ test-bpf = []
 [dependencies]
 anchor-lang = "0.28.0"
 anchor-spl = "0.28.0"
+govern = { path = "../govern", features = ["cpi"] }
+num-traits = "0.2.16"
 vipers = {path = "../../libs/vipers"}
-met-voter = { path = "../met-voter", features = ["cpi"] }
+
+[dev-dependencies]
+proptest = { version = "1.0" }

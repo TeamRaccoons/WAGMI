@@ -1,5 +1,5 @@
 [package]
-name = "govern-cli"
+name = "locked-voter-cli"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,12 +7,13 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "3.1.8", features = ["derive"] }
-govern = { path = "../../programs/govern" }
+locked-voter = { path = "../../programs/locked-voter" }
 shellexpand = "2.1.0"
 anchor-lang = "0.28.0"
 anchor-spl = "0.28.0"
 anchor-client = "0.28.0"
 anyhow = "1.0.57"
 solana-program = "1.16.12"
+govern = { path = "../../programs/govern" }
 smart-wallet = { path = "../../programs/smart-wallet" }
-met-voter = { path = "../../programs/met-voter" }
+utils-cli = {path ="../utils"}

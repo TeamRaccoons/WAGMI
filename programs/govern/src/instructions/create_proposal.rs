@@ -11,7 +11,7 @@ pub struct CreateProposal<'info> {
     #[account(
         init,
         seeds = [
-            b"MeteoraProposal".as_ref(),
+            b"Proposal".as_ref(),
             governor.key().as_ref(),
             governor.proposal_count.to_le_bytes().as_ref()
         ],
@@ -52,6 +52,8 @@ impl<'info> CreateProposal<'info> {
 
         proposal.queued_at = 0;
         proposal.queued_transaction = Pubkey::default();
+
+        proposal.voting_reward = governor.voting_reward;
 
         proposal.instructions = instructions.clone();
 

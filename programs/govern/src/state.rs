@@ -25,6 +25,23 @@ pub struct Governor {
 
     /// Governance parameters.
     pub params: GovernanceParameters,
+
+    /// optional reward, can set by smartwallet
+    pub voting_reward: VotingReward,
+
+    /// buffer for further use
+    pub buffers: [u128; 32],
+}
+
+/// Governance parameters.
+#[derive(AnchorSerialize, AnchorDeserialize, Copy, Clone, Debug, Default, Eq, PartialEq)]
+pub struct VotingReward {
+    /// Reward mint
+    pub reward_mint: Pubkey,
+    /// Reward vault
+    pub reward_vault: Pubkey,
+    /// Total reward per proposal
+    pub reward_per_proposal: u64,
 }
 
 /// Governance parameters.
@@ -80,6 +97,15 @@ pub struct Proposal {
     /// If the transaction was queued, this is the associated Smart Wallet transaction.
     pub queued_transaction: Pubkey,
 
+    /// optional reward
+    pub voting_reward: VotingReward,
+
+    /// total claimed reward
+    pub total_claimed_reward: u64,
+
+    /// buffers for future use
+    pub buffers: [u128; 10],
+
     /// The instructions associated with the proposal.
     pub instructions: Vec<ProposalInstruction>,
 }
@@ -91,6 +117,19 @@ impl Proposal {
         + 4 // Vec discriminator
             + std::mem::size_of::<Proposal>()
             + (instructions.iter().map(|ix| ix.space()).sum::<usize>())
+    }
+
+    pub fn get_voting_reward(&self, vote: &Vote) -> Option<u64> {
+        let total_vote = self.total_votes()? as u128;
+        if total_vote == 0 {
+            return Some(0);
+        }
+        let reward_per_proposal = self.voting_reward.reward_per_proposal as u128;
+        let weight = vote.weight as u128;
+        let voting_reward = reward_per_proposal
+            .checked_mul(weight)?
+            .checked_div(total_vote)?;
+        return voting_reward.try_into().ok();
     }
 }
 
@@ -116,11 +155,14 @@ pub struct Vote {
     pub voter: Pubkey,
     /// Bump seed
     pub bump: u8,
-
     /// The side of the vote taken.
     pub side: u8,
     /// The number of votes this vote holds.
     pub weight: u64,
+    /// Flag to check whether voter has claim the reward or not
+    pub claimed: bool,
+    /// buffers for future use
+    pub buffers: [u8; 32],
 }
 
 /// Instruction.

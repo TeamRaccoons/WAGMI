@@ -11,7 +11,7 @@ pub struct NewVote<'info> {
     #[account(
         init,
         seeds = [
-            b"MeteoraVote".as_ref(),
+            b"Vote".as_ref(),
             proposal.key().as_ref(),
             voter.as_ref()
         ],

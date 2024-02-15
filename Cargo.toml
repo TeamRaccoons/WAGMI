@@ -3,7 +3,8 @@ members = [
     "programs/*",
     "cli/govern",
     "cli/merkle_distributor",
-    "cli/voter",
+    "cli/met-voter",
+    "cli/locked-voter",
     "cli/smartwallet",
 ]
 

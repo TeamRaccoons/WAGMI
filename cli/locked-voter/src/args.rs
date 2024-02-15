@@ -31,7 +31,7 @@ pub struct ConfigOverride {
     global = true,
     short,
     long,
-    default_value_t = voter::id().to_string()
+    default_value_t = locked_voter::id().to_string()
     )]
     pub program_id: String,
 }
@@ -41,8 +41,6 @@ pub enum CliCommand {
     NewLocker {
         #[clap(long)]
         token_mint: Pubkey,
-        #[clap(long)]
-        expiration: i64,
         /// For example, veCRV is 10 because 1 CRV locked for 4 years = 10 veCRV.
         #[clap(long)]
         max_stake_vote_multiplier: u8,
@@ -61,8 +59,6 @@ pub enum CliCommand {
         base: Pubkey,
         #[clap(long)]
         token_mint: Pubkey,
-        #[clap(long)]
-        expiration: i64,
         /// For example, veCRV is 10 because 1 CRV locked for 4 years = 10 veCRV.
         #[clap(long)]
         max_stake_vote_multiplier: u8,
@@ -101,12 +97,6 @@ pub enum CliCommand {
     Withdraw {
         #[clap(long)]
         base: Pubkey,
-    },
-    ActivateProposal {
-        #[clap(long)]
-        base: Pubkey,
-        #[clap(long)]
-        proposal: Pubkey,
     },
     CastVote {
         #[clap(long)]

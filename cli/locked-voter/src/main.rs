@@ -43,7 +43,6 @@ fn main() -> Result<()> {
     match opts.command {
         CliCommand::NewLocker {
             token_mint,
-            expiration,
             max_stake_vote_multiplier,
             min_stake_duration,
             max_stake_duration,
@@ -53,7 +52,6 @@ fn main() -> Result<()> {
                 &program,
                 base,
                 token_mint,
-                expiration,
                 max_stake_vote_multiplier,
                 min_stake_duration,
                 max_stake_duration,
@@ -61,69 +59,81 @@ fn main() -> Result<()> {
             )?;
         }
         CliCommand::NewEscrow { base } => {
-            let (locker, _bump) =
-                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
+            let (locker, _bump) = Pubkey::find_program_address(
+                &[b"Locker".as_ref(), base.as_ref()],
+                &locked_voter::id(),
+            );
             new_escrow(&program, locker)?;
         }
         CliCommand::IncreaseLockedAmount { base, amount } => {
-            let (locker, _bump) =
-                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
+            let (locker, _bump) = Pubkey::find_program_address(
+                &[b"Locker".as_ref(), base.as_ref()],
+                &locked_voter::id(),
+            );
             increase_locked_amount(&program, locker, amount)?;
         }
         CliCommand::ExtendLockDuration { base, duration } => {
-            let (locker, _bump) =
-                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
+            let (locker, _bump) = Pubkey::find_program_address(
+                &[b"Locker".as_ref(), base.as_ref()],
+                &locked_voter::id(),
+            );
             extend_locked_duration(&program, locker, duration)?;
         }
         CliCommand::ToggleMaxLock { base, is_max_lock } => {
-            let (locker, _bump) =
-                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
+            let (locker, _bump) = Pubkey::find_program_address(
+                &[b"Locker".as_ref(), base.as_ref()],
+                &locked_voter::id(),
+            );
             toggle_max_lock(&program, locker, is_max_lock)?;
         }
         CliCommand::Withdraw { base } => {
-            let (locker, _bump) =
-                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
+            let (locker, _bump) = Pubkey::find_program_address(
+                &[b"Locker".as_ref(), base.as_ref()],
+                &locked_voter::id(),
+            );
             withdraw(&program, locker)?;
-        }
-        CliCommand::ActivateProposal { base, proposal } => {
-            let (locker, _bump) =
-                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
-            active_proposal(&program, locker, proposal)?;
         }
         CliCommand::CastVote {
             base,
             proposal,
             side,
         } => {
-            let (locker, _bump) =
-                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
+            let (locker, _bump) = Pubkey::find_program_address(
+                &[b"Locker".as_ref(), base.as_ref()],
+                &locked_voter::id(),
+            );
             cast_vote(&program, locker, proposal, side)?;
         }
         CliCommand::SetVoteDelegate { base, new_delegate } => {
-            let (locker, _bump) =
-                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
+            let (locker, _bump) = Pubkey::find_program_address(
+                &[b"Locker".as_ref(), base.as_ref()],
+                &locked_voter::id(),
+            );
             set_vote_delegate(&program, locker, new_delegate)?;
         }
         CliCommand::ViewLocker { base } => {
-            let (locker, _bump) =
-                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
-            let locker: voter::Locker = program.account(locker)?;
+            let (locker, _bump) = Pubkey::find_program_address(
+                &[b"Locker".as_ref(), base.as_ref()],
+                &locked_voter::id(),
+            );
+            let locker: locked_voter::Locker = program.account(locker)?;
             println!("{:?}", locker);
         }
         CliCommand::ViewEscrow { base, owner } => {
-            let (locker, _bump) =
-                Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
+            let (locker, _bump) = Pubkey::find_program_address(
+                &[b"Locker".as_ref(), base.as_ref()],
+                &locked_voter::id(),
+            );
             let (escrow, _bump) = Pubkey::find_program_address(
                 &[b"Escrow".as_ref(), locker.as_ref(), owner.as_ref()],
-                &voter::id(),
+                &locked_voter::id(),
             );
-            let escrow_state: voter::Escrow = program.account(escrow)?;
+            let escrow_state: locked_voter::Escrow = program.account(escrow)?;
             println!("{:?}", escrow_state);
         }
         CliCommand::Verify {
             base,
             token_mint,
-            expiration,
             max_stake_vote_multiplier,
             min_stake_duration,
             max_stake_duration,
@@ -133,7 +143,6 @@ fn main() -> Result<()> {
                 &program,
                 base,
                 token_mint,
-                expiration,
                 max_stake_vote_multiplier,
                 min_stake_duration,
                 max_stake_duration,
@@ -149,15 +158,14 @@ fn verify<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     base: Pubkey,
     token_mint: Pubkey,
-    expiration: i64,
     max_stake_vote_multiplier: u8,
     min_stake_duration: u64,
     max_stake_duration: u64,
     proposal_activation_min_votes: u64,
 ) -> Result<()> {
     let (locker, _bump) =
-        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
-    let locker_state: voter::Locker = program.account(locker)?;
+        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &locked_voter::id());
+    let locker_state: locked_voter::Locker = program.account(locker)?;
 
     println!("verify token mint");
     assert_eq!(locker_state.token_mint, token_mint);
@@ -166,9 +174,6 @@ fn verify<C: Deref<Target = impl Signer> + Clone>(
     let (governor, _bump) =
         Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
     assert_eq!(locker_state.governor, governor);
-
-    println!("verify expiration");
-    assert_eq!(locker_state.expiration, expiration);
 
     let params = locker_state.params;
     println!("verify max_stake_vote_multiplier");
@@ -191,7 +196,6 @@ fn new_locker<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     base_keypair: Keypair,
     token_mint: Pubkey,
-    expiration: i64,
     max_stake_vote_multiplier: u8,
     min_stake_duration: u64,
     max_stake_duration: u64,
@@ -202,12 +206,12 @@ fn new_locker<C: Deref<Target = impl Signer> + Clone>(
         Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
 
     let (locker, _bump) =
-        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
+        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &locked_voter::id());
     println!("locker address {}", locker);
 
     let builder = program
         .request()
-        .accounts(voter::accounts::NewLocker {
+        .accounts(locked_voter::accounts::NewLocker {
             base,
             locker,
             token_mint,
@@ -215,9 +219,8 @@ fn new_locker<C: Deref<Target = impl Signer> + Clone>(
             payer: program.payer(),
             system_program: solana_program::system_program::ID,
         })
-        .args(voter::instruction::NewLocker {
-            expiration,
-            params: voter::LockerParams {
+        .args(locked_voter::instruction::NewLocker {
+            params: locked_voter::LockerParams {
                 max_stake_vote_multiplier,
                 min_stake_duration,
                 max_stake_duration,
@@ -240,19 +243,19 @@ fn new_escrow<C: Deref<Target = impl Signer> + Clone>(
             locker.as_ref(),
             program.payer().as_ref(),
         ],
-        &voter::id(),
+        &locked_voter::id(),
     );
 
     let builder = program
         .request()
-        .accounts(voter::accounts::NewEscrow {
+        .accounts(locked_voter::accounts::NewEscrow {
             locker,
             escrow,
             escrow_owner: program.payer(),
             payer: program.payer(),
             system_program: solana_program::system_program::ID,
         })
-        .args(voter::instruction::NewEscrow {});
+        .args(locked_voter::instruction::NewEscrow {});
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())
@@ -263,14 +266,14 @@ fn increase_locked_amount<C: Deref<Target = impl Signer> + Clone>(
     locker: Pubkey,
     amount: u64,
 ) -> Result<()> {
-    let locker_state: voter::Locker = program.account(locker)?;
+    let locker_state: locked_voter::Locker = program.account(locker)?;
     let (escrow, _bump) = Pubkey::find_program_address(
         &[
             b"Escrow".as_ref(),
             locker.as_ref(),
             program.payer().as_ref(),
         ],
-        &voter::id(),
+        &locked_voter::id(),
     );
     let escrow_tokens = get_associated_token_address(&escrow, &locker_state.token_mint);
 
@@ -278,7 +281,7 @@ fn increase_locked_amount<C: Deref<Target = impl Signer> + Clone>(
 
     let builder = program
         .request()
-        .accounts(voter::accounts::IncreaseLockedAmount {
+        .accounts(locked_voter::accounts::IncreaseLockedAmount {
             locker,
             escrow,
             escrow_tokens,
@@ -286,7 +289,7 @@ fn increase_locked_amount<C: Deref<Target = impl Signer> + Clone>(
             payer: program.payer(),
             token_program: anchor_spl::token::ID,
         })
-        .args(voter::instruction::IncreaseLockedAmount { amount });
+        .args(locked_voter::instruction::IncreaseLockedAmount { amount });
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())
@@ -303,17 +306,17 @@ fn extend_locked_duration<C: Deref<Target = impl Signer> + Clone>(
             locker.as_ref(),
             program.payer().as_ref(),
         ],
-        &voter::id(),
+        &locked_voter::id(),
     );
 
     let builder = program
         .request()
-        .accounts(voter::accounts::ExtendLockDuration {
+        .accounts(locked_voter::accounts::ExtendLockDuration {
             locker,
             escrow,
             escrow_owner: program.payer(),
         })
-        .args(voter::instruction::ExtendLockDuration { duration });
+        .args(locked_voter::instruction::ExtendLockDuration { duration });
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())
@@ -330,18 +333,18 @@ fn toggle_max_lock<C: Deref<Target = impl Signer> + Clone>(
             locker.as_ref(),
             program.payer().as_ref(),
         ],
-        &voter::id(),
+        &locked_voter::id(),
     );
 
     let is_max_lock = if is_max_lock == 0 { false } else { true };
     let builder = program
         .request()
-        .accounts(voter::accounts::ToggleMaxLock {
+        .accounts(locked_voter::accounts::ToggleMaxLock {
             locker,
             escrow,
             escrow_owner: program.payer(),
         })
-        .args(voter::instruction::ToggleMaxLock { is_max_lock });
+        .args(locked_voter::instruction::ToggleMaxLock { is_max_lock });
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())
@@ -351,14 +354,14 @@ fn withdraw<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     locker: Pubkey,
 ) -> Result<()> {
-    let locker_state: voter::Locker = program.account(locker)?;
+    let locker_state: locked_voter::Locker = program.account(locker)?;
     let (escrow, _bump) = Pubkey::find_program_address(
         &[
             b"Escrow".as_ref(),
             locker.as_ref(),
             program.payer().as_ref(),
         ],
-        &voter::id(),
+        &locked_voter::id(),
     );
     let escrow_tokens = get_associated_token_address(&escrow, &locker_state.token_mint);
 
@@ -367,7 +370,7 @@ fn withdraw<C: Deref<Target = impl Signer> + Clone>(
 
     let builder = program
         .request()
-        .accounts(voter::accounts::Withdraw {
+        .accounts(locked_voter::accounts::Withdraw {
             locker,
             escrow,
             escrow_tokens,
@@ -376,38 +379,7 @@ fn withdraw<C: Deref<Target = impl Signer> + Clone>(
             payer: program.payer(),
             token_program: anchor_spl::token::ID,
         })
-        .args(voter::instruction::Withdraw {});
-    let signature = builder.send()?;
-    println!("Signature {:?}", signature);
-    Ok(())
-}
-
-fn active_proposal<C: Deref<Target = impl Signer> + Clone>(
-    program: &Program<C>,
-    locker: Pubkey,
-    proposal: Pubkey,
-) -> Result<()> {
-    let locker_state: voter::Locker = program.account(locker)?;
-    let (escrow, _bump) = Pubkey::find_program_address(
-        &[
-            b"Escrow".as_ref(),
-            locker.as_ref(),
-            program.payer().as_ref(),
-        ],
-        &voter::id(),
-    );
-
-    let builder = program
-        .request()
-        .accounts(voter::accounts::ActivateProposal {
-            locker,
-            escrow,
-            proposal,
-            escrow_owner: program.payer(),
-            governor: locker_state.governor,
-            govern_program: govern::ID,
-        })
-        .args(voter::instruction::ActivateProposal {});
+        .args(locked_voter::instruction::Withdraw {});
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())
@@ -419,14 +391,14 @@ fn cast_vote<C: Deref<Target = impl Signer> + Clone>(
     proposal: Pubkey,
     side: u8,
 ) -> Result<()> {
-    let locker_state: voter::Locker = program.account(locker)?;
+    let locker_state: locked_voter::Locker = program.account(locker)?;
     let (escrow, _bump) = Pubkey::find_program_address(
         &[
             b"Escrow".as_ref(),
             locker.as_ref(),
             program.payer().as_ref(),
         ],
-        &voter::id(),
+        &locked_voter::id(),
     );
 
     let (vote, _bump) = Pubkey::find_program_address(
@@ -455,8 +427,8 @@ fn cast_vote<C: Deref<Target = impl Signer> + Clone>(
         });
     }
     instructions.push(Instruction {
-        program_id: voter::id(),
-        accounts: voter::accounts::CastVote {
+        program_id: locked_voter::id(),
+        accounts: locked_voter::accounts::CastVote {
             locker,
             escrow,
             vote,
@@ -466,7 +438,7 @@ fn cast_vote<C: Deref<Target = impl Signer> + Clone>(
             govern_program: govern::ID,
         }
         .to_account_metas(None),
-        data: voter::instruction::CastVote { side }.data(),
+        data: locked_voter::instruction::CastVote { side }.data(),
     });
 
     let builder = program.request();
@@ -494,16 +466,16 @@ fn set_vote_delegate<C: Deref<Target = impl Signer> + Clone>(
             locker.as_ref(),
             program.payer().as_ref(),
         ],
-        &voter::id(),
+        &locked_voter::id(),
     );
 
     let builder = program
         .request()
-        .accounts(voter::accounts::SetVoteDelegate {
+        .accounts(locked_voter::accounts::SetVoteDelegate {
             escrow,
             escrow_owner: program.payer(),
         })
-        .args(voter::instruction::SetVoteDelegate { new_delegate });
+        .args(locked_voter::instruction::SetVoteDelegate { new_delegate });
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())

@@ -150,7 +150,7 @@ fn verify<C: Deref<Target = impl Signer> + Clone>(
     verify_amount: bool,
 ) -> Result<()> {
     let (locker, _bump) =
-        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
+        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &met_voter::id());
 
     let (distributor, _bump) = Pubkey::find_program_address(
         &[b"MerkleDistributor".as_ref(), base.as_ref()],
@@ -214,7 +214,7 @@ fn new_distributor<C: Deref<Target = impl Signer> + Clone>(
     let base = base_keypair.pubkey();
 
     let (locker, _bump) =
-        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter::id());
+        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &met_voter::id());
 
     let (distributor, _bump) = Pubkey::find_program_address(
         &[b"MerkleDistributor".as_ref(), base.as_ref()],
@@ -353,14 +353,14 @@ fn claim<C: Deref<Target = impl Signer> + Clone>(
             distributor_state.locker.as_ref(),
             claimant.as_ref(),
         ],
-        &voter::id(),
+        &met_voter::id(),
     );
     // check whether escrow is created
     let mut instructions = vec![];
     let escrow_info = program.rpc().get_account(&escrow);
     if escrow_info.is_err() {
         instructions = vec![Instruction {
-            accounts: voter::accounts::NewEscrow {
+            accounts: met_voter::accounts::NewEscrow {
                 locker: distributor_state.locker,
                 escrow,
                 escrow_owner: claimant,
@@ -368,8 +368,8 @@ fn claim<C: Deref<Target = impl Signer> + Clone>(
                 system_program: solana_program::system_program::ID,
             }
             .to_account_metas(None),
-            data: voter::instruction::NewEscrow {}.data(),
-            program_id: voter::id(),
+            data: met_voter::instruction::NewEscrow {}.data(),
+            program_id: met_voter::id(),
         }];
     }
     let escrow_tokens = get_associated_token_address(&escrow, &distributor_state.mint);
@@ -390,7 +390,7 @@ fn claim<C: Deref<Target = impl Signer> + Clone>(
             claimant,
             system_program: solana_program::system_program::ID,
             token_program: anchor_spl::token::ID,
-            voter_program: voter::ID,
+            voter_program: met_voter::ID,
             locker: distributor_state.locker,
             escrow,
             escrow_tokens,

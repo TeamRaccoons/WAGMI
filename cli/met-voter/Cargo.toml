@@ -1,5 +1,5 @@
 [package]
-name = "voter-cli"
+name = "met-voter-cli"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "3.1.8", features = ["derive"] }
-voter = { path = "../../programs/voter" }
+met-voter = { path = "../../programs/met-voter" }
 shellexpand = "2.1.0"
 anchor-lang = "0.28.0"
 anchor-spl = "0.28.0"

@@ -1,5 +1,7 @@
 use crate::error::ErrorCode;
 use crate::*;
+use met_voter as voter;
+use met_voter::program::MetVoter as Voter;
 
 /// [merkle_distributor::claim] accounts.
 #[derive(Accounts)]
@@ -42,7 +44,7 @@ pub struct Claim<'info> {
     pub token_program: Program<'info, Token>,
 
     /// Voter program
-    pub voter_program: Program<'info, voter::program::Voter>,
+    pub voter_program: Program<'info, Voter>,
 
     /// CHECK: Locker
     #[account(mut)]

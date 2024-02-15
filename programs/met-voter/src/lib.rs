@@ -22,7 +22,7 @@ declare_id!("voteXZxajNhmCGpqzBhVArCANMKra5nwqtaaLA6v9CX");
 /// Locked voter program.
 #[deny(missing_docs)]
 #[program]
-pub mod voter {
+pub mod met_voter {
     use super::*;
 
     /// Creates a new [Locker].

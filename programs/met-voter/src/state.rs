@@ -34,6 +34,8 @@ pub struct Locker {
     pub expiration: i64,
     /// Mutable parameters of how a [Locker] should behave.
     pub params: LockerParams,
+    /// buffer for further use
+    pub buffers: [u128; 32],
 }
 
 /// Contains parameters for the [Locker].
@@ -76,6 +78,8 @@ pub struct Escrow {
 
     /// Max lock
     pub is_max_lock: bool,
+    /// buffer for further use
+    pub buffers: [u128; 10],
 }
 
 impl Escrow {

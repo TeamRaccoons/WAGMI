@@ -44,7 +44,7 @@ describe("Govern", () => {
     // create smartwallet
     const [governorAddr, gBump] =
       await anchor.web3.PublicKey.findProgramAddress(
-        [Buffer.from("MeteoraGovernor"), governBase.publicKey.toBuffer()],
+        [Buffer.from("Governor"), governBase.publicKey.toBuffer()],
         program.programId
       );
     bump = gBump;
@@ -111,7 +111,7 @@ describe("Govern", () => {
       const index = governorState.proposalCount;
       const [proposal, bump] = await anchor.web3.PublicKey.findProgramAddress(
         [
-          Buffer.from("MeteoraProposal"),
+          Buffer.from("Proposal"),
           governor.toBuffer(),
           index.toArrayLike(Buffer, "le", 8),
         ],
@@ -177,7 +177,7 @@ describe("Govern", () => {
         let descriptionLink = "https://app.meteora.ag";
         const [proposalMetaKey, bump] =
           await anchor.web3.PublicKey.findProgramAddress(
-            [Buffer.from("MeteoraProposalMeta"), proposalKey.toBuffer()],
+            [Buffer.from("ProposalMeta"), proposalKey.toBuffer()],
             program.programId
           );
 
@@ -205,7 +205,7 @@ describe("Govern", () => {
         let descriptionLink = "https://app.meteora.ag";
         const [proposalMetaKey, bump] =
           await anchor.web3.PublicKey.findProgramAddress(
-            [Buffer.from("MeteoraProposalMeta"), proposalKey.toBuffer()],
+            [Buffer.from("ProposalMeta"), proposalKey.toBuffer()],
             program.programId
           );
 
