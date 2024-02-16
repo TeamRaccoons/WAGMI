@@ -184,7 +184,7 @@ fn verify<C: Deref<Target = impl Signer> + Clone>(
 
     println!("verify governor");
     let (governor, _bump) =
-        Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
+        Pubkey::find_program_address(&[b"Governor".as_ref(), base.as_ref()], &govern::id());
     assert_eq!(locker_state.governor, governor);
 
     println!("verify expiration");
@@ -219,7 +219,7 @@ fn new_locker<C: Deref<Target = impl Signer> + Clone>(
 ) -> Result<()> {
     let base = base_keypair.pubkey();
     let (governor, _bump) =
-        Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
+        Pubkey::find_program_address(&[b"Governor".as_ref(), base.as_ref()], &govern::id());
 
     let (locker, _bump) =
         Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &met_voter::id());
@@ -451,7 +451,7 @@ fn cast_vote<C: Deref<Target = impl Signer> + Clone>(
 
     let (vote, _bump) = Pubkey::find_program_address(
         &[
-            b"MeteoraVote".as_ref(),
+            b"Vote".as_ref(),
             proposal.as_ref(),
             program.payer().as_ref(),
         ],

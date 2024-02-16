@@ -16,3 +16,4 @@ anyhow = "1.0.57"
 solana-program = "1.16.12"
 smart-wallet = { path = "../../programs/smart-wallet" }
 met-voter = { path = "../../programs/met-voter" }
+utils-cli = {path ="../utils"}

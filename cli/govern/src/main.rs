@@ -12,6 +12,7 @@ use clap::*;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::str::FromStr;
+// use utils_cli::*;
 
 fn main() -> Result<()> {
     let opts = Opts::parse();
@@ -188,6 +189,12 @@ fn create_governor<C: Deref<Target = impl Signer> + Clone>(
             },
         })
         .signer(&base_keypair);
+
+    // let result =
+    //     simulate_transaction(&builder, program, &vec![&default_keypair(), &base_keypair]).unwrap();
+    // println!("{:?}", result);
+    // return Ok(());
+
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())

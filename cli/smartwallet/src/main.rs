@@ -162,7 +162,7 @@ fn create_smart_wallet<C: Deref<Target = impl Signer> + Clone>(
     // push governor in the owner
     let mut owners = owners.to_vec();
     let (governor, _bump) =
-        Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
+        Pubkey::find_program_address(&[b"Governor".as_ref(), base.as_ref()], &govern::id());
     owners.push(governor);
     assert_eq!(max_owners >= owners.len() as u8, true);
 
@@ -261,7 +261,7 @@ fn create_remove_owner_tx<C: Deref<Target = impl Signer> + Clone>(
     }
     // check whether the owner is governor
     let (governor, _bump) =
-        Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
+        Pubkey::find_program_address(&[b"Governor".as_ref(), base.as_ref()], &govern::id());
     if owner == governor {
         println!("Cannot remove governor");
         return Ok(());
@@ -310,7 +310,7 @@ fn create_set_governance_params_tx<C: Deref<Target = impl Signer> + Clone>(
         &smart_wallet::id(),
     );
     let (governor, _bump) =
-        Pubkey::find_program_address(&[b"MeteoraGovernor".as_ref(), base.as_ref()], &govern::id());
+        Pubkey::find_program_address(&[b"Governor".as_ref(), base.as_ref()], &govern::id());
 
     println!("set governance parameters");
     let data = govern::instruction::SetGovernanceParams {

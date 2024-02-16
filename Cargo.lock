@@ -1697,6 +1697,7 @@ dependencies = [
  "shellexpand",
  "smart-wallet",
  "solana-program",
+ "utils-cli",
 ]
 
 [[package]]
