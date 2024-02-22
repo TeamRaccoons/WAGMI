@@ -48,6 +48,19 @@ pub mod govern {
             .create_proposal(unwrap_bump!(ctx, "proposal"), instructions)
     }
 
+    /// Creates a [Proposal].
+    /// This may be called by anyone, since the [Proposal] does not do anything until
+    /// it is activated in [activate_proposal].
+    #[access_control(ctx.accounts.validate())]
+    pub fn create_option_proposal(
+        ctx: Context<CreateOptionProposal>,
+        max_option: u8,
+        instructions: Vec<ProposalInstruction>,
+    ) -> Result<()> {
+        ctx.accounts
+            .create_option_proposal(unwrap_bump!(ctx, "proposal"), max_option, instructions)
+    }
+
     /// Activates a proposal.
     /// Only the [Governor::voter] may call this; that program
     /// may ensure that only certain types of users can activate proposals.

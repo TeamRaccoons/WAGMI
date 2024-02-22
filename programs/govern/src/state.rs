@@ -29,8 +29,12 @@ pub struct Governor {
     /// optional reward, can set by smartwallet
     pub voting_reward: VotingReward,
 
+    /// The total number of [OptionProposal]s
+    pub option_proposal_count: u64,
     /// buffer for further use
-    pub buffers: [u128; 32],
+    pub padding: u64,
+    /// buffer for further use
+    pub buffers: [u128; 31],
 }
 
 /// Governance parameters.
@@ -57,7 +61,71 @@ pub struct GovernanceParameters {
     pub timelock_delay_seconds: i64,
 }
 
-/// A Proposal is a pending transaction that may or may not be executed by the DAO.
+/// Option proposal
+#[account]
+#[derive(Debug, Default)]
+pub struct OptionProposal {
+    /// The public key of the governor.
+    pub governor: Pubkey,
+    /// The unique ID of the proposal, auto-incremented.
+    pub index: u64,
+    /// Bump seed
+    pub bump: u8,
+
+    /// The public key of the proposer.
+    pub proposer: Pubkey,
+
+    /// The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
+    pub quorum_votes: u64,
+
+    /// maximum options of the proposal
+    pub max_option: u8,
+    /// Vote for each option
+    pub option_votes: Vec<u8>,
+
+    /// The timestamp when the proposal was canceled.
+    pub canceled_at: i64,
+    /// The timestamp when the proposal was created.
+    pub created_at: i64,
+    /// The timestamp in which the proposal was activated.
+    /// This is when voting begins.
+    pub activated_at: i64,
+    /// The timestamp when voting ends.
+    /// This only applies to active proposals.
+    pub voting_ends_at: i64,
+
+    /// The timestamp in which the proposal was queued, i.e.
+    /// approved for execution on the Smart Wallet.
+    pub queued_at: i64,
+    /// If the transaction was queued, this is the associated Smart Wallet transaction.
+    pub queued_transaction: Pubkey,
+
+    /// optional reward
+    pub voting_reward: VotingReward,
+
+    /// total claimed reward
+    pub total_claimed_reward: u64,
+
+    /// buffers for future use
+    pub buffers: [u128; 10],
+
+    /// The instructions associated with the proposal.
+    pub instructions: Vec<ProposalInstruction>,
+}
+
+impl OptionProposal {
+    /// Space that the [OptionProposal] takes up.
+    pub fn space(max_option: u8, instructions: Vec<ProposalInstruction>) -> usize {
+        8  // Anchor discriminator.
+        + std::mem::size_of::<OptionProposal>()
+        + 4 // Vec discriminator
+        + max_option as usize
+        + 4 // Vec discriminator
+            + (instructions.iter().map(|ix| ix.space()).sum::<usize>())
+    }
+}
+
+/// A Yes/No Proposal is a pending transaction that may or may not be executed by the DAO.
 #[account]
 #[derive(Debug, Default)]
 pub struct Proposal {
