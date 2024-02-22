@@ -44,6 +44,7 @@ fn main() -> Result<()> {
             voting_period,
             quorum_votes,
             timelock_delay_seconds,
+            voter_program,
         } => {
             create_governor(
                 &program,
@@ -52,6 +53,7 @@ fn main() -> Result<()> {
                 voting_period,
                 quorum_votes,
                 timelock_delay_seconds,
+                voter_program,
             )?;
         }
         CliCommand::CreateDummyProposal { base } => {
@@ -96,6 +98,7 @@ fn main() -> Result<()> {
             voting_period,
             quorum_votes,
             timelock_delay_seconds,
+            voter_program,
         } => {
             verify(
                 &program,
@@ -104,6 +107,7 @@ fn main() -> Result<()> {
                 voting_period,
                 quorum_votes,
                 timelock_delay_seconds,
+                voter_program,
             )
             .unwrap();
         }
@@ -119,6 +123,7 @@ fn verify<C: Deref<Target = impl Signer> + Clone>(
     voting_period: u64,
     quorum_votes: u64,
     timelock_delay_seconds: i64,
+    voter_program: Pubkey,
 ) -> Result<()> {
     let (governor, _bump) =
         Pubkey::find_program_address(&[b"Governor".as_ref(), base.as_ref()], &govern::id());
@@ -142,7 +147,7 @@ fn verify<C: Deref<Target = impl Signer> + Clone>(
     assert_eq!(governor_state.smart_wallet, smart_wallet);
     println!("verify locker");
     let (locker, _bump) =
-        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &met_voter::id());
+        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter_program);
     assert_eq!(governor_state.locker, locker);
     Ok(())
 }
@@ -154,6 +159,7 @@ fn create_governor<C: Deref<Target = impl Signer> + Clone>(
     voting_period: u64,
     quorum_votes: u64,
     timelock_delay_seconds: i64,
+    voter_program: Pubkey,
 ) -> Result<()> {
     let base = base_keypair.pubkey();
 
@@ -164,7 +170,7 @@ fn create_governor<C: Deref<Target = impl Signer> + Clone>(
 
     // create locker pda
     let (locker, _bump) =
-        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &met_voter::id());
+        Pubkey::find_program_address(&[b"Locker".as_ref(), base.as_ref()], &voter_program);
 
     let (governor, _bump) =
         Pubkey::find_program_address(&[b"Governor".as_ref(), base.as_ref()], &govern::id());

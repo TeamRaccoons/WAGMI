@@ -20,7 +20,7 @@ use std::ops::Deref;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::str::FromStr;
-
+// use utils_cli::*;
 fn main() -> Result<()> {
     let opts = Opts::parse();
     let payer =
@@ -244,6 +244,12 @@ fn new_distributor<C: Deref<Target = impl Signer> + Clone>(
             clawback_start_ts: clawback_start_ts as i64,
         })
         .signer(&base_keypair);
+
+    // let result =
+    //     simulate_transaction(&builder, program, &vec![&default_keypair(), &base_keypair]).unwrap();
+    // println!("{:?}", result);
+    // return Ok(());
+
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
     Ok(())

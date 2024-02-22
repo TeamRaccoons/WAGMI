@@ -52,6 +52,9 @@ pub enum CliCommand {
         /// The timelock delay of the DAO's created proposals.
         #[clap(long)]
         timelock_delay_seconds: i64,
+        /// The timelock delay of the DAO's created proposals.
+        #[clap(long)]
+        voter_program: Pubkey,
     },
     Verify {
         #[clap(long)]
@@ -68,6 +71,9 @@ pub enum CliCommand {
         /// The timelock delay of the DAO's created proposals.
         #[clap(long)]
         timelock_delay_seconds: i64,
+        /// The timelock delay of the DAO's created proposals.
+        #[clap(long)]
+        voter_program: Pubkey,
     },
     CreateDummyProposal {
         #[clap(long)]
