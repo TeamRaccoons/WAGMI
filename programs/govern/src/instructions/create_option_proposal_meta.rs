@@ -2,8 +2,8 @@ use crate::*;
 
 /// Accounts for [govern::create_proposal_meta].
 #[derive(Accounts)]
-#[instruction(_bump: u8, title: String, description_link: String)]
-pub struct CreateProposalMeta<'info> {
+#[instruction(_bump: u8, option_descriptions: Vec<String>)]
+pub struct CreateOptionProposalMeta<'info> {
     /// The [Proposal].
     pub proposal: Box<Account<'info, Proposal>>,
     /// Proposer of the proposal.
@@ -17,11 +17,9 @@ pub struct CreateProposalMeta<'info> {
         ],
         bump,
         payer = payer,
-        space = 8 + std::mem::size_of::<ProposalMeta>()
-            + 4 + title.as_bytes().len()
-            + 4 + description_link.as_bytes().len()
+        space = 8 + OptionProposalMeta::space(&option_descriptions)
     )]
-    pub proposal_meta: Box<Account<'info, ProposalMeta>>,
+    pub proposal_meta: Box<Account<'info, OptionProposalMeta>>,
     /// Payer of the [ProposalMeta].
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -29,38 +27,44 @@ pub struct CreateProposalMeta<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl<'info> CreateProposalMeta<'info> {
-    pub fn create_proposal_meta(&mut self, title: String, description_link: String) -> Result<()> {
+impl<'info> CreateOptionProposalMeta<'info> {
+    pub fn create_proposal_meta(&mut self, option_descriptions: Vec<String>) -> Result<()> {
+        invariant!(
+            option_descriptions.len()
+                == self
+                    .proposal
+                    .actual_max_option_excluding_abstain_option()
+                    .unwrap(),
+            InvalidOptionDescriptions
+        );
         let proposal_meta = &mut self.proposal_meta;
         proposal_meta.proposal = self.proposal.key();
-        proposal_meta.title = title.clone();
-        proposal_meta.description_link = description_link.clone();
+        proposal_meta.option_descriptions = option_descriptions.clone();
 
-        emit!(ProposalMetaCreateEvent {
+        emit!(OptionProposalMetaCreateEvent {
             governor: self.proposal.governor,
             proposal: self.proposal.key(),
-            title,
-            description_link,
+            option_descriptions,
         });
 
         Ok(())
     }
 }
 
-impl<'info> Validate<'info> for CreateProposalMeta<'info> {
+impl<'info> Validate<'info> for CreateOptionProposalMeta<'info> {
     fn validate(&self) -> Result<()> {
         assert_keys_eq!(self.proposer, self.proposal.proposer);
         invariant!(
-            self.proposal.proposal_type == u8::from(ProposalType::YesNo),
+            self.proposal.proposal_type == u8::from(ProposalType::Option),
             NotYesNoProposal
         );
         Ok(())
     }
 }
 
-/// Event called in [govern::create_proposal_meta].
+/// Event called in [govern::create_option_proposal_meta].
 #[event]
-pub struct ProposalMetaCreateEvent {
+pub struct OptionProposalMetaCreateEvent {
     /// The governor.
     #[index]
     pub governor: Pubkey,
@@ -68,7 +72,5 @@ pub struct ProposalMetaCreateEvent {
     #[index]
     pub proposal: Pubkey,
     /// The title.
-    pub title: String,
-    /// The description.
-    pub description_link: String,
+    pub option_descriptions: Vec<String>,
 }

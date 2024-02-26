@@ -9,10 +9,12 @@ use num_traits::cast::ToPrimitive;
 use smart_wallet::SmartWallet;
 use vipers::prelude::*;
 
+mod constants;
 mod instructions;
-pub mod proposal;
+mod proposal;
 mod state;
 
+pub use constants::*;
 pub use instructions::*;
 pub use proposal::*;
 pub use state::*;
@@ -138,6 +140,16 @@ pub mod govern {
     ) -> Result<()> {
         ctx.accounts.create_proposal_meta(title, description_link)
     }
+
+    /// Creates a option [ProposalMeta].
+    #[access_control(ctx.accounts.validate())]
+    pub fn create_option_proposal_meta(
+        ctx: Context<CreateOptionProposalMeta>,
+        _bump: u8, // fix anchor weird bug
+        option_descriptions: Vec<String>,
+    ) -> Result<()> {
+        ctx.accounts.create_proposal_meta(option_descriptions)
+    }
 }
 
 /// Errors.
@@ -145,6 +157,8 @@ pub mod govern {
 pub enum ErrorCode {
     #[msg("Invalid vote side.")]
     InvalidVoteSide,
+    #[msg("Invalid proposal type.")]
+    InvalidProposalType,
     #[msg("The owner of the smart wallet doesn't match with current.")]
     GovernorNotFound,
     #[msg("The proposal cannot be activated since it has not yet passed the voting delay.")]
@@ -153,4 +167,12 @@ pub enum ErrorCode {
     ProposalNotDraft,
     #[msg("The proposal must be active.")]
     ProposalNotActive,
+    #[msg("Max option is invalid")]
+    InvalidMaxOption,
+    #[msg("Proposal is not YesNo.")]
+    NotYesNoProposal,
+    #[msg("Proposal is not Option.")]
+    NotOptionProposal,
+    #[msg("Invalid option descriptions.")]
+    InvalidOptionDescriptions,
 }

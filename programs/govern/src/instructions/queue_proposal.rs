@@ -81,7 +81,9 @@ impl<'info> Validate<'info> for QueueProposal<'info> {
         assert_keys_eq!(self.smart_wallet, self.governor.smart_wallet);
         let now = Clock::get()?.unix_timestamp;
         let proposal_state = unwrap_opt!(self.proposal.state(now), "invalid state");
-        if proposal_state != ProposalState::Succeeded {
+        if proposal_state != ProposalState::Succeeded
+            && self.proposal.proposal_type == u8::from(ProposalType::YesNo)
+        {
             msg!(
                 "now: {}, voting_ends_at: {}",
                 now,
@@ -89,13 +91,13 @@ impl<'info> Validate<'info> for QueueProposal<'info> {
             );
             msg!(
                 "for votes: {}, against votes: {}",
-                self.proposal.for_votes,
-                self.proposal.against_votes,
+                self.proposal.option_votes[FOR_VOTE_INDEX],
+                self.proposal.option_votes[AGAINST_VOTE_INDEX],
             );
             msg!(
                 "quorum req: {}, abstain votes: {}",
                 self.governor.params.quorum_votes,
-                self.proposal.abstain_votes,
+                self.proposal.option_votes[ABSTAIN_VOTE_INDEX],
             );
             invariant!(
                 proposal_state == ProposalState::Succeeded,

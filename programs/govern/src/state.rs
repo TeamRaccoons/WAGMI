@@ -1,7 +1,7 @@
 //! Struct definitions for accounts that hold state.
 
 use anchor_lang::prelude::*;
-
+use vipers::program_err;
 /// A Governor is the "DAO": it is the account that holds control over important protocol functions,
 /// including treasury, protocol parameters, and more.
 #[account]
@@ -29,12 +29,8 @@ pub struct Governor {
     /// optional reward, can set by smartwallet
     pub voting_reward: VotingReward,
 
-    /// The total number of [OptionProposal]s
-    pub option_proposal_count: u64,
     /// buffer for further use
-    pub padding: u64,
-    /// buffer for further use
-    pub buffers: [u128; 31],
+    pub buffers: [u128; 32],
 }
 
 /// Governance parameters.
@@ -61,67 +57,101 @@ pub struct GovernanceParameters {
     pub timelock_delay_seconds: i64,
 }
 
-/// Option proposal
-#[account]
-#[derive(Debug, Default)]
-pub struct OptionProposal {
-    /// The public key of the governor.
-    pub governor: Pubkey,
-    /// The unique ID of the proposal, auto-incremented.
-    pub index: u64,
-    /// Bump seed
-    pub bump: u8,
+// /// Option proposal
+// #[account]
+// #[derive(Debug, Default)]
+// pub struct OptionProposal {
+//     /// The public key of the governor.
+//     pub governor: Pubkey,
+//     /// The unique ID of the proposal, auto-incremented.
+//     pub index: u64,
+//     /// Bump seed
+//     pub bump: u8,
 
-    /// The public key of the proposer.
-    pub proposer: Pubkey,
+//     /// The public key of the proposer.
+//     pub proposer: Pubkey,
 
-    /// The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
-    pub quorum_votes: u64,
+//     /// The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
+//     pub quorum_votes: u64,
 
-    /// maximum options of the proposal
-    pub max_option: u8,
-    /// Vote for each option
-    pub option_votes: Vec<u8>,
+//     /// maximum options of the proposal
+//     pub max_option: u8,
+//     /// Vote for each option
+//     pub option_votes: Vec<u64>,
 
-    /// The timestamp when the proposal was canceled.
-    pub canceled_at: i64,
-    /// The timestamp when the proposal was created.
-    pub created_at: i64,
-    /// The timestamp in which the proposal was activated.
-    /// This is when voting begins.
-    pub activated_at: i64,
-    /// The timestamp when voting ends.
-    /// This only applies to active proposals.
-    pub voting_ends_at: i64,
+//     /// The timestamp when the proposal was canceled.
+//     pub canceled_at: i64,
+//     /// The timestamp when the proposal was created.
+//     pub created_at: i64,
+//     /// The timestamp in which the proposal was activated.
+//     /// This is when voting begins.
+//     pub activated_at: i64,
+//     /// The timestamp when voting ends.
+//     /// This only applies to active proposals.
+//     pub voting_ends_at: i64,
 
-    /// The timestamp in which the proposal was queued, i.e.
-    /// approved for execution on the Smart Wallet.
-    pub queued_at: i64,
-    /// If the transaction was queued, this is the associated Smart Wallet transaction.
-    pub queued_transaction: Pubkey,
+//     /// The timestamp in which the proposal was queued, i.e.
+//     /// approved for execution on the Smart Wallet.
+//     pub queued_at: i64,
+//     /// If the transaction was queued, this is the associated Smart Wallet transaction.
+//     pub queued_transaction: Pubkey,
 
-    /// optional reward
-    pub voting_reward: VotingReward,
+//     /// optional reward
+//     pub voting_reward: VotingReward,
 
-    /// total claimed reward
-    pub total_claimed_reward: u64,
+//     /// total claimed reward
+//     pub total_claimed_reward: u64,
 
-    /// buffers for future use
-    pub buffers: [u128; 10],
+//     /// buffers for future use
+//     pub buffers: [u128; 10],
 
-    /// The instructions associated with the proposal.
-    pub instructions: Vec<ProposalInstruction>,
+//     /// The instructions associated with the proposal.
+//     pub instructions: Vec<ProposalInstruction>,
+// }
+
+// impl OptionProposal {
+//     /// Space that the [OptionProposal] takes up.
+//     pub fn space(max_option: u8, instructions: Vec<ProposalInstruction>) -> usize {
+//         8  // Anchor discriminator.
+//         + std::mem::size_of::<OptionProposal>()
+//         + 4 // Vec discriminator
+//         + (max_option as usize * 8)
+//         + 4 // Vec discriminator
+//             + (instructions.iter().map(|ix| ix.space()).sum::<usize>())
+//     }
+// }
+
+/// Proposal type
+#[derive(Debug, Eq, PartialEq)]
+#[repr(u8)]
+pub enum ProposalType {
+    /// Yes/No proposal
+    YesNo = 0,
+    /// Option
+    Option = 1,
 }
 
-impl OptionProposal {
-    /// Space that the [OptionProposal] takes up.
-    pub fn space(max_option: u8, instructions: Vec<ProposalInstruction>) -> usize {
-        8  // Anchor discriminator.
-        + std::mem::size_of::<OptionProposal>()
-        + 4 // Vec discriminator
-        + max_option as usize
-        + 4 // Vec discriminator
-            + (instructions.iter().map(|ix| ix.space()).sum::<usize>())
+impl Default for ProposalType {
+    fn default() -> Self {
+        ProposalType::YesNo
+    }
+}
+
+impl From<ProposalType> for u8 {
+    fn from(proposal_type: ProposalType) -> Self {
+        proposal_type as u8
+    }
+}
+
+impl TryFrom<u8> for ProposalType {
+    type Error = Error;
+
+    fn try_from(value: u8) -> Result<Self> {
+        match value {
+            0 => Ok(ProposalType::YesNo),
+            1 => Ok(ProposalType::Option),
+            _ => program_err!(InvalidProposalType),
+        }
     }
 }
 
@@ -142,11 +172,16 @@ pub struct Proposal {
     /// The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
     pub quorum_votes: u64,
     /// Current number of votes in favor of this proposal
-    pub for_votes: u64,
-    /// Current number of votes in opposition to this proposal
-    pub against_votes: u64,
-    /// Current number of votes for abstaining for this proposal
-    pub abstain_votes: u64,
+    // pub for_votes: u64,
+    // /// Current number of votes in opposition to this proposal
+    // pub against_votes: u64,
+    // /// Current number of votes for abstaining for this proposal
+    // pub abstain_votes: u64,
+
+    /// maximum options of the proposal
+    pub max_option: u8,
+    /// Vote for each option
+    pub option_votes: Vec<u64>,
 
     /// The timestamp when the proposal was canceled.
     pub canceled_at: i64,
@@ -171,6 +206,8 @@ pub struct Proposal {
     /// total claimed reward
     pub total_claimed_reward: u64,
 
+    pub proposal_type: u8,
+
     /// buffers for future use
     pub buffers: [u128; 10],
 
@@ -180,10 +217,12 @@ pub struct Proposal {
 
 impl Proposal {
     /// Space that the [Proposal] takes up.
-    pub fn space(instructions: Vec<ProposalInstruction>) -> usize {
+    pub fn space(max_option: u8, instructions: Vec<ProposalInstruction>) -> usize {
         8  // Anchor discriminator.
+        + std::mem::size_of::<Proposal>()
         + 4 // Vec discriminator
-            + std::mem::size_of::<Proposal>()
+        + (max_option as usize * 8)
+        + 4 // Vec discriminator            
             + (instructions.iter().map(|ix| ix.space()).sum::<usize>())
     }
 
@@ -193,11 +232,16 @@ impl Proposal {
             return Some(0);
         }
         let reward_per_proposal = self.voting_reward.reward_per_proposal as u128;
-        let weight = vote.weight as u128;
+        let voting_power = vote.voting_power as u128;
         let voting_reward = reward_per_proposal
-            .checked_mul(weight)?
+            .checked_mul(voting_power)?
             .checked_div(total_vote)?;
         return voting_reward.try_into().ok();
+    }
+
+    pub fn actual_max_option_excluding_abstain_option(&self) -> Option<usize> {
+        let max_option = self.max_option.checked_sub(1)?;
+        return Some(max_option as usize);
     }
 }
 
@@ -213,6 +257,27 @@ pub struct ProposalMeta {
     pub description_link: String,
 }
 
+/// Metadata about an option proposal.
+#[account]
+#[derive(Debug, Default)]
+pub struct OptionProposalMeta {
+    /// The [Proposal].
+    pub proposal: Pubkey,
+    /// description for options
+    pub option_descriptions: Vec<String>,
+}
+
+impl OptionProposalMeta {
+    /// Space that a [ProposalInstruction] takes up.
+    pub fn space(option_descriptions: &Vec<String>) -> usize {
+        let mut total_size = std::mem::size_of::<Pubkey>() + 4;
+        for description in option_descriptions.iter() {
+            total_size = 4 + total_size + description.as_bytes().len();
+        }
+        return total_size;
+    }
+}
+
 /// A [Vote] is a vote made by a `voter`
 #[account]
 #[derive(Debug, Default)]
@@ -226,7 +291,7 @@ pub struct Vote {
     /// The side of the vote taken.
     pub side: u8,
     /// The number of votes this vote holds.
-    pub weight: u64,
+    pub voting_power: u64,
     /// Flag to check whether voter has claim the reward or not
     pub claimed: bool,
     /// buffers for future use
@@ -268,10 +333,9 @@ pub struct ProposalAccountMeta {
 
 #[cfg(test)]
 mod state_test {
-    use std::assert_eq;
-
-    use crate::{Proposal, ProposalAccountMeta, ProposalInstruction};
+    use super::*;
     use anchor_lang::{prelude::Pubkey, AnchorSerialize, Discriminator};
+    use std::assert_eq;
 
     #[test]
     fn test_proposal_instruction_space() {
@@ -303,7 +367,7 @@ mod state_test {
         serialized_bytes.append(&mut Proposal::DISCRIMINATOR.to_vec());
 
         let bytes_length = serialized_bytes.len();
-        let proposal_rental_space = Proposal::space(vec![]);
+        let proposal_rental_space = Proposal::space(2, vec![]);
 
         // The serialized data shall always LESSER to the rental space as the memory alignment for Proposal struct is 8 bytes
         // Which means, std::mem::size_of::<Proposal>() will returns more bytes than the serialized one.
@@ -352,10 +416,32 @@ mod state_test {
         serialized_bytes.append(&mut Proposal::DISCRIMINATOR.to_vec());
 
         let bytes_length = serialized_bytes.len();
-        let proposal_rental_space = Proposal::space(proposal_ixs);
+        let proposal_rental_space = Proposal::space(2, proposal_ixs);
 
         let extra_bytes = proposal_rental_space - bytes_length;
         assert_eq!(extra_bytes, 31);
         assert_eq!(bytes_length <= proposal_rental_space, true);
+    }
+
+    #[test]
+    fn test_option_proposal_meta_data() {
+        let option_descriptions: Vec<String> = vec![
+            "A cross-chain aggregator project".to_string(),
+            "A cross-chain aggregator project".to_string(),
+            "A cross-chain aggregator project".to_string(),
+            "A cross-chain aggregator project".to_string(),
+            "A cross-chain aggregator project".to_string(),
+            "A cross-chain aggregator project".to_string(),
+            "A cross-chain aggregator project".to_string(),
+            "A cross-chain aggregator project".to_string(),
+            "A cross-chain aggregator project".to_string(),
+            "A cross-chain aggregator project".to_string(),
+        ];
+
+        // let serialized_bytes = proposal.try_to_vec().unwrap().len();
+        let proposal_ix_rent_space = OptionProposalMeta::space(&option_descriptions);
+
+        println!("meta data size {}", proposal_ix_rent_space);
+        assert_eq!(proposal_ix_rent_space, 356);
     }
 }

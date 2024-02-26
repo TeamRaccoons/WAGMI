@@ -7,19 +7,19 @@ pub struct CreateOptionProposal<'info> {
     /// The [Governor].
     #[account(mut)]
     pub governor: Box<Account<'info, Governor>>,
-    /// The [OptionProposal].
+    /// The [Proposal].
     #[account(
         init,
         seeds = [
-            b"OptionProposal".as_ref(),
+            b"Proposal".as_ref(),
             governor.key().as_ref(),
-            governor.option_proposal_count.to_le_bytes().as_ref()
+            governor.proposal_count.to_le_bytes().as_ref()
         ],
         bump,
         payer = payer,
-        space = OptionProposal::space(max_option, instructions),
+        space = Proposal::space(max_option + 1, instructions), // plus 1 for abstain vote
     )]
-    pub proposal: Box<Account<'info, OptionProposal>>,
+    pub proposal: Box<Account<'info, Proposal>>,
     /// Proposer of the proposal.
     pub proposer: Signer<'info>,
     /// Payer of the proposal.
@@ -36,6 +36,9 @@ impl<'info> CreateOptionProposal<'info> {
         max_option: u8,
         instructions: Vec<ProposalInstruction>,
     ) -> Result<()> {
+        invariant!(max_option <= MAX_OPTION, InvalidMaxOption);
+        invariant!(max_option >= 2, InvalidMaxOption);
+
         let governor = &mut self.governor;
 
         let proposal = &mut self.proposal;
@@ -61,7 +64,11 @@ impl<'info> CreateOptionProposal<'info> {
 
         proposal.instructions = instructions.clone();
 
-        governor.option_proposal_count += 1;
+        proposal.proposal_type = ProposalType::Option.into();
+        proposal.max_option = max_option + 1;
+        proposal.option_votes = vec![0; (max_option + 1) as usize];
+
+        governor.proposal_count += 1;
 
         emit!(OptionProposalCreateEvent {
             governor: governor.key(),
