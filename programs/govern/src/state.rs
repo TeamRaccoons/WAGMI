@@ -57,70 +57,6 @@ pub struct GovernanceParameters {
     pub timelock_delay_seconds: i64,
 }
 
-// /// Option proposal
-// #[account]
-// #[derive(Debug, Default)]
-// pub struct OptionProposal {
-//     /// The public key of the governor.
-//     pub governor: Pubkey,
-//     /// The unique ID of the proposal, auto-incremented.
-//     pub index: u64,
-//     /// Bump seed
-//     pub bump: u8,
-
-//     /// The public key of the proposer.
-//     pub proposer: Pubkey,
-
-//     /// The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
-//     pub quorum_votes: u64,
-
-//     /// maximum options of the proposal
-//     pub max_option: u8,
-//     /// Vote for each option
-//     pub option_votes: Vec<u64>,
-
-//     /// The timestamp when the proposal was canceled.
-//     pub canceled_at: i64,
-//     /// The timestamp when the proposal was created.
-//     pub created_at: i64,
-//     /// The timestamp in which the proposal was activated.
-//     /// This is when voting begins.
-//     pub activated_at: i64,
-//     /// The timestamp when voting ends.
-//     /// This only applies to active proposals.
-//     pub voting_ends_at: i64,
-
-//     /// The timestamp in which the proposal was queued, i.e.
-//     /// approved for execution on the Smart Wallet.
-//     pub queued_at: i64,
-//     /// If the transaction was queued, this is the associated Smart Wallet transaction.
-//     pub queued_transaction: Pubkey,
-
-//     /// optional reward
-//     pub voting_reward: VotingReward,
-
-//     /// total claimed reward
-//     pub total_claimed_reward: u64,
-
-//     /// buffers for future use
-//     pub buffers: [u128; 10],
-
-//     /// The instructions associated with the proposal.
-//     pub instructions: Vec<ProposalInstruction>,
-// }
-
-// impl OptionProposal {
-//     /// Space that the [OptionProposal] takes up.
-//     pub fn space(max_option: u8, instructions: Vec<ProposalInstruction>) -> usize {
-//         8  // Anchor discriminator.
-//         + std::mem::size_of::<OptionProposal>()
-//         + 4 // Vec discriminator
-//         + (max_option as usize * 8)
-//         + 4 // Vec discriminator
-//             + (instructions.iter().map(|ix| ix.space()).sum::<usize>())
-//     }
-// }
-
 /// Proposal type
 #[derive(Debug, Eq, PartialEq)]
 #[repr(u8)]
@@ -171,12 +107,6 @@ pub struct Proposal {
 
     /// The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
     pub quorum_votes: u64,
-    /// Current number of votes in favor of this proposal
-    // pub for_votes: u64,
-    // /// Current number of votes in opposition to this proposal
-    // pub against_votes: u64,
-    // /// Current number of votes for abstaining for this proposal
-    // pub abstain_votes: u64,
 
     /// maximum options of the proposal
     pub max_option: u8,
