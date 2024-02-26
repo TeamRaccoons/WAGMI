@@ -12,14 +12,14 @@ pub struct CreateOptionProposalMeta<'info> {
     #[account(
         init,
         seeds = [
-            b"ProposalMeta".as_ref(),
+            b"OptionProposalMeta".as_ref(),
             proposal.key().as_ref()
         ],
         bump,
         payer = payer,
         space = 8 + OptionProposalMeta::space(&option_descriptions)
     )]
-    pub proposal_meta: Box<Account<'info, OptionProposalMeta>>,
+    pub option_proposal_meta: Box<Account<'info, OptionProposalMeta>>,
     /// Payer of the [ProposalMeta].
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -37,9 +37,9 @@ impl<'info> CreateOptionProposalMeta<'info> {
                     .unwrap(),
             InvalidOptionDescriptions
         );
-        let proposal_meta = &mut self.proposal_meta;
-        proposal_meta.proposal = self.proposal.key();
-        proposal_meta.option_descriptions = option_descriptions.clone();
+        let option_proposal_meta = &mut self.option_proposal_meta;
+        option_proposal_meta.proposal = self.proposal.key();
+        option_proposal_meta.option_descriptions = option_descriptions.clone();
 
         emit!(OptionProposalMetaCreateEvent {
             governor: self.proposal.governor,

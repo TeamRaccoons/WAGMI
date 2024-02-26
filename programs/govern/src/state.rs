@@ -297,7 +297,7 @@ mod state_test {
         serialized_bytes.append(&mut Proposal::DISCRIMINATOR.to_vec());
 
         let bytes_length = serialized_bytes.len();
-        let proposal_rental_space = Proposal::space(2, vec![]);
+        let proposal_rental_space = Proposal::space(3, vec![]);
 
         // The serialized data shall always LESSER to the rental space as the memory alignment for Proposal struct is 8 bytes
         // Which means, std::mem::size_of::<Proposal>() will returns more bytes than the serialized one.
@@ -320,7 +320,7 @@ mod state_test {
         // Extra bytes = 24 + 7 = 31
 
         let extra_bytes = proposal_rental_space - bytes_length;
-        assert_eq!(extra_bytes, 31);
+        assert_eq!(extra_bytes, 77);
         assert_eq!(bytes_length <= proposal_rental_space, true);
     }
 
@@ -346,10 +346,10 @@ mod state_test {
         serialized_bytes.append(&mut Proposal::DISCRIMINATOR.to_vec());
 
         let bytes_length = serialized_bytes.len();
-        let proposal_rental_space = Proposal::space(2, proposal_ixs);
+        let proposal_rental_space = Proposal::space(3, proposal_ixs);
 
         let extra_bytes = proposal_rental_space - bytes_length;
-        assert_eq!(extra_bytes, 31);
+        assert_eq!(extra_bytes, 77);
         assert_eq!(bytes_length <= proposal_rental_space, true);
     }
 
@@ -372,6 +372,6 @@ mod state_test {
         let proposal_ix_rent_space = OptionProposalMeta::space(&option_descriptions);
 
         println!("meta data size {}", proposal_ix_rent_space);
-        assert_eq!(proposal_ix_rent_space, 356);
+        assert_eq!(proposal_ix_rent_space, 396);
     }
 }

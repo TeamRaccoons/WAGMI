@@ -128,6 +128,13 @@ export function deriveProposalMeta(proposal: web3.PublicKey) {
   );
 }
 
+export function deriveOptionProposalMeta(proposal: web3.PublicKey) {
+  return web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("OptionProposalMeta"), proposal.toBytes()],
+    GOVERN_PROGRAM_ID
+  );
+}
+
 export async function createProposal(
   governor: web3.PublicKey,
   instruction: IProposalInstruction[],
@@ -187,16 +194,16 @@ export async function createOptionProposalMeta(
   optionDesciptions: string[],
   governProgram: Program<Govern>
 ) {
-  const [proposalMeta, bump] = deriveProposalMeta(proposal);
+  const [optionProposalMeta, bump] = deriveOptionProposalMeta(proposal);
 
-  console.log("Creating option proposal meta", proposalMeta.toBase58());
+  console.log("Creating option proposal meta", optionProposalMeta.toBase58());
 
   const tx = await governProgram.methods
     .createOptionProposalMeta(bump, optionDesciptions)
     .accounts({
       payer: governProgram.provider.publicKey,
       proposal,
-      proposalMeta,
+      optionProposalMeta,
       proposer: governProgram.provider.publicKey,
       systemProgram: web3.SystemProgram.programId,
     })
@@ -204,7 +211,7 @@ export async function createOptionProposalMeta(
 
   console.log("Create option proposal meta tx", tx);
 
-  return proposalMeta;
+  return optionProposalMeta;
 }
 
 export async function createProposalMeta(

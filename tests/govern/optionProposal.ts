@@ -183,7 +183,7 @@ describe("Govern", () => {
 
         const [proposalMetaKey, bump] =
           await anchor.web3.PublicKey.findProgramAddress(
-            [Buffer.from("ProposalMeta"), proposalKey.toBuffer()],
+            [Buffer.from("OptionProposalMeta"), proposalKey.toBuffer()],
             program.programId
           );
 
@@ -192,7 +192,7 @@ describe("Govern", () => {
           .accounts({
             proposal: proposalKey,
             proposer: provider.wallet.publicKey,
-            proposalMeta: proposalMetaKey,
+            optionProposalMeta: proposalMetaKey,
             payer: provider.wallet.publicKey,
             systemProgram: SystemProgram.programId,
           })
@@ -214,7 +214,7 @@ describe("Govern", () => {
 
         const [proposalMetaKey, bump] =
           await anchor.web3.PublicKey.findProgramAddress(
-            [Buffer.from("ProposalMeta"), proposalKey.toBuffer()],
+            [Buffer.from("OptionProposalMeta"), proposalKey.toBuffer()],
             program.programId
           );
 
@@ -223,7 +223,7 @@ describe("Govern", () => {
           .accounts({
             proposal: proposalKey,
             proposer: provider.wallet.publicKey,
-            proposalMeta: proposalMetaKey,
+            optionProposalMeta: proposalMetaKey,
             payer: provider.wallet.publicKey,
             systemProgram: SystemProgram.programId,
           })

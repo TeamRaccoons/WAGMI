@@ -5,7 +5,7 @@ use crate::*;
 #[instruction(voter: Pubkey)]
 pub struct NewVote<'info> {
     /// CHECK: Proposal being voted on.
-    pub proposal: UncheckedAccount<'info>,
+    pub proposal: Box<Account<'info, Proposal>>,
 
     /// The vote.
     #[account(
