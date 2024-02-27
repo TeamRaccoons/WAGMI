@@ -140,7 +140,7 @@ describe("Govern", () => {
       expect(proposalData.bump).to.equal(proposalBump);
       expect(proposalData.index.toString()).to.equal(proposalIndex.toString());
 
-      expect(proposalData.maxOption).to.equal(maxOption + 1);
+      expect(proposalData.maxOption).to.equal(maxOption);
 
       expect(proposalData.canceledAt.toString()).to.equal("0");
       expect(proposalData.queuedAt.toString()).to.equal("0");
