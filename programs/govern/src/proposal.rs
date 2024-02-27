@@ -43,7 +43,7 @@ impl Proposal {
         if voting_power == 0 {
             return Ok(());
         }
-        if side >= self.max_option {
+        if side > self.max_option {
             return Err(InvalidVoteSide.into());
         }
         let current_vote: u64 = self.option_votes[side as usize];
@@ -56,7 +56,7 @@ impl Proposal {
         if voting_power == 0 {
             return Ok(());
         }
-        if side >= self.max_option {
+        if side > self.max_option {
             return Err(InvalidVoteSide.into());
         }
         let current_vote: u64 = self.option_votes[side as usize];
@@ -102,8 +102,6 @@ impl Proposal {
         if self.proposal_type == u8::from(ProposalType::YesNo) {
             if self.option_votes[FOR_VOTE_INDEX] <= self.option_votes[AGAINST_VOTE_INDEX] {
                 return Some(ProposalState::Defeated);
-            } else {
-                return Some(ProposalState::Succeeded);
             }
         }
         Some(ProposalState::Succeeded)

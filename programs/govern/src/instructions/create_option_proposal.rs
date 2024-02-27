@@ -36,8 +36,10 @@ impl<'info> CreateOptionProposal<'info> {
         max_option: u8,
         instructions: Vec<ProposalInstruction>,
     ) -> Result<()> {
-        invariant!(max_option <= MAX_OPTION, InvalidMaxOption);
-        invariant!(max_option >= 2, InvalidMaxOption);
+        invariant!(
+            max_option >= 2 && max_option <= MAX_OPTION,
+            InvalidMaxOption
+        );
 
         let governor = &mut self.governor;
 
@@ -45,9 +47,6 @@ impl<'info> CreateOptionProposal<'info> {
         proposal.governor = governor.key();
         proposal.index = governor.proposal_count;
         proposal.bump = bump;
-
-        proposal.max_option = max_option;
-        proposal.option_votes = vec![0; max_option as usize];
 
         proposal.proposer = self.proposer.key();
 
@@ -65,8 +64,8 @@ impl<'info> CreateOptionProposal<'info> {
         proposal.instructions = instructions.clone();
 
         proposal.proposal_type = ProposalType::Option.into();
-        proposal.max_option = max_option + 1;
-        proposal.option_votes = vec![0; (max_option + 1) as usize];
+        proposal.max_option = max_option;
+        proposal.option_votes = vec![0; (max_option + 1) as usize]; // plus 1 for abstain vote
 
         governor.proposal_count += 1;
 
@@ -74,6 +73,7 @@ impl<'info> CreateOptionProposal<'info> {
             governor: governor.key(),
             proposal: proposal.key(),
             index: proposal.index,
+            max_option,
             instructions,
         });
 
@@ -98,6 +98,8 @@ pub struct OptionProposalCreateEvent {
     pub proposal: Pubkey,
     /// The index of the [Proposal].
     pub index: u64,
+    /// Max option of proposal.
+    pub max_option: u8,
     /// Instructions in the proposal.
     pub instructions: Vec<ProposalInstruction>,
 }

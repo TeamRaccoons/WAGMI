@@ -30,11 +30,7 @@ pub struct CreateOptionProposalMeta<'info> {
 impl<'info> CreateOptionProposalMeta<'info> {
     pub fn create_proposal_meta(&mut self, option_descriptions: Vec<String>) -> Result<()> {
         invariant!(
-            option_descriptions.len()
-                == self
-                    .proposal
-                    .actual_max_option_excluding_abstain_option()
-                    .unwrap(),
+            option_descriptions.len() == self.proposal.max_option as usize,
             InvalidOptionDescriptions
         );
         let option_proposal_meta = &mut self.option_proposal_meta;
@@ -56,7 +52,7 @@ impl<'info> Validate<'info> for CreateOptionProposalMeta<'info> {
         assert_keys_eq!(self.proposer, self.proposal.proposer);
         invariant!(
             self.proposal.proposal_type == u8::from(ProposalType::Option),
-            NotYesNoProposal
+            NotOptionProposal
         );
         Ok(())
     }

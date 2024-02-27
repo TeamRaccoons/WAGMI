@@ -50,7 +50,7 @@ pub mod govern {
             .create_proposal(unwrap_bump!(ctx, "proposal"), instructions)
     }
 
-    /// Creates a [Proposal].
+    /// Creates an Option [Proposal].
     /// This may be called by anyone, since the [Proposal] does not do anything until
     /// it is activated in [activate_proposal].
     #[access_control(ctx.accounts.validate())]
@@ -141,7 +141,7 @@ pub mod govern {
         ctx.accounts.create_proposal_meta(title, description_link)
     }
 
-    /// Creates a option [ProposalMeta].
+    /// Creates an [OptionProposalMeta].
     #[access_control(ctx.accounts.validate())]
     pub fn create_option_proposal_meta(
         ctx: Context<CreateOptionProposalMeta>,

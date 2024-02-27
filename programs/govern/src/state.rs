@@ -168,11 +168,6 @@ impl Proposal {
             .checked_div(total_vote)?;
         return voting_reward.try_into().ok();
     }
-
-    pub fn actual_max_option_excluding_abstain_option(&self) -> Option<usize> {
-        let max_option = self.max_option.checked_sub(1)?;
-        return Some(max_option as usize);
-    }
 }
 
 /// Metadata about a proposal.

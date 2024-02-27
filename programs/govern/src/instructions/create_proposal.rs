@@ -17,7 +17,7 @@ pub struct CreateProposal<'info> {
         ],
         bump,
         payer = payer,
-        space = Proposal::space(3, instructions), // yes/no proposal only has 2 options
+        space = Proposal::space(3, instructions), // yes/no proposal only has 2 options, plus 1 for abstain vote
     )]
     pub proposal: Box<Account<'info, Proposal>>,
     /// Proposer of the proposal.
@@ -58,8 +58,8 @@ impl<'info> CreateProposal<'info> {
         proposal.instructions = instructions.clone();
 
         proposal.proposal_type = ProposalType::YesNo.into();
-        proposal.max_option = 3;
-        proposal.option_votes = vec![0; 3];
+        proposal.max_option = 2;
+        proposal.option_votes = vec![0; 3]; // plus 1 for abstain vote
 
         governor.proposal_count += 1;
 

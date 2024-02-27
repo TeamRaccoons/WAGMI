@@ -4,7 +4,7 @@ use crate::*;
 #[derive(Accounts)]
 #[instruction(voter: Pubkey)]
 pub struct NewVote<'info> {
-    /// CHECK: Proposal being voted on.
+    /// Proposal being voted on.
     pub proposal: Box<Account<'info, Proposal>>,
 
     /// The vote.
