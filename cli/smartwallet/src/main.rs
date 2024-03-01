@@ -140,7 +140,17 @@ fn verify<C: Deref<Target = impl Signer> + Clone>(
     assert_eq!(smart_wallet_state.minimum_delay, minimum_delay);
 
     println!("verify owners");
-    assert_eq!(smart_wallet_state.owners, owners);
+    if smart_wallet_state.owners.len() == owners.len() + 1 {
+        println!("go here");
+        // should add governor address to verify
+        let (governor, _bump) =
+            Pubkey::find_program_address(&[b"Governor".as_ref(), base.as_ref()], &govern::id());
+        let mut owners = owners.clone();
+        owners.push(governor);
+        assert_eq!(smart_wallet_state.owners, owners);
+    } else {
+        assert_eq!(smart_wallet_state.owners, owners);
+    }
 
     Ok(())
 }
