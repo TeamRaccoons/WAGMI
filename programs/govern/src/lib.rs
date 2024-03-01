@@ -9,10 +9,12 @@ use num_traits::cast::ToPrimitive;
 use smart_wallet::SmartWallet;
 use vipers::prelude::*;
 
+mod constants;
 mod instructions;
-pub mod proposal;
+mod proposal;
 mod state;
 
+pub use constants::*;
 pub use instructions::*;
 pub use proposal::*;
 pub use state::*;
@@ -46,6 +48,19 @@ pub mod govern {
     ) -> Result<()> {
         ctx.accounts
             .create_proposal(unwrap_bump!(ctx, "proposal"), instructions)
+    }
+
+    /// Creates an Option [Proposal].
+    /// This may be called by anyone, since the [Proposal] does not do anything until
+    /// it is activated in [activate_proposal].
+    #[access_control(ctx.accounts.validate())]
+    pub fn create_option_proposal(
+        ctx: Context<CreateOptionProposal>,
+        max_option: u8,
+        instructions: Vec<ProposalInstruction>,
+    ) -> Result<()> {
+        ctx.accounts
+            .create_option_proposal(unwrap_bump!(ctx, "proposal"), max_option, instructions)
     }
 
     /// Activates a proposal.
@@ -125,6 +140,16 @@ pub mod govern {
     ) -> Result<()> {
         ctx.accounts.create_proposal_meta(title, description_link)
     }
+
+    /// Creates an [OptionProposalMeta].
+    #[access_control(ctx.accounts.validate())]
+    pub fn create_option_proposal_meta(
+        ctx: Context<CreateOptionProposalMeta>,
+        _bump: u8, // fix anchor weird bug
+        option_descriptions: Vec<String>,
+    ) -> Result<()> {
+        ctx.accounts.create_proposal_meta(option_descriptions)
+    }
 }
 
 /// Errors.
@@ -132,6 +157,8 @@ pub mod govern {
 pub enum ErrorCode {
     #[msg("Invalid vote side.")]
     InvalidVoteSide,
+    #[msg("Invalid proposal type.")]
+    InvalidProposalType,
     #[msg("The owner of the smart wallet doesn't match with current.")]
     GovernorNotFound,
     #[msg("The proposal cannot be activated since it has not yet passed the voting delay.")]
@@ -140,4 +167,12 @@ pub enum ErrorCode {
     ProposalNotDraft,
     #[msg("The proposal must be active.")]
     ProposalNotActive,
+    #[msg("Max option is invalid")]
+    InvalidMaxOption,
+    #[msg("Proposal is not YesNo.")]
+    NotYesNoProposal,
+    #[msg("Proposal is not Option.")]
+    NotOptionProposal,
+    #[msg("Invalid option descriptions.")]
+    InvalidOptionDescriptions,
 }

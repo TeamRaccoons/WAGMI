@@ -50,6 +50,10 @@ impl<'info> CreateProposalMeta<'info> {
 impl<'info> Validate<'info> for CreateProposalMeta<'info> {
     fn validate(&self) -> Result<()> {
         assert_keys_eq!(self.proposer, self.proposal.proposer);
+        invariant!(
+            self.proposal.proposal_type == u8::from(ProposalType::YesNo),
+            NotYesNoProposal
+        );
         Ok(())
     }
 }

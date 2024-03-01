@@ -17,7 +17,7 @@ pub struct NewVote<'info> {
         ],
         bump,
         payer = payer,
-        space = 8 +  std::mem::size_of::<Vote>()
+        space = 8 + std::mem::size_of::<Vote>()
     )]
     pub vote: Account<'info, Vote>,
 
@@ -36,8 +36,8 @@ impl<'info> NewVote<'info> {
         vote.voter = voter;
         vote.bump = bump;
 
-        vote.side = VoteSide::Pending.into();
-        vote.weight = 0;
+        vote.side = 0; // abstain vote
+        vote.voting_power = 0;
 
         Ok(())
     }

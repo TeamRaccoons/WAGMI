@@ -87,15 +87,17 @@ impl<'info> Validate<'info> for QueueProposal<'info> {
                 now,
                 self.proposal.voting_ends_at
             );
-            msg!(
-                "for votes: {}, against votes: {}",
-                self.proposal.for_votes,
-                self.proposal.against_votes,
-            );
+            if self.proposal.proposal_type == u8::from(ProposalType::YesNo) {
+                msg!(
+                    "for votes: {}, against votes: {}",
+                    self.proposal.option_votes[FOR_VOTE_INDEX],
+                    self.proposal.option_votes[AGAINST_VOTE_INDEX],
+                );
+            }
             msg!(
                 "quorum req: {}, abstain votes: {}",
                 self.governor.params.quorum_votes,
-                self.proposal.abstain_votes,
+                self.proposal.option_votes[ABSTAIN_VOTE_INDEX],
             );
             invariant!(
                 proposal_state == ProposalState::Succeeded,

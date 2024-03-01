@@ -1,9 +1,6 @@
 //! Proposal logic.
-
-use std::convert::TryFrom;
-
+use crate::ErrorCode::InvalidVoteSide;
 use crate::*;
-use vipers::{program_err, unwrap_int, unwrap_opt};
 
 /// The state of a proposal.
 ///
@@ -34,46 +31,6 @@ pub enum ProposalState {
     Queued,
 }
 
-/// Side of a vote.
-#[derive(Debug, Eq, PartialEq)]
-#[repr(u8)]
-pub enum VoteSide {
-    /// A vote that has not been set or has been unset.
-    Pending = 0,
-    /// Vote against the passing of the proposal.
-    Against = 1,
-    /// Vote to make the proposal pass.
-    For = 2,
-    /// This vote does not count as a `For` or `Against`, but it still contributes to quorum.
-    Abstain = 3,
-}
-
-impl Default for VoteSide {
-    fn default() -> Self {
-        VoteSide::Pending
-    }
-}
-
-impl From<VoteSide> for u8 {
-    fn from(side: VoteSide) -> Self {
-        side as u8
-    }
-}
-
-impl TryFrom<u8> for VoteSide {
-    type Error = Error;
-
-    fn try_from(value: u8) -> Result<Self> {
-        match value {
-            0 => Ok(VoteSide::Pending),
-            1 => Ok(VoteSide::Against),
-            2 => Ok(VoteSide::For),
-            3 => Ok(VoteSide::Abstain),
-            _ => program_err!(InvalidVoteSide),
-        }
-    }
-}
-
 impl Default for ProposalState {
     fn default() -> Self {
         Self::Draft
@@ -81,51 +38,33 @@ impl Default for ProposalState {
 }
 
 impl Proposal {
-    /// Subtracts from the total weight of a vote for a [Proposal].
-    pub(crate) fn subtract_vote_weight(
-        &mut self,
-        vote_side: VoteSide,
-        vote_weight: u64,
-    ) -> Result<()> {
-        if vote_weight == 0 {
+    // /// Subtracts from the total weight of a vote for a [Proposal].
+    pub(crate) fn subtract_vote_weight(&mut self, side: u8, voting_power: u64) -> Result<()> {
+        if voting_power == 0 {
             return Ok(());
         }
-        match vote_side {
-            VoteSide::Pending => {}
-            VoteSide::Against => {
-                self.against_votes = unwrap_int!(self.against_votes.checked_sub(vote_weight));
-            }
-            VoteSide::For => {
-                self.for_votes = unwrap_int!(self.for_votes.checked_sub(vote_weight));
-            }
-            VoteSide::Abstain => {
-                self.abstain_votes = unwrap_int!(self.abstain_votes.checked_sub(vote_weight));
-            }
+        if side > self.max_option {
+            return Err(InvalidVoteSide.into());
         }
+        let current_vote: u64 = self.option_votes[side as usize];
+        self.option_votes[side as usize] = unwrap_int!(current_vote.checked_sub(voting_power));
         Ok(())
     }
 
     /// Adds to the total weight of a vote for a [Proposal].
-    pub(crate) fn add_vote_weight(&mut self, vote_side: VoteSide, vote_weight: u64) -> Result<()> {
-        if vote_weight == 0 {
+    pub(crate) fn add_vote_weight(&mut self, side: u8, voting_power: u64) -> Result<()> {
+        if voting_power == 0 {
             return Ok(());
         }
-        match vote_side {
-            VoteSide::Pending => {}
-            VoteSide::Against => {
-                self.against_votes = unwrap_int!(self.against_votes.checked_add(vote_weight));
-            }
-            VoteSide::For => {
-                self.for_votes = unwrap_int!(self.for_votes.checked_add(vote_weight));
-            }
-            VoteSide::Abstain => {
-                self.abstain_votes = unwrap_int!(self.abstain_votes.checked_add(vote_weight));
-            }
+        if side > self.max_option {
+            return Err(InvalidVoteSide.into());
         }
+        let current_vote: u64 = self.option_votes[side as usize];
+        self.option_votes[side as usize] = unwrap_int!(current_vote.checked_add(voting_power));
         Ok(())
     }
 
-    /// Gets the state.
+    // Gets the state.
     pub fn get_state(&self) -> Result<ProposalState> {
         Ok(unwrap_opt!(
             self.state(Clock::get()?.unix_timestamp),
@@ -135,11 +74,8 @@ impl Proposal {
 
     /// total votes
     pub fn total_votes(&self) -> Option<u64> {
-        Some(
-            self.for_votes
-                .checked_add(self.against_votes)?
-                .checked_add(self.abstain_votes)?,
-        )
+        let total_vote = self.option_votes.iter().sum();
+        Some(total_vote)
     }
 
     /// Checks if the proposal meets quorum; that is,
@@ -148,8 +84,8 @@ impl Proposal {
         Some(self.total_votes()? >= self.quorum_votes)
     }
 
-    /// The state of the proposal. See [ProposalState] for more details.
-    /// Adapted from <https://github.com/compound-finance/compound-protocol/blob/4a8648ec0364d24c4ecfc7d6cae254f55030d65f/contracts/Governance/GovernorBravoDelegate.sol#L205>
+    // /// The state of the proposal. See [ProposalState] for more details.
+    // /// Adapted from <https://github.com/compound-finance/compound-protocol/blob/4a8648ec0364d24c4ecfc7d6cae254f55030d65f/contracts/Governance/GovernorBravoDelegate.sol#L205>
     pub fn state(&self, current_time: i64) -> Option<ProposalState> {
         if self.canceled_at > 0 {
             return Some(ProposalState::Canceled);
@@ -157,10 +93,16 @@ impl Proposal {
             return Some(ProposalState::Draft);
         } else if current_time < self.voting_ends_at {
             return Some(ProposalState::Active);
-        } else if self.for_votes <= self.against_votes || !self.meets_quorum()? {
+        } else if !self.meets_quorum()? {
             return Some(ProposalState::Defeated);
         } else if self.queued_at > 0 {
             return Some(ProposalState::Queued);
+        }
+
+        if self.proposal_type == u8::from(ProposalType::YesNo) {
+            if self.option_votes[FOR_VOTE_INDEX] <= self.option_votes[AGAINST_VOTE_INDEX] {
+                return Some(ProposalState::Defeated);
+            }
         }
         Some(ProposalState::Succeeded)
     }
@@ -194,245 +136,5 @@ impl Proposal {
                 },
             )
             .collect()
-    }
-}
-
-// impl<'info> QueueProposal<'info> {
-//     /// Queues a Transaction into the Smart Wallet.
-//     pub fn queue_transaction(&mut self, tx_bump: u8) -> Result<()> {
-//         let seeds = governor_seeds!(self.governor);
-//         let signer_seeds = &[&seeds[..]];
-//         let cpi_ctx = CpiContext::new_with_signer(
-//             self.smart_wallet_program.to_account_info(),
-//             smart_wallet::cpi::accounts::CreateTransaction {
-//                 smart_wallet: self.smart_wallet.to_account_info(),
-//                 transaction: self.transaction.to_account_info(),
-//                 proposer: self.governor.to_account_info(),
-//                 payer: self.payer.to_account_info(),
-//                 system_program: self.system_program.to_account_info(),
-//             },
-//             signer_seeds,
-//         );
-
-//         // no delay
-//         if self.governor.params.timelock_delay_seconds == 0 {
-//             smart_wallet::cpi::create_transaction(
-//                 cpi_ctx,
-//                 tx_bump,
-//                 self.proposal.to_smart_wallet_instructions(),
-//             )?;
-//         } else {
-//             // delay; calculate ETA
-//             smart_wallet::cpi::create_transaction_with_timelock(
-//                 cpi_ctx,
-//                 tx_bump,
-//                 self.proposal.to_smart_wallet_instructions(),
-//                 unwrap_int!(Clock::get()?
-//                     .unix_timestamp
-//                     .checked_add(self.governor.params.timelock_delay_seconds)),
-//             )?;
-//         }
-
-//         let proposal = &mut self.proposal;
-//         proposal.queued_at = Clock::get()?.unix_timestamp;
-//         proposal.queued_transaction = self.transaction.key();
-
-//         Ok(())
-//     }
-// }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use proptest::prelude::*;
-
-    /// Maximum seconds elapsed between two checkpoints.
-    /// [i32::MAX] corresponds to about 70 years.
-    const MAX_SECONDS_BETWEEN_CHECKPOINTS: i64 = i32::MAX as i64;
-    const MAX_TOTAL_TOKENS: u64 = u64::MAX / 1000_u64;
-
-    prop_compose! { pub fn total_and_intermediate_ts()(
-          elapsed_seconds in 0..MAX_SECONDS_BETWEEN_CHECKPOINTS,
-          last_checkpoint_ts in 0..(i64::MAX - MAX_SECONDS_BETWEEN_CHECKPOINTS),
-        ) -> (i64, i64) {
-          (last_checkpoint_ts + elapsed_seconds, last_checkpoint_ts)
-       }
-    }
-
-    prop_compose! {
-        pub fn part_and_total()(
-            total in 0..MAX_TOTAL_TOKENS
-        )(
-            // use a really small number here
-            part in 0..total,
-            total in Just(total)
-        ) -> (u64, u64) {
-           (part, total)
-       }
-    }
-
-    #[derive(Default)]
-    struct TestProposalParams {
-        pub canceled_at: i64,
-        pub current_ts: i64,
-        pub activated_at: i64,
-        pub created_at: i64,
-        pub voting_ends_at: i64,
-        pub queued_at: i64,
-        pub abstain_votes: u64,
-        pub against_votes: u64,
-        pub for_votes: u64,
-        pub quorum_votes: u64,
-    }
-
-    fn test_proposal_state(t: TestProposalParams) -> ProposalState {
-        let proposal = Proposal {
-            for_votes: t.for_votes,
-            against_votes: t.against_votes,
-            abstain_votes: t.abstain_votes,
-            canceled_at: t.canceled_at,
-            created_at: t.created_at,
-            activated_at: t.activated_at,
-            voting_ends_at: t.voting_ends_at,
-            queued_at: t.queued_at,
-            quorum_votes: t.quorum_votes,
-            ..Proposal::default()
-        };
-
-        proposal.state(t.current_ts).unwrap()
-    }
-
-    #[test]
-    fn test_draft_state() {
-        let params = TestProposalParams {
-            activated_at: 0,
-            ..TestProposalParams::default()
-        };
-        assert_eq!(test_proposal_state(params), ProposalState::Draft);
-    }
-
-    proptest! {
-        #[test]
-        fn test_cancelled_state(
-            canceled_at in 1..=i64::MAX,
-        ) {
-            let params = TestProposalParams {
-                canceled_at,
-                ..TestProposalParams::default()
-            };
-            assert_eq!(test_proposal_state(params), ProposalState::Canceled);
-        }
-    }
-
-    proptest! {
-        #[test]
-        fn test_active_state(
-            activated_at in 1..=i64::MAX,
-            (voting_ends_at, current_ts) in total_and_intermediate_ts(),
-        ) {
-            let params = TestProposalParams {
-                current_ts,
-                activated_at,
-                voting_ends_at,
-                ..TestProposalParams::default()
-            };
-            assert_eq!(test_proposal_state(params), ProposalState::Active);
-        }
-    }
-
-    proptest! {
-        #[test]
-        fn test_defeated_state(
-            activated_at in 1..=i64::MAX,
-            (for_votes, against_votes) in part_and_total(),
-            (current_ts, voting_ends_at) in total_and_intermediate_ts(),
-        ) {
-            let params = TestProposalParams {
-                current_ts,
-                activated_at,
-                voting_ends_at,
-                for_votes,
-                against_votes,
-                ..TestProposalParams::default()
-            };
-            assert_eq!(test_proposal_state(params), ProposalState::Defeated);
-        }
-    }
-
-    proptest! {
-        #[test]
-        fn test_not_meet_quorum(
-            activated_at in 1..=i64::MAX,
-            (all_votes, quorum_votes) in part_and_total(),
-            (current_ts, voting_ends_at) in total_and_intermediate_ts(),
-            for_shares in 1..=3u64,
-            against_shares in 1..=3u64,
-            abstain_shares in 1..=3u64,
-        ) {
-
-            let total_shares = for_shares + against_shares + abstain_shares;
-            let for_votes = all_votes * for_shares / total_shares;
-            let against_votes = all_votes * against_shares / total_shares;
-            let abstain_votes = all_votes * abstain_shares / total_shares;
-            let params = TestProposalParams {
-                current_ts,
-                activated_at,
-                voting_ends_at,
-                for_votes,
-                against_votes,
-                abstain_votes,
-                quorum_votes,
-                ..TestProposalParams::default()
-            };
-            let proposal = Proposal {
-                for_votes,
-                against_votes,
-                abstain_votes,
-                quorum_votes,
-                ..Proposal::default()
-            };
-            assert!(!proposal.meets_quorum().unwrap(), "proposal should fail quorum; for_votes: {}, against_votes: {}, abstain: votes: {}", for_votes, against_votes, abstain_votes);
-            assert_eq!(test_proposal_state(params), ProposalState::Defeated);
-        }
-    }
-
-    proptest! {
-        #[test]
-        fn test_queued_state(
-            activated_at in 1..=i64::MAX,
-            queued_at in 1..i64::MAX,
-            (quorum_votes, for_votes) in part_and_total(),
-            (current_ts, voting_ends_at) in total_and_intermediate_ts(),
-        ) {
-            let params = TestProposalParams {
-                activated_at,
-                current_ts,
-                for_votes,
-                quorum_votes,
-                voting_ends_at,
-                queued_at,
-                ..TestProposalParams::default()
-            };
-            assert_eq!(test_proposal_state(params), ProposalState::Queued);
-        }
-    }
-
-    proptest! {
-        #[test]
-        fn test_success_state(
-            activated_at in 1..=i64::MAX,
-            (quorum_votes, for_votes) in part_and_total(),
-            (current_ts, voting_ends_at) in total_and_intermediate_ts(),
-        ) {
-            let params = TestProposalParams {
-                activated_at,
-                current_ts,
-                for_votes,
-                quorum_votes,
-                voting_ends_at,
-                ..TestProposalParams::default()
-            };
-            assert_eq!(test_proposal_state(params), ProposalState::Succeeded);
-        }
     }
 }

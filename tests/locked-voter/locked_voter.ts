@@ -640,8 +640,8 @@ describe("Locked voter", () => {
     const proposalState = await governProgram.account.proposal.fetch(proposal);
 
     expect(voteState.side.toString()).to.be.equal(VoteSide.Against.toString());
-    expect(proposalState.againstVotes.toString()).to.be.equal(
-      voteState.weight.toString()
+    expect(proposalState.optionVotes[1].toString()).to.be.equal(
+      voteState.votingPower.toString()
     );
   });
 
@@ -706,12 +706,12 @@ describe("Locked voter", () => {
       proposal
     );
 
-    const proposalForVoteDelta = afterProposalState.forVotes
-      .sub(beforeProposalState.forVotes)
+    const proposalForVoteDelta = afterProposalState.optionVotes[2]
+      .sub(beforeProposalState.optionVotes[2])
       .toString();
 
     expect(voteState.side.toString()).to.be.equal(VoteSide.For.toString());
-    expect(proposalForVoteDelta).to.be.equal(voteState.weight.toString());
+    expect(proposalForVoteDelta).to.be.equal(voteState.votingPower.toString());
   });
 
   it("user #3 cast abstain proposal", async () => {
@@ -747,12 +747,12 @@ describe("Locked voter", () => {
       proposal
     );
 
-    const proposalAbstainVoteDelta = afterProposalState.abstainVotes
-      .sub(beforeProposalState.abstainVotes)
+    const proposalAbstainVoteDelta = afterProposalState.optionVotes[0]
+      .sub(beforeProposalState.optionVotes[0])
       .toString();
 
     expect(voteState.side.toString()).to.be.equal(VoteSide.Abstain.toString());
-    expect(proposalAbstainVoteDelta).to.be.equal(voteState.weight.toString());
+    expect(proposalAbstainVoteDelta).to.be.equal(voteState.votingPower.toString());
   });
 
   it("users able to exit when escrow ended", async () => {

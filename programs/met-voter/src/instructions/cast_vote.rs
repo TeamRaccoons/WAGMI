@@ -66,6 +66,7 @@ impl<'info> Validate<'info> for CastVote<'info> {
         assert_keys_eq!(self.proposal.governor, self.governor);
         assert_keys_eq!(self.vote.proposal, self.proposal);
         assert_keys_eq!(self.vote.voter, self.escrow.owner);
+
         invariant!(
             self.proposal.get_state()? == ProposalState::Active,
             "proposal must be active"

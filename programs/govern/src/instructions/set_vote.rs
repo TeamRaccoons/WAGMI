@@ -1,6 +1,5 @@
 use crate::*;
-
-/// Accounts for [govern::set_voter].
+/// Accounts for [govern::set_vote].
 #[derive(Accounts)]
 pub struct SetVote<'info> {
     /// The [Governor].
@@ -17,16 +16,16 @@ pub struct SetVote<'info> {
 
 impl<'info> SetVote<'info> {
     /// Queues a Transaction into the Smart Wallet.
-    pub fn set_vote(&mut self, side: u8, weight: u64) -> Result<()> {
+    pub fn set_vote(&mut self, side: u8, voting_power: u64) -> Result<()> {
         let vote = &self.vote;
 
         let proposal = &mut self.proposal;
-        proposal.subtract_vote_weight(vote.side.try_into()?, vote.weight)?;
-        proposal.add_vote_weight(side.try_into()?, weight)?;
+        proposal.subtract_vote_weight(vote.side, vote.voting_power)?;
+        proposal.add_vote_weight(side, voting_power)?;
 
         let vote = &mut self.vote;
         vote.side = side;
-        vote.weight = weight;
+        vote.voting_power = voting_power;
 
         emit!(VoteSetEvent {
             governor: proposal.governor,
@@ -34,7 +33,7 @@ impl<'info> SetVote<'info> {
             voter: vote.voter,
             vote: vote.key(),
             side,
-            weight,
+            voting_power,
         });
 
         Ok(())
@@ -80,6 +79,6 @@ pub struct VoteSetEvent {
     /// The vote side.
     #[index]
     pub side: u8,
-    /// The vote's weight.
-    pub weight: u64,
+    /// The vote's voting_power.
+    pub voting_power: u64,
 }

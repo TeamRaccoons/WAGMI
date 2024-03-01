@@ -14,5 +14,5 @@ export enum VoteSide {
   /**
    * This vote does not count as a `For` or `Against`, but it still contributes to quorum.
    */
-  Abstain = 3,
+  Abstain = 0,
 }

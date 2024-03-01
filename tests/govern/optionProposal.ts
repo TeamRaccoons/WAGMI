@@ -31,6 +31,8 @@ describe("Govern", () => {
   const governBase = new anchor.web3.Keypair();
   const numOwners = 3;
 
+  const maxOption = 8;
+
   const threshold = new anchor.BN(1);
   const delay = new anchor.BN(0);
 
@@ -101,7 +103,7 @@ describe("Govern", () => {
     );
   });
 
-  describe("Proposal", () => {
+  describe("Option Proposal", () => {
     let proposalIndex: BN;
     let proposalKey: Pubkey;
     let proposalBump: number;
@@ -117,9 +119,8 @@ describe("Govern", () => {
         ],
         program.programId
       );
-
       await program.methods
-        .createProposal(0, DUMMY_INSTRUCTIONS)
+        .createOptionProposal(maxOption, DUMMY_INSTRUCTIONS)
         .accounts({
           governor: governor,
           proposal,
@@ -139,12 +140,12 @@ describe("Govern", () => {
       expect(proposalData.bump).to.equal(proposalBump);
       expect(proposalData.index.toString()).to.equal(proposalIndex.toString());
 
+      expect(proposalData.maxOption).to.equal(maxOption);
+
       expect(proposalData.canceledAt.toString()).to.equal("0");
       expect(proposalData.queuedAt.toString()).to.equal("0");
       expect(proposalData.activatedAt.toString()).to.equal("0");
       expect(proposalData.votingEndsAt.toString()).to.equal("0");
-      expect(proposalData.optionVotes[0].toString()).to.equal("0");
-      expect(proposalData.optionVotes[1].toString()).to.equal("0");
       expect(proposalData.quorumVotes.toString()).to.equal(
         governorState.params.quorumVotes.toString()
       );
@@ -166,6 +167,7 @@ describe("Govern", () => {
           proposer: provider.wallet.publicKey,
         })
         .rpc();
+
       const proposalData = await program.account.proposal.fetch(proposalKey);
       expect(proposalData.canceledAt.toNumber()).to.greaterThan(0);
     });
@@ -173,20 +175,24 @@ describe("Govern", () => {
     context("Proposal meta", () => {
       it("Cannot create proposal meta if not proposer", async () => {
         const fakeProposer = Keypair.generate();
-        let title = "This is my Proposal";
-        let descriptionLink = "https://app.meteora.ag";
+
+        let optionDescriptions = [];
+        for (let i = 0; i < maxOption; i++) {
+          optionDescriptions.push("A cross-chain aggregator project");
+        }
+
         const [proposalMetaKey, bump] =
           await anchor.web3.PublicKey.findProgramAddress(
-            [Buffer.from("ProposalMeta"), proposalKey.toBuffer()],
+            [Buffer.from("OptionProposalMeta"), proposalKey.toBuffer()],
             program.programId
           );
 
         const createMetaTX = program.methods
-          .createProposalMeta(0, title, descriptionLink)
+          .createOptionProposalMeta(0, optionDescriptions)
           .accounts({
             proposal: proposalKey,
             proposer: provider.wallet.publicKey,
-            proposalMeta: proposalMetaKey,
+            optionProposalMeta: proposalMetaKey,
             payer: provider.wallet.publicKey,
             systemProgram: SystemProgram.programId,
           })
@@ -201,31 +207,34 @@ describe("Govern", () => {
       });
 
       it("Can create proposal meta", async () => {
-        let title = "This is my Proposal";
-        let descriptionLink = "https://app.meteora.ag";
+        let optionDescriptions = [];
+        for (let i = 0; i < maxOption; i++) {
+          optionDescriptions.push(`A cross-chain aggregator project ${i}`);
+        }
+
         const [proposalMetaKey, bump] =
           await anchor.web3.PublicKey.findProgramAddress(
-            [Buffer.from("ProposalMeta"), proposalKey.toBuffer()],
+            [Buffer.from("OptionProposalMeta"), proposalKey.toBuffer()],
             program.programId
           );
 
         const createMetaTX = await program.methods
-          .createProposalMeta(0, title, descriptionLink)
+          .createOptionProposalMeta(0, optionDescriptions)
           .accounts({
             proposal: proposalKey,
             proposer: provider.wallet.publicKey,
-            proposalMeta: proposalMetaKey,
+            optionProposalMeta: proposalMetaKey,
             payer: provider.wallet.publicKey,
             systemProgram: SystemProgram.programId,
           })
           .rpc();
 
-        const metadata = await program.account.proposalMeta.fetch(
+        const metadata = await program.account.optionProposalMeta.fetch(
           proposalMetaKey
         );
-
-        expect(metadata.title).to.be.equal(title);
-        expect(metadata.descriptionLink).to.be.equal(descriptionLink);
+        for (let i = 0; i < maxOption; i++) {
+          expect(optionDescriptions[i]).to.be.equal(metadata.optionDescriptions[i]);
+        }
         expect(metadata.proposal.toString()).to.equal(proposalKey.toString());
       });
     });

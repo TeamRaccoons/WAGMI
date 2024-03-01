@@ -128,6 +128,13 @@ export function deriveProposalMeta(proposal: web3.PublicKey) {
   );
 }
 
+export function deriveOptionProposalMeta(proposal: web3.PublicKey) {
+  return web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("OptionProposalMeta"), proposal.toBytes()],
+    GOVERN_PROGRAM_ID
+  );
+}
+
 export async function createProposal(
   governor: web3.PublicKey,
   instruction: IProposalInstruction[],
@@ -152,6 +159,59 @@ export async function createProposal(
   console.log("Create proposal tx", tx);
 
   return proposal;
+}
+
+export async function createOptionProposal(
+  governor: web3.PublicKey,
+  instruction: IProposalInstruction[],
+  governProgram: Program<Govern>,
+  maxOption: number,
+) {
+  const governState = await governProgram.account.governor.fetch(governor);
+  const [proposal, bump] = deriveProposal(governor, governState.proposalCount);
+
+  console.log("Creating option proposal", proposal.toBase58());
+
+  const tx = await governProgram.methods
+    .createOptionProposal(maxOption, instruction)
+    .accounts({
+      governor,
+      payer: governProgram.provider.publicKey,
+      proposal,
+      proposer: governProgram.provider.publicKey,
+      systemProgram: web3.SystemProgram.programId,
+    })
+    .rpc();
+
+  console.log("Create option proposal tx", tx);
+
+  return proposal;
+}
+
+
+export async function createOptionProposalMeta(
+  proposal: web3.PublicKey,
+  optionDesciptions: string[],
+  governProgram: Program<Govern>
+) {
+  const [optionProposalMeta, bump] = deriveOptionProposalMeta(proposal);
+
+  console.log("Creating option proposal meta", optionProposalMeta.toBase58());
+
+  const tx = await governProgram.methods
+    .createOptionProposalMeta(bump, optionDesciptions)
+    .accounts({
+      payer: governProgram.provider.publicKey,
+      proposal,
+      optionProposalMeta,
+      proposer: governProgram.provider.publicKey,
+      systemProgram: web3.SystemProgram.programId,
+    })
+    .rpc();
+
+  console.log("Create option proposal meta tx", tx);
+
+  return optionProposalMeta;
 }
 
 export async function createProposalMeta(

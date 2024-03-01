@@ -932,10 +932,10 @@ describe("Locked voter", () => {
 
     const voteState = await governProgram.account.vote.fetch(vote);
     const proposalState = await governProgram.account.proposal.fetch(proposal);
-
-    expect(voteState.side.toString()).to.be.equal(VoteSide.Against.toString());
-    expect(proposalState.againstVotes.toString()).to.be.equal(
-      voteState.weight.toString()
+    // console.log(voteState)
+    expect(voteState.side).to.be.equal(VoteSide.Against);
+    expect(proposalState.optionVotes[1].toString()).to.be.equal(
+      voteState.votingPower.toString()
     );
   });
 
@@ -1010,12 +1010,12 @@ describe("Locked voter", () => {
         proposal
       );
 
-      const proposalForVoteDelta = afterProposalState.forVotes
-        .sub(beforeProposalState.forVotes)
+      const proposalForVoteDelta = afterProposalState.optionVotes[2]
+        .sub(beforeProposalState.optionVotes[2])
         .toString();
 
       expect(voteState.side.toString()).to.be.equal(VoteSide.For.toString());
-      expect(proposalForVoteDelta).to.be.equal(voteState.weight.toString());
+      expect(proposalForVoteDelta).to.be.equal(voteState.votingPower.toString());
     }
   });
 
