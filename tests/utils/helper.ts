@@ -150,6 +150,7 @@ export async function createProposal(
     .accounts({
       governor,
       payer: governProgram.provider.publicKey,
+      smartWallet: governState.smartWallet,
       proposal,
       proposer: governProgram.provider.publicKey,
       systemProgram: web3.SystemProgram.programId,
@@ -176,6 +177,7 @@ export async function createOptionProposal(
     .createOptionProposal(maxOption, instruction)
     .accounts({
       governor,
+      smartWallet: governState.smartWallet,
       payer: governProgram.provider.publicKey,
       proposal,
       proposer: governProgram.provider.publicKey,

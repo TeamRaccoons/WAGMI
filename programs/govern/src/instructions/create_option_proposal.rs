@@ -5,7 +5,7 @@ use crate::*;
 #[instruction(max_option: u8, instructions: Vec<ProposalInstruction>)]
 pub struct CreateOptionProposal<'info> {
     /// The [Governor].
-    #[account(mut)]
+    #[account(mut, has_one = smart_wallet)]
     pub governor: Box<Account<'info, Governor>>,
     /// The [Proposal].
     #[account(
@@ -20,7 +20,10 @@ pub struct CreateOptionProposal<'info> {
         space = Proposal::space(max_option + 1, instructions), // plus 1 for abstain vote
     )]
     pub proposal: Box<Account<'info, Proposal>>,
+    /// smart wallet of governor
+    pub smart_wallet: Account<'info, SmartWallet>,
     /// Proposer of the proposal.
+    /// One of the owners. Checked in the handler via [SmartWallet::owner_index].
     pub proposer: Signer<'info>,
     /// Payer of the proposal.
     #[account(mut)]
@@ -72,6 +75,7 @@ impl<'info> CreateOptionProposal<'info> {
         emit!(OptionProposalCreateEvent {
             governor: governor.key(),
             proposal: proposal.key(),
+            proposer: self.proposer.key(),
             index: proposal.index,
             max_option,
             instructions,
@@ -83,6 +87,8 @@ impl<'info> CreateOptionProposal<'info> {
 
 impl<'info> Validate<'info> for CreateOptionProposal<'info> {
     fn validate(&self) -> Result<()> {
+        // validate proposer is one of owners of smart-wallet
+        self.smart_wallet.owner_index(self.proposer.key())?;
         Ok(())
     }
 }
@@ -96,6 +102,8 @@ pub struct OptionProposalCreateEvent {
     /// The proposal being created.
     #[index]
     pub proposal: Pubkey,
+    /// proposer of proposal
+    pub proposer: Pubkey,
     /// The index of the [Proposal].
     pub index: u64,
     /// Max option of proposal.

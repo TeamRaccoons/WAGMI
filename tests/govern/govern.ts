@@ -123,6 +123,7 @@ describe("Govern", () => {
         .accounts({
           governor: governor,
           proposal,
+          smartWallet,
           proposer: provider.wallet.publicKey,
           payer: provider.wallet.publicKey,
           systemProgram: SystemProgram.programId,
