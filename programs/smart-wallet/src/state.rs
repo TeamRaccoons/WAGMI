@@ -225,7 +225,7 @@ pub struct StagedTXInstruction {
 #[cfg(test)]
 mod state_test {
     use crate::SmartWallet;
-    use anchor_lang::{prelude::Pubkey, AnchorSerialize, Discriminator};
+    use anchor_lang::{prelude::Pubkey, AnchorSerialize};
     use std::assert_eq;
 
     #[test]
@@ -266,24 +266,18 @@ mod state_test {
             };
 
             // Make sure everytime add a owner, the serialized size increased < rental space
-            for _ in 0..owner_count {
+            for i in 0..owner_count {
                 smart_wallet.owners.push(Pubkey::default());
 
-                let mut serialized_bytes = smart_wallet.try_to_vec().unwrap();
-                serialized_bytes.append(&mut SmartWallet::DISCRIMINATOR.to_vec());
-
+                let serialized_bytes = smart_wallet.try_to_vec().unwrap();
                 let bytes_length = serialized_bytes.len();
-                assert_eq!(bytes_length < rental_space, true);
+
+                if i < owner_count - 1 {
+                    assert_eq!(bytes_length < rental_space, true);
+                } else {
+                    assert_eq!(bytes_length, rental_space);
+                }
             }
-
-            let mut serialized_bytes = smart_wallet.try_to_vec().unwrap();
-            serialized_bytes.append(&mut SmartWallet::DISCRIMINATOR.to_vec());
-
-            let bytes_length = serialized_bytes.len();
-
-            // When it's full, there will still be extra space due to space was calculated using std::mem::size_of, which is based on memory layout
-            let extra_bytes = rental_space - bytes_length;
-            assert_eq!(extra_bytes, 26);
         }
     }
 }

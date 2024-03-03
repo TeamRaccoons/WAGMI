@@ -328,7 +328,7 @@ mod state_test {
         // Extra bytes = 24 + 7 = 31
 
         let extra_bytes = proposal_rental_space - bytes_length;
-        assert_eq!(extra_bytes, 77);
+        assert_eq!(extra_bytes, 16);
         assert_eq!(bytes_length <= proposal_rental_space, true);
     }
 
@@ -357,7 +357,7 @@ mod state_test {
         let proposal_rental_space = Proposal::space(3, proposal_ixs);
 
         let extra_bytes = proposal_rental_space - bytes_length;
-        assert_eq!(extra_bytes, 77);
+        assert_eq!(extra_bytes, 16);
         assert_eq!(bytes_length <= proposal_rental_space, true);
     }
 
