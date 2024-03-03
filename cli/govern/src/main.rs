@@ -230,6 +230,7 @@ fn create_dummy_proposal<C: Deref<Target = impl Signer> + Clone>(
         .accounts(govern::accounts::CreateProposal {
             governor,
             proposal,
+            smart_wallet: governor_state.smart_wallet,
             proposer: program.payer(),
             payer: program.payer(),
             system_program: solana_program::system_program::ID,
