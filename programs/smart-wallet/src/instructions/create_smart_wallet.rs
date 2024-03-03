@@ -16,7 +16,7 @@ pub struct CreateSmartWallet<'info> {
         ],
         bump,
         payer = payer,
-        space = SmartWallet::space(max_owners),
+        space = 8 + SmartWallet::space(max_owners),
     )]
     pub smart_wallet: Account<'info, SmartWallet>,
 

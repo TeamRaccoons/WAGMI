@@ -38,6 +38,16 @@ pub struct Locker {
     pub buffers: [u128; 32],
 }
 
+impl Locker {
+    /// LEN of locker
+    pub const LEN: usize = std::mem::size_of::<Pubkey>() * 3
+        + 1
+        + 8
+        + 8
+        + std::mem::size_of::<LockerParams>()
+        + 16 * 32;
+}
+
 /// Contains parameters for the [Locker].
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct LockerParams {
@@ -83,6 +93,8 @@ pub struct Escrow {
 }
 
 impl Escrow {
+    /// LEN of escrow
+    pub const LEN: usize = std::mem::size_of::<Pubkey>() * 4 + 1 + 8 + 8 + 8 + 1 + 16 * 10;
     /// Gets the amount of voting power the [Escrow] will have at the given time.
     pub fn voting_power_at_time(&self, locker: &Locker, timestamp: i64) -> Option<u64> {
         locker.calculate_voter_power(self, timestamp)

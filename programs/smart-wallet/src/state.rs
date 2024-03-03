@@ -43,10 +43,11 @@ pub struct SmartWallet {
 impl SmartWallet {
     /// Computes the space a [SmartWallet] uses.
     pub fn space(max_owners: u8) -> usize {
-        8 // Anchor discriminator
-            + std::mem::size_of::<SmartWallet>()
+        std::mem::size_of::<Pubkey>()
+            + 1 + 8 + 8 + 8 + 1 + 4 + 8
             + 4 // 4 = the Vec discriminator
             + std::mem::size_of::<Pubkey>() * (max_owners as usize)
+            + 8 * 16
     }
 
     /// Gets the index of the key in the owners Vec, or error
@@ -96,9 +97,10 @@ pub struct Transaction {
 
 impl Transaction {
     /// Computes the space a [Transaction] uses.
-    pub fn space(instructions: Vec<TXInstruction>) -> usize {
-        8  // Anchor discriminator
-            + std::mem::size_of::<Transaction>()
+    pub fn space(instructions: Vec<TXInstruction>, num_owner: usize) -> usize {
+        std::mem::size_of::<Pubkey>() * 3
+            + 8 + 1 + 4 + 8 + 8 + 8
+            + 4 + std::mem::size_of::<bool>() * num_owner
             + 4 // Vec discriminator
             + (instructions.iter().map(|ix| ix.space()).sum::<usize>())
     }
@@ -124,7 +126,9 @@ impl TXInstruction {
     /// Space that a [TXInstruction] takes up.
     pub fn space(&self) -> usize {
         std::mem::size_of::<Pubkey>()
+            + 4
             + (self.keys.len() as usize) * std::mem::size_of::<TXAccountMeta>()
+            + 4
             + (self.data.len() as usize)
     }
 }

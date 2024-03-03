@@ -24,7 +24,7 @@ pub struct Claim<'info> {
             distributor.key().as_ref()
         ],
         bump,
-        space = 8 + std::mem::size_of::<ClaimStatus>(),
+        space = 8 + ClaimStatus::LEN,
         payer = claimant
     )]
     pub claim_status: Account<'info, ClaimStatus>,

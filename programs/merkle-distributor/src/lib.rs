@@ -130,6 +130,12 @@ pub struct MerkleDistributor {
     pub buffer_2: [u8; 32],
 }
 
+impl MerkleDistributor {
+    /// LEN of MerkleDistributor
+    pub const LEN: usize =
+        std::mem::size_of::<Pubkey>() * 6 + 1 + 32 + 8 + 8 + 8 + 8 + 8 + 1 + 32 * 3;
+}
+
 /// Holds whether or not a claimant has claimed tokens.
 ///
 /// TODO: this is probably better stored as the node that was verified.
@@ -146,6 +152,11 @@ pub struct ClaimStatus {
     pub amount: u64,
     /// Buffer 0
     pub buffer_0: [u8; 32],
+}
+
+impl ClaimStatus {
+    /// LEN of MerkleDistributor
+    pub const LEN: usize = std::mem::size_of::<Pubkey>() + 1 + 8 + 8 + 32;
 }
 
 /// Emitted when tokens are claimed.

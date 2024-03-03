@@ -17,7 +17,7 @@ pub struct NewVote<'info> {
         ],
         bump,
         payer = payer,
-        space = 8 + std::mem::size_of::<Vote>()
+        space = 8 + Vote::LEN
     )]
     pub vote: Account<'info, Vote>,
 

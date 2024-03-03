@@ -14,7 +14,7 @@ pub struct CreateGovernor<'info> {
         ],
         bump,
         payer = payer,
-        space = 8 + std::mem::size_of::<Governor>()
+        space = 8 + Governor::LEN
     )]
     pub governor: Account<'info, Governor>,
     /// The Smart Wallet.

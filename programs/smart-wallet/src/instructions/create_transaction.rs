@@ -17,7 +17,7 @@ pub struct CreateTransaction<'info> {
         ],
         bump,
         payer = payer,
-        space = Transaction::space(instructions),
+        space = 8 + Transaction::space(instructions, smart_wallet.max_owners as usize),
     )]
     pub transaction: Account<'info, Transaction>,
     /// One of the owners. Checked in the handler via [SmartWallet::owner_index].
