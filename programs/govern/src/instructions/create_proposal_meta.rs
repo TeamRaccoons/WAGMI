@@ -1,6 +1,7 @@
 use crate::*;
 
 /// Accounts for [govern::create_proposal_meta].
+#[event_cpi]
 #[derive(Accounts)]
 #[instruction(_bump: u8, title: String, description_link: String)]
 pub struct CreateProposalMeta<'info> {
@@ -30,20 +31,22 @@ pub struct CreateProposalMeta<'info> {
 }
 
 impl<'info> CreateProposalMeta<'info> {
-    pub fn create_proposal_meta(&mut self, title: String, description_link: String) -> Result<()> {
+    pub fn create_proposal_meta(
+        &mut self,
+        title: String,
+        description_link: String,
+    ) -> Result<ProposalMetaCreateEvent> {
         let proposal_meta = &mut self.proposal_meta;
         proposal_meta.proposal = self.proposal.key();
         proposal_meta.title = title.clone();
         proposal_meta.description_link = description_link.clone();
 
-        emit!(ProposalMetaCreateEvent {
+        Ok(ProposalMetaCreateEvent {
             governor: self.proposal.governor,
             proposal: self.proposal.key(),
             title,
             description_link,
-        });
-
-        Ok(())
+        })
     }
 }
 
