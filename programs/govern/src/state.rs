@@ -157,7 +157,7 @@ pub struct Proposal {
 impl Proposal {
     /// Space that the [Proposal] takes up.
     pub fn space(max_option: u8, instructions: Vec<ProposalInstruction>) -> usize {
-        std::mem::size_of::<Pubkey>() * 3 
+        std::mem::size_of::<Pubkey>() * 3
         + 8 * 8 + 3 + 16 * 10 + std::mem::size_of::<VotingReward>()
         + 4 // Vec discriminator
         + (max_option as usize * 8)
