@@ -244,7 +244,8 @@ fn create_dummy_proposal<C: Deref<Target = impl Signer> + Clone>(
             system_program: solana_program::system_program::ID,
         })
         .args(govern::instruction::CreateProposal {
-            _bump: 0,
+            proposal_type: 0,
+            max_option: 2,
             instructions: vec![],
         });
     let signature = builder.send()?;

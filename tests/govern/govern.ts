@@ -119,7 +119,7 @@ describe("Govern", () => {
       );
 
       await program.methods
-        .createProposal(0, DUMMY_INSTRUCTIONS)
+        .createProposal(0, 2, DUMMY_INSTRUCTIONS)
         .accounts({
           governor: governor,
           proposal,

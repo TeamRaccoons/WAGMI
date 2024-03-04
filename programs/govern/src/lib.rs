@@ -43,27 +43,13 @@ pub mod govern {
     #[access_control(ctx.accounts.validate())]
     pub fn create_proposal(
         ctx: Context<CreateProposal>,
-        _bump: u8, // weird bug from anchor
-        instructions: Vec<ProposalInstruction>,
-    ) -> Result<()> {
-        let event = ctx
-            .accounts
-            .create_proposal(unwrap_bump!(ctx, "proposal"), instructions)?;
-        emit_cpi!(event);
-        Ok(())
-    }
-
-    /// Creates an Option [Proposal].
-    /// This may be called by anyone, since the [Proposal] does not do anything until
-    /// it is activated in [activate_proposal].
-    #[access_control(ctx.accounts.validate())]
-    pub fn create_option_proposal(
-        ctx: Context<CreateOptionProposal>,
+        proposal_type: u8,
         max_option: u8,
         instructions: Vec<ProposalInstruction>,
     ) -> Result<()> {
-        let event = ctx.accounts.create_option_proposal(
+        let event = ctx.accounts.create_proposal(
             unwrap_bump!(ctx, "proposal"),
+            proposal_type,
             max_option,
             instructions,
         )?;

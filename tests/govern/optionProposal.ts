@@ -120,7 +120,7 @@ describe("Govern", () => {
         program.programId
       );
       await program.methods
-        .createOptionProposal(maxOption, DUMMY_INSTRUCTIONS)
+        .createProposal(1, maxOption, DUMMY_INSTRUCTIONS)
         .accounts({
           governor: governor,
           proposal,
