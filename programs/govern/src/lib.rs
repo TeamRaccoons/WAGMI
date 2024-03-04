@@ -46,8 +46,11 @@ pub mod govern {
         _bump: u8, // weird bug from anchor
         instructions: Vec<ProposalInstruction>,
     ) -> Result<()> {
-        ctx.accounts
-            .create_proposal(unwrap_bump!(ctx, "proposal"), instructions)
+        let event = ctx
+            .accounts
+            .create_proposal(unwrap_bump!(ctx, "proposal"), instructions)?;
+        emit_cpi!(event);
+        Ok(())
     }
 
     /// Creates an Option [Proposal].
@@ -59,8 +62,13 @@ pub mod govern {
         max_option: u8,
         instructions: Vec<ProposalInstruction>,
     ) -> Result<()> {
-        ctx.accounts
-            .create_option_proposal(unwrap_bump!(ctx, "proposal"), max_option, instructions)
+        let event = ctx.accounts.create_option_proposal(
+            unwrap_bump!(ctx, "proposal"),
+            max_option,
+            instructions,
+        )?;
+        emit_cpi!(event);
+        Ok(())
     }
 
     /// Activates a proposal.
@@ -75,13 +83,16 @@ pub mod govern {
     /// This is only callable by the creator of the proposal.
     #[access_control(ctx.accounts.validate())]
     pub fn cancel_proposal(ctx: Context<CancelProposal>) -> Result<()> {
-        ctx.accounts.cancel_proposal()
+        let event = ctx.accounts.cancel_proposal()?;
+        emit_cpi!(event);
+        Ok(())
     }
 
     /// Queues a proposal for execution by the [SmartWallet].
     #[access_control(ctx.accounts.validate())]
     pub fn queue_proposal(ctx: Context<QueueProposal>) -> Result<()> {
-        ctx.accounts.queue_transaction()?;
+        let event = ctx.accounts.queue_transaction()?;
+        emit_cpi!(event);
         Ok(())
     }
 
@@ -121,7 +132,9 @@ pub mod govern {
     /// Claim rewards, for voter
     #[access_control(ctx.accounts.validate())]
     pub fn claim_reward(ctx: Context<ClaimReward>) -> Result<()> {
-        ctx.accounts.claim_reward()
+        let event = ctx.accounts.claim_reward()?;
+        emit_cpi!(event);
+        Ok(())
     }
 
     /// Sets the locker of the [Governor].
@@ -138,7 +151,9 @@ pub mod govern {
         title: String,
         description_link: String,
     ) -> Result<()> {
-        ctx.accounts.create_proposal_meta(title, description_link)
+        let event = ctx.accounts.create_proposal_meta(title, description_link)?;
+        emit_cpi!(event);
+        Ok(())
     }
 
     /// Creates an [OptionProposalMeta].
@@ -148,7 +163,9 @@ pub mod govern {
         _bump: u8, // fix anchor weird bug
         option_descriptions: Vec<String>,
     ) -> Result<()> {
-        ctx.accounts.create_proposal_meta(option_descriptions)
+        let event = ctx.accounts.create_proposal_meta(option_descriptions)?;
+        emit_cpi!(event);
+        Ok(())
     }
 }
 

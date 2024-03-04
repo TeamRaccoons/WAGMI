@@ -1,6 +1,7 @@
 use crate::*;
 
 /// Accounts for [govern::create_proposal].
+#[event_cpi]
 #[derive(Accounts)]
 #[instruction(_bump: u8, instructions: Vec<ProposalInstruction>)]
 pub struct CreateProposal<'info> {
@@ -37,7 +38,7 @@ impl<'info> CreateProposal<'info> {
         &mut self,
         bump: u8,
         instructions: Vec<ProposalInstruction>,
-    ) -> Result<()> {
+    ) -> Result<ProposalCreateEvent> {
         let governor = &mut self.governor;
 
         let proposal = &mut self.proposal;
@@ -66,15 +67,13 @@ impl<'info> CreateProposal<'info> {
 
         governor.proposal_count += 1;
 
-        emit!(ProposalCreateEvent {
+        Ok(ProposalCreateEvent {
             governor: governor.key(),
             proposal: proposal.key(),
             proposer: self.proposer.key(),
             index: proposal.index,
             instructions,
-        });
-
-        Ok(())
+        })
     }
 }
 

@@ -1,6 +1,7 @@
 use crate::*;
 
 /// Accounts for [govern::create_option_proposal].
+#[event_cpi]
 #[derive(Accounts)]
 #[instruction(max_option: u8, instructions: Vec<ProposalInstruction>)]
 pub struct CreateOptionProposal<'info> {
@@ -38,7 +39,7 @@ impl<'info> CreateOptionProposal<'info> {
         bump: u8,
         max_option: u8,
         instructions: Vec<ProposalInstruction>,
-    ) -> Result<()> {
+    ) -> Result<OptionProposalCreateEvent> {
         invariant!(
             max_option >= 2 && max_option <= MAX_OPTION,
             InvalidMaxOption
@@ -72,16 +73,14 @@ impl<'info> CreateOptionProposal<'info> {
 
         governor.proposal_count += 1;
 
-        emit!(OptionProposalCreateEvent {
+        Ok(OptionProposalCreateEvent {
             governor: governor.key(),
             proposal: proposal.key(),
             proposer: self.proposer.key(),
             index: proposal.index,
             max_option,
             instructions,
-        });
-
-        Ok(())
+        })
     }
 }
 

@@ -1,6 +1,7 @@
 use crate::*;
 
 /// Accounts for [govern::cancel_proposal].
+#[event_cpi]
 #[derive(Accounts)]
 pub struct CancelProposal<'info> {
     /// The [Governor].
@@ -13,16 +14,14 @@ pub struct CancelProposal<'info> {
 }
 
 impl<'info> CancelProposal<'info> {
-    pub fn cancel_proposal(&mut self) -> Result<()> {
+    pub fn cancel_proposal(&mut self) -> Result<ProposalCancelEvent> {
         let proposal = &mut self.proposal;
         proposal.canceled_at = Clock::get()?.unix_timestamp;
 
-        emit!(ProposalCancelEvent {
+        Ok(ProposalCancelEvent {
             governor: proposal.governor,
             proposal: proposal.key(),
-        });
-
-        Ok(())
+        })
     }
 }
 

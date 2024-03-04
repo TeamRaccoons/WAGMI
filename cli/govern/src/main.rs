@@ -14,6 +14,10 @@ use std::rc::Rc;
 use std::str::FromStr;
 // use utils_cli::*;
 
+pub fn derive_event_authority_pda() -> (Pubkey, u8) {
+    Pubkey::find_program_address(&[b"__event_authority"], &govern::ID)
+}
+
 fn main() -> Result<()> {
     let opts = Opts::parse();
     let payer =
@@ -225,6 +229,8 @@ fn create_dummy_proposal<C: Deref<Target = impl Signer> + Clone>(
     );
     println!("proposal address {}", proposal);
 
+    let (event_authority, _bump) = derive_event_authority_pda();
+
     let builder = program
         .request()
         .accounts(govern::accounts::CreateProposal {
@@ -233,6 +239,8 @@ fn create_dummy_proposal<C: Deref<Target = impl Signer> + Clone>(
             smart_wallet: governor_state.smart_wallet,
             proposer: program.payer(),
             payer: program.payer(),
+            event_authority,
+            program: govern::ID,
             system_program: solana_program::system_program::ID,
         })
         .args(govern::instruction::CreateProposal {
@@ -249,12 +257,15 @@ fn cancel_proposal<C: Deref<Target = impl Signer> + Clone>(
     proposal: Pubkey,
 ) -> Result<()> {
     let proposal_state: govern::Proposal = program.account(proposal)?;
+    let (event_authority, _bump) = derive_event_authority_pda();
 
     let builder = program
         .request()
         .accounts(govern::accounts::CancelProposal {
             governor: proposal_state.governor,
             proposal,
+            event_authority,
+            program: govern::ID,
             proposer: program.payer(),
         })
         .args(govern::instruction::CancelProposal {});
@@ -279,6 +290,7 @@ fn queue_proposal<C: Deref<Target = impl Signer> + Clone>(
         ],
         &smart_wallet::id(),
     );
+    let (event_authority, _bump) = derive_event_authority_pda();
     let builder = program
         .request()
         .accounts(govern::accounts::QueueProposal {
@@ -288,6 +300,8 @@ fn queue_proposal<C: Deref<Target = impl Signer> + Clone>(
             smart_wallet: governor_state.smart_wallet,
             smart_wallet_program: smart_wallet::id(),
             payer: program.payer(),
+            event_authority,
+            program: govern::ID,
             system_program: solana_program::system_program::ID,
         })
         .args(govern::instruction::QueueProposal {});
@@ -334,6 +348,7 @@ fn create_proposal_meta<C: Deref<Target = impl Signer> + Clone>(
         &[b"ProposalMeta".as_ref(), proposal.as_ref()],
         &govern::id(),
     );
+    let (event_authority, _bump) = derive_event_authority_pda();
     let builder = program
         .request()
         .accounts(govern::accounts::CreateProposalMeta {
@@ -341,6 +356,8 @@ fn create_proposal_meta<C: Deref<Target = impl Signer> + Clone>(
             proposal_meta,
             proposer: program.payer(),
             payer: program.payer(),
+            event_authority,
+            program: govern::ID,
             system_program: solana_program::system_program::ID,
         })
         .args(govern::instruction::CreateProposalMeta {

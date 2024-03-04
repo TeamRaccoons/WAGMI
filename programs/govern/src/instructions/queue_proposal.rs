@@ -1,6 +1,7 @@
 use crate::*;
 
 /// Accounts for [govern::queue_proposal].
+#[event_cpi]
 #[derive(Accounts)]
 pub struct QueueProposal<'info> {
     /// The Governor.
@@ -27,7 +28,7 @@ pub struct QueueProposal<'info> {
 
 impl<'info> QueueProposal<'info> {
     /// Queues a Transaction into the Smart Wallet.
-    pub fn queue_transaction(&mut self) -> Result<()> {
+    pub fn queue_transaction(&mut self) -> Result<ProposalQueueEvent> {
         let seeds = governor_seeds!(self.governor);
         let signer_seeds = &[&seeds[..]];
         let cpi_ctx = CpiContext::new_with_signer(
@@ -65,13 +66,11 @@ impl<'info> QueueProposal<'info> {
         proposal.queued_at = Clock::get()?.unix_timestamp;
         proposal.queued_transaction = self.transaction.key();
 
-        emit!(ProposalQueueEvent {
+        Ok(ProposalQueueEvent {
             governor: self.proposal.governor,
             proposal: self.proposal.key(),
             transaction: self.transaction.key(),
-        });
-
-        Ok(())
+        })
     }
 }
 

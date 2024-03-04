@@ -1,6 +1,7 @@
 use crate::*;
 
 /// Accounts for [govern::create_proposal_meta].
+#[event_cpi]
 #[derive(Accounts)]
 #[instruction(_bump: u8, option_descriptions: Vec<String>)]
 pub struct CreateOptionProposalMeta<'info> {
@@ -28,7 +29,10 @@ pub struct CreateOptionProposalMeta<'info> {
 }
 
 impl<'info> CreateOptionProposalMeta<'info> {
-    pub fn create_proposal_meta(&mut self, option_descriptions: Vec<String>) -> Result<()> {
+    pub fn create_proposal_meta(
+        &mut self,
+        option_descriptions: Vec<String>,
+    ) -> Result<OptionProposalMetaCreateEvent> {
         invariant!(
             option_descriptions.len() == self.proposal.max_option as usize,
             InvalidOptionDescriptions
@@ -37,13 +41,11 @@ impl<'info> CreateOptionProposalMeta<'info> {
         option_proposal_meta.proposal = self.proposal.key();
         option_proposal_meta.option_descriptions = option_descriptions.clone();
 
-        emit!(OptionProposalMetaCreateEvent {
+        Ok(OptionProposalMetaCreateEvent {
             governor: self.proposal.governor,
             proposal: self.proposal.key(),
             option_descriptions,
-        });
-
-        Ok(())
+        })
     }
 }
 

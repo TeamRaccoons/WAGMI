@@ -1,6 +1,7 @@
 use crate::*;
 use anchor_spl::token::{self, Token, TokenAccount};
 /// Accounts for [govern::claim_reward].
+#[event_cpi]
 #[derive(Accounts)]
 pub struct ClaimReward<'info> {
     /// The [Governor]
@@ -26,7 +27,7 @@ pub struct ClaimReward<'info> {
 }
 
 impl<'info> ClaimReward<'info> {
-    pub fn claim_reward(&mut self) -> Result<()> {
+    pub fn claim_reward(&mut self) -> Result<ClaimRewardEvent> {
         self.vote.claimed = true;
 
         let voting_reward = unwrap_opt!(
@@ -59,14 +60,12 @@ impl<'info> ClaimReward<'info> {
             );
         }
 
-        emit!(ClaimRewardEvent {
+        Ok(ClaimRewardEvent {
             governor: self.governor.key(),
             voter: self.voter.key(),
             proposal: self.proposal.key(),
             voting_reward,
-        });
-
-        Ok(())
+        })
     }
 }
 
