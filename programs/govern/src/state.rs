@@ -32,6 +32,15 @@ pub struct Governor {
     /// buffer for further use
     pub buffers: [u128; 32],
 }
+impl Governor {
+    /// LEN of Governor
+    pub const LEN: usize = std::mem::size_of::<Pubkey>() * 3
+        + 1
+        + 8
+        + 16 * 32
+        + std::mem::size_of::<GovernanceParameters>()
+        + std::mem::size_of::<VotingReward>();
+}
 
 /// Governance parameters.
 #[derive(AnchorSerialize, AnchorDeserialize, Copy, Clone, Debug, Default, Eq, PartialEq)]
@@ -148,8 +157,8 @@ pub struct Proposal {
 impl Proposal {
     /// Space that the [Proposal] takes up.
     pub fn space(max_option: u8, instructions: Vec<ProposalInstruction>) -> usize {
-        8  // Anchor discriminator.
-        + std::mem::size_of::<Proposal>()
+        std::mem::size_of::<Pubkey>() * 3
+        + 8 * 8 + 3 + 16 * 10 + std::mem::size_of::<VotingReward>()
         + 4 // Vec discriminator
         + (max_option as usize * 8)
         + 4 // Vec discriminator            
@@ -221,6 +230,10 @@ pub struct Vote {
     pub claimed: bool,
     /// buffers for future use
     pub buffers: [u8; 32],
+}
+impl Vote {
+    /// LEN of Vote
+    pub const LEN: usize = std::mem::size_of::<Pubkey>() * 2 + 1 + 1 + 8 + 1 + 32;
 }
 
 /// Instruction.
@@ -315,7 +328,7 @@ mod state_test {
         // Extra bytes = 24 + 7 = 31
 
         let extra_bytes = proposal_rental_space - bytes_length;
-        assert_eq!(extra_bytes, 77);
+        assert_eq!(extra_bytes, 16);
         assert_eq!(bytes_length <= proposal_rental_space, true);
     }
 
@@ -344,7 +357,7 @@ mod state_test {
         let proposal_rental_space = Proposal::space(3, proposal_ixs);
 
         let extra_bytes = proposal_rental_space - bytes_length;
-        assert_eq!(extra_bytes, 77);
+        assert_eq!(extra_bytes, 16);
         assert_eq!(bytes_length <= proposal_rental_space, true);
     }
 

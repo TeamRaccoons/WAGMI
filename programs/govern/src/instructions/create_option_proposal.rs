@@ -18,7 +18,7 @@ pub struct CreateOptionProposal<'info> {
         ],
         bump,
         payer = payer,
-        space = Proposal::space(max_option + 1, instructions), // plus 1 for abstain vote
+        space = 8 + Proposal::space(max_option + 1, instructions), // plus 1 for abstain vote
     )]
     pub proposal: Box<Account<'info, Proposal>>,
     /// smart wallet of governor

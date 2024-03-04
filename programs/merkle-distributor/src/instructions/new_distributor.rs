@@ -14,7 +14,7 @@ pub struct NewDistributor<'info> {
             base.key().as_ref()
         ],
         bump,
-        space = 8 + std::mem::size_of::<MerkleDistributor>(),
+        space = 8 + MerkleDistributor::LEN,
         payer = admin
     )]
     pub distributor: Account<'info, MerkleDistributor>,

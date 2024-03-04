@@ -18,7 +18,7 @@ pub struct CreateProposalMeta<'info> {
         ],
         bump,
         payer = payer,
-        space = 8 + std::mem::size_of::<ProposalMeta>()
+        space = 8 + std::mem::size_of::<Pubkey>()
             + 4 + title.as_bytes().len()
             + 4 + description_link.as_bytes().len()
     )]

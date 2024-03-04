@@ -18,7 +18,7 @@ pub struct CreateProposal<'info> {
         ],
         bump,
         payer = payer,
-        space = Proposal::space(3, instructions), // yes/no proposal only has 2 options, plus 1 for abstain vote
+        space = 8 + Proposal::space(3, instructions), // yes/no proposal only has 2 options, plus 1 for abstain vote
     )]
     pub proposal: Box<Account<'info, Proposal>>,
     /// smart wallet of governor

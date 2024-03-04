@@ -15,7 +15,7 @@ pub struct NewLocker<'info> {
         ],
         bump,
         payer = payer,
-        space = 8 + std::mem::size_of::<Locker>()
+        space = 8 + Locker::LEN
     )]
     pub locker: Account<'info, Locker>,
 

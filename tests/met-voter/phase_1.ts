@@ -932,7 +932,7 @@ describe("Locked voter", () => {
 
     const voteState = await governProgram.account.vote.fetch(vote);
     const proposalState = await governProgram.account.proposal.fetch(proposal);
-    // console.log(voteState)
+    console.log(voteState)
     expect(voteState.side).to.be.equal(VoteSide.Against);
     expect(proposalState.optionVotes[1].toString()).to.be.equal(
       voteState.votingPower.toString()
@@ -1013,7 +1013,7 @@ describe("Locked voter", () => {
       const proposalForVoteDelta = afterProposalState.optionVotes[2]
         .sub(beforeProposalState.optionVotes[2])
         .toString();
-
+      console.log(voteState)
       expect(voteState.side.toString()).to.be.equal(VoteSide.For.toString());
       expect(proposalForVoteDelta).to.be.equal(voteState.votingPower.toString());
     }
