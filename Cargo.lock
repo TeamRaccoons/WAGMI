@@ -1693,7 +1693,6 @@ dependencies = [
  "anyhow",
  "clap 3.2.25",
  "govern",
- "met-voter",
  "shellexpand",
  "smart-wallet",
  "solana-program",

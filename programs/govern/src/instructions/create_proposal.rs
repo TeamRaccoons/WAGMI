@@ -3,7 +3,7 @@ use crate::*;
 /// Accounts for [govern::create_proposal].
 #[event_cpi]
 #[derive(Accounts)]
-#[instruction(_bump: u8, instructions: Vec<ProposalInstruction>)]
+#[instruction(proposal_type: u8, max_option: u8, instructions: Vec<ProposalInstruction>)]
 pub struct CreateProposal<'info> {
     /// The [Governor].
     #[account(mut, has_one = smart_wallet)]
@@ -18,7 +18,7 @@ pub struct CreateProposal<'info> {
         ],
         bump,
         payer = payer,
-        space = 8 + Proposal::space(3, instructions), // yes/no proposal only has 2 options, plus 1 for abstain vote
+        space = 8 + Proposal::space(max_option + 1, instructions), // yes/no proposal only has 2 options, plus 1 for abstain vote
     )]
     pub proposal: Box<Account<'info, Proposal>>,
     /// smart wallet of governor
@@ -37,8 +37,24 @@ impl<'info> CreateProposal<'info> {
     pub fn create_proposal(
         &mut self,
         bump: u8,
+        proposal_type: u8,
+        max_option: u8,
         instructions: Vec<ProposalInstruction>,
     ) -> Result<ProposalCreateEvent> {
+        // validate proposal type
+        let proposal_type_state = ProposalType::try_from(proposal_type)?;
+        match proposal_type_state {
+            ProposalType::YesNo => {
+                invariant!(max_option == 2, InvalidMaxOption);
+            }
+            ProposalType::Option => {
+                invariant!(
+                    max_option >= 2 && max_option <= MAX_OPTION,
+                    InvalidMaxOption
+                );
+            }
+        }
+
         let governor = &mut self.governor;
 
         let proposal = &mut self.proposal;
@@ -61,9 +77,9 @@ impl<'info> CreateProposal<'info> {
 
         proposal.instructions = instructions.clone();
 
-        proposal.proposal_type = ProposalType::YesNo.into();
-        proposal.max_option = 2;
-        proposal.option_votes = vec![0; 3]; // plus 1 for abstain vote
+        proposal.proposal_type = proposal_type;
+        proposal.max_option = max_option;
+        proposal.option_votes = vec![0; (max_option + 1) as usize]; // plus 1 for abstain vote
 
         governor.proposal_count += 1;
 
@@ -71,6 +87,8 @@ impl<'info> CreateProposal<'info> {
             governor: governor.key(),
             proposal: proposal.key(),
             proposer: self.proposer.key(),
+            proposal_type,
+            max_option,
             index: proposal.index,
             instructions,
         })
@@ -96,6 +114,10 @@ pub struct ProposalCreateEvent {
     pub proposal: Pubkey,
     /// proposer of proposal
     pub proposer: Pubkey,
+    /// The proposal type
+    pub proposal_type: u8,
+    /// Max option of proposal
+    pub max_option: u8,
     /// The index of the [Proposal].
     pub index: u64,
     /// Instructions in the proposal.

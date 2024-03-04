@@ -141,12 +141,12 @@ export async function createProposal(
   governProgram: Program<Govern>
 ) {
   const governState = await governProgram.account.governor.fetch(governor);
-  const [proposal, bump] = deriveProposal(governor, governState.proposalCount);
+  const [proposal, _bump] = deriveProposal(governor, governState.proposalCount);
 
   console.log("Creating proposal", proposal.toBase58());
 
   const tx = await governProgram.methods
-    .createProposal(bump, instruction)
+    .createProposal(0, 2, instruction)
     .accounts({
       governor,
       payer: governProgram.provider.publicKey,
@@ -169,12 +169,12 @@ export async function createOptionProposal(
   maxOption: number,
 ) {
   const governState = await governProgram.account.governor.fetch(governor);
-  const [proposal, bump] = deriveProposal(governor, governState.proposalCount);
+  const [proposal, _bump] = deriveProposal(governor, governState.proposalCount);
 
   console.log("Creating option proposal", proposal.toBase58());
 
   const tx = await governProgram.methods
-    .createOptionProposal(maxOption, instruction)
+    .createProposal(1, maxOption, instruction)
     .accounts({
       governor,
       smartWallet: governState.smartWallet,
