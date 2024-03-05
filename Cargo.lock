@@ -3598,6 +3598,7 @@ dependencies = [
  "anyhow",
  "clap 3.2.25",
  "govern",
+ "locked-voter",
  "met-voter",
  "shellexpand",
  "smart-wallet",
