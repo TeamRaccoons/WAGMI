@@ -4,6 +4,7 @@ use crate::*;
 #[derive(Accounts)]
 pub struct NewEscrow<'info> {
     /// [Locker].
+    #[account(mut)]
     pub locker: Box<Account<'info, Locker>>,
 
     /// [Escrow].
@@ -49,6 +50,9 @@ impl<'info> NewEscrow<'info> {
         escrow.escrow_ends_at = 0;
         escrow.vote_delegate = self.escrow_owner.key();
         escrow.is_max_lock = false;
+
+        let locker = &mut self.locker;
+        locker.total_escrow = unwrap_int!(locker.total_escrow.checked_add(1));
 
         emit!(NewEscrowEvent {
             escrow: escrow.key(),

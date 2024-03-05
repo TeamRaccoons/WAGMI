@@ -27,6 +27,8 @@ pub struct Locker {
     pub token_mint: Pubkey,
     /// Total number of tokens locked in [Escrow]s.
     pub locked_supply: u64,
+    /// Total number of escrow
+    pub total_escrow: u64,
     /// Governor associated with the [Locker].
     pub governor: Pubkey,
     /// Indicate whether a locker expired, if then all escrow can be withdraw before expiration
@@ -42,6 +44,7 @@ impl Locker {
     /// LEN of locker
     pub const LEN: usize = std::mem::size_of::<Pubkey>() * 3
         + 1
+        + 8
         + 8
         + 8
         + std::mem::size_of::<LockerParams>()
