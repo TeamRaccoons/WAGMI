@@ -122,6 +122,11 @@ pub enum CliCommand {
         #[clap(long)]
         owner: Pubkey,
     },
+    /// Dump stakers for a given locker as a csv
+    GetStakers {
+        #[clap(long)]
+        locker: Pubkey,
+    },
 }
 
 #[derive(Parser, Debug)]

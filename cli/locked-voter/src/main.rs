@@ -11,6 +11,8 @@ use anchor_spl::associated_token::get_associated_token_address;
 use anyhow::Result;
 use clap::*;
 use solana_program::instruction::Instruction;
+use solana_rpc_client_api::filter::Memcmp;
+use solana_rpc_client_api::filter::RpcFilterType;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::str::FromStr;
@@ -149,6 +151,7 @@ fn main() -> Result<()> {
             )
             .unwrap();
         }
+        CliCommand::GetStakers { locker } => get_stakers(&program, locker).unwrap(),
     }
     Ok(())
 }
@@ -477,5 +480,20 @@ fn set_vote_delegate<C: Deref<Target = impl Signer> + Clone>(
         .args(locked_voter::instruction::SetVoteDelegate { new_delegate });
     let signature = builder.send()?;
     println!("Signature {:?}", signature);
+    Ok(())
+}
+
+fn get_stakers<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    locker: Pubkey,
+) -> Result<()> {
+    let keyed_escrows = program.accounts::<locked_voter::Escrow>(vec![RpcFilterType::Memcmp(
+        Memcmp::new_base58_encoded(8, &locker.to_bytes()),
+    )])?;
+    println!("escrow,owner,amount");
+    for (key, escrow) in keyed_escrows {
+        println!("{key},{},{}", escrow.owner, escrow.amount);
+    }
+
     Ok(())
 }
