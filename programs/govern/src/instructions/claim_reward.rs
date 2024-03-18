@@ -82,8 +82,8 @@ impl<'info> Validate<'info> for ClaimReward<'info> {
         let proposal_state = unwrap_opt!(self.proposal.state(now), "invalid state");
         invariant!(
             proposal_state == ProposalState::Defeated
-                || proposal_state != ProposalState::Queued
-                || proposal_state != ProposalState::Succeeded,
+                || proposal_state == ProposalState::Queued
+                || proposal_state == ProposalState::Succeeded,
             "Proposal must be defeated, queued or succeeded"
         );
         invariant!(!self.vote.claimed, "Voter has claimed reward");
