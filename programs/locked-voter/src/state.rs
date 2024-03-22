@@ -118,6 +118,22 @@ impl Escrow {
         self.escrow_ends_at = next_escrow_ends_at;
         Ok(())
     }
+
+    /// get remaning duration
+    pub fn get_remaining_duration_until_expiration(
+        &self,
+        current_time: i64,
+        locker: &Locker,
+    ) -> Option<u64> {
+        if self.is_max_lock {
+            return Some(locker.params.max_stake_duration);
+        }
+        if self.escrow_ends_at < current_time {
+            return Some(0);
+        }
+        let duration = self.escrow_ends_at.checked_sub(current_time)?;
+        Some(duration as u64)
+    }
 }
 
 #[cfg(test)]
