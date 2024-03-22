@@ -11,8 +11,9 @@ pub struct Auth<'info> {
 impl<'info> Auth<'info> {
     pub fn set_owners(&mut self, owners: Vec<Pubkey>) -> Result<()> {
         let smart_wallet = &mut self.smart_wallet;
-        if (owners.len() as u64) < smart_wallet.threshold {
-            smart_wallet.threshold = owners.len() as u64;
+        // one owner is governor, so threshold must be less than owners.len()
+        if (owners.len() as u64) <= smart_wallet.threshold {
+            smart_wallet.threshold = unwrap_int!((owners.len() as u64).checked_sub(1));
         }
 
         smart_wallet.owners = owners.clone();
@@ -27,8 +28,9 @@ impl<'info> Auth<'info> {
     }
 
     pub fn change_threshold(&mut self, threshold: u64) -> Result<()> {
+        // one owner is governor, so threshold must be less than owners.len()
         invariant!(
-            threshold <= self.smart_wallet.owners.len() as u64,
+            threshold < self.smart_wallet.owners.len() as u64,
             InvalidThreshold
         );
         let smart_wallet = &mut self.smart_wallet;
