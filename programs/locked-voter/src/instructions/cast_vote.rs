@@ -50,6 +50,10 @@ impl<'info> CastVote<'info> {
     }
 
     /// The voting power of the escrow at the time the proposal's voting ends.
+    /// Because user can unstake (toggle max lock) right after vote for a proposal, but the voting power is still the same,
+    /// so at the end of proposal user can still earn max voting power, while they can just wait for (max_stake_duration - voting_period) to withdraw the full token
+    /// in the fact that they should wait for max_stake_duration to withdraw the full token
+    /// To mitigate the issue, when deploying the DAO, admin should pick max_stake_duration >> voting_period
     fn future_voting_power(&self) -> Result<u64> {
         Ok(unwrap_int!(self.escrow.voting_power_at_time(
             &self.locker,
