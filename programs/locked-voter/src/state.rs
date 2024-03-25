@@ -119,7 +119,7 @@ impl Escrow {
         Ok(())
     }
 
-    /// get remaning duration
+    /// get remaining duration
     pub fn get_remaining_duration_until_expiration(
         &self,
         current_time: i64,
