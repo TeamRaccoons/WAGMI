@@ -1,6 +1,6 @@
+use crate::ErrorCode;
 use crate::*;
 use anchor_spl::token;
-
 /// Accounts for [voter::increase_locked_amount].
 #[derive(Accounts)]
 pub struct IncreaseLockedAmount<'info> {
@@ -73,6 +73,19 @@ impl<'info> Validate<'info> for IncreaseLockedAmount<'info> {
 
         assert_keys_eq!(self.source_tokens.mint, self.locker.token_mint);
         assert_keys_neq!(self.escrow_tokens, self.source_tokens);
+
+        let duration = unwrap_opt!(
+            self.escrow.get_remaining_duration_until_expiration(
+                Clock::get()?.unix_timestamp,
+                &self.locker
+            ),
+            "invalid duration"
+        );
+        require!(
+            duration >= self.locker.params.min_stake_duration,
+            ErrorCode::LockupDurationTooShort
+        );
+
         Ok(())
     }
 }

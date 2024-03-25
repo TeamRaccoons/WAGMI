@@ -253,48 +253,6 @@ describe("Locked voter", () => {
     }
   });
 
-  it("users lock token", async () => {
-    for (const keypair of userKeypairs) {
-      const wallet = new Wallet(keypair);
-
-      const voterProgram = createMetVoterProgram(wallet, MET_VOTER_PROGRAM_ID);
-      const [escrow, _bump] = deriveEscrow(locker, wallet.publicKey, MET_VOTER_PROGRAM_ID);
-
-      const escrowATA = await getOrCreateATA(
-        rewardMint,
-        escrow,
-        keypair,
-        provider.connection
-      );
-
-      const rewardATA = await getOrCreateATA(
-        rewardMint,
-        wallet.publicKey,
-        keypair,
-        provider.connection
-      );
-
-      await voterProgram.methods
-        .increaseLockedAmount(lockAmount)
-        .accounts({
-          escrow,
-          escrowTokens: escrowATA,
-          locker,
-          payer: voterProgram.provider.publicKey,
-          sourceTokens: rewardATA,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        })
-        .rpc();
-
-      const escrowState = await voterProgram.account.escrow.fetch(escrow);
-      const escrowATABalance = await provider.connection
-        .getTokenAccountBalance(escrowATA)
-        .then((b) => b.value.amount);
-
-      expect(escrowState.amount.toString()).to.be.equal(lockAmount.toString());
-      expect(escrowATABalance).to.be.equal(lockAmount.toString());
-    }
-  });
 
   it("cannot extend lock duration more than max stake duration", async () => {
     const keypair = userKeypairs[0];
@@ -340,74 +298,6 @@ describe("Locked voter", () => {
     );
   });
 
-
-  it("able to withdraw if doesn't extend lock duration", async () => {
-    const newWallet = await createAndFundWallet(provider.connection);
-    const userWallet = new Wallet(newWallet.keypair);
-
-    const userATA = await getOrCreateATA(
-      rewardMint,
-      userWallet.publicKey,
-      newWallet.keypair,
-      provider.connection
-    );
-
-    await mintTo(
-      provider.connection,
-      keypair,
-      rewardMint,
-      userATA,
-      keypair.publicKey,
-      lockAmount.toNumber()
-    );
-
-    const voterProgram = createMetVoterProgram(userWallet, MET_VOTER_PROGRAM_ID);
-    const [escrow, _bump] = deriveEscrow(locker, userWallet.publicKey, MET_VOTER_PROGRAM_ID);
-
-    await voterProgram.methods
-      .newEscrow()
-      .accounts({
-        escrow,
-        escrowOwner: userWallet.publicKey,
-        locker,
-        payer: userWallet.publicKey,
-        systemProgram: web3.SystemProgram.programId,
-      })
-      .rpc();
-
-    const escrowATA = await getOrCreateATA(
-      rewardMint,
-      escrow,
-      newWallet.keypair,
-      provider.connection
-    );
-
-    await voterProgram.methods
-      .increaseLockedAmount(lockAmount)
-      .accounts({
-        escrow,
-        escrowTokens: escrowATA,
-        locker,
-        payer: voterProgram.provider.publicKey,
-        sourceTokens: userATA,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
-      .rpc();
-
-    await voterProgram.methods
-      .withdraw()
-      .accounts({
-        destinationTokens: userATA,
-        escrow,
-        escrowOwner: voterProgram.provider.publicKey,
-        escrowTokens: escrowATA,
-        locker,
-        payer: voterProgram.provider.publicKey,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
-      .rpc();
-  });
-
   it("users extend lock duration", async () => {
     for (const keypair of userKeypairs) {
       const userWallet = new Wallet(keypair);
@@ -432,6 +322,50 @@ describe("Locked voter", () => {
       expect(escrowState.escrowEndsAt.toString()).not.equal("0");
     }
   });
+
+  it("users lock token", async () => {
+    for (const keypair of userKeypairs) {
+      const wallet = new Wallet(keypair);
+
+      const voterProgram = createMetVoterProgram(wallet, MET_VOTER_PROGRAM_ID);
+      const [escrow, _bump] = deriveEscrow(locker, wallet.publicKey, MET_VOTER_PROGRAM_ID);
+
+      const escrowATA = await getOrCreateATA(
+        rewardMint,
+        escrow,
+        keypair,
+        provider.connection
+      );
+
+      const rewardATA = await getOrCreateATA(
+        rewardMint,
+        wallet.publicKey,
+        keypair,
+        provider.connection
+      );
+
+      await voterProgram.methods
+        .increaseLockedAmount(lockAmount)
+        .accounts({
+          escrow,
+          escrowTokens: escrowATA,
+          locker,
+          payer: voterProgram.provider.publicKey,
+          sourceTokens: rewardATA,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .rpc();
+
+      const escrowState = await voterProgram.account.escrow.fetch(escrow);
+      const escrowATABalance = await provider.connection
+        .getTokenAccountBalance(escrowATA)
+        .then((b) => b.value.amount);
+
+      expect(escrowState.amount.toString()).to.be.equal(lockAmount.toString());
+      expect(escrowATABalance).to.be.equal(lockAmount.toString());
+    }
+  });
+
 
   it("cannot shorten lock duration", async () => {
     const keypair = userKeypairs[0];
