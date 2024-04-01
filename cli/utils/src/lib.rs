@@ -1,3 +1,6 @@
+use anchor_client::solana_client::rpc_client::RpcClient;
+use anchor_client::solana_client::rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig};
+use anchor_client::solana_client::rpc_filter::{Memcmp, RpcFilterType};
 use anchor_client::solana_client::rpc_response::RpcSimulateTransactionResult;
 use anchor_client::solana_sdk::signature::{read_keypair_file, Keypair};
 use anchor_client::RequestBuilder;
@@ -7,8 +10,12 @@ use anchor_client::{
     Program,
 };
 use anchor_lang::prelude::Pubkey;
+use anchor_lang::{AccountDeserialize, Discriminator};
+use anyhow::Result;
 use regex::Regex;
+use solana_account_decoder::UiAccountEncoding;
 use std::ops::Deref;
+use std::time::Duration;
 
 pub fn parse_event_log<
     T: anchor_lang::AnchorDeserialize + anchor_lang::AnchorSerialize + anchor_lang::Discriminator,
@@ -67,4 +74,42 @@ pub fn simulate_transaction<C: Deref<Target = impl Signer> + Clone>(
 pub fn default_keypair() -> Keypair {
     read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json"))
         .expect("Requires a keypair file")
+}
+
+pub fn accounts_with_rpc_timeout<
+    C: Deref<Target = impl Signer> + Clone,
+    A: AccountDeserialize + Discriminator,
+>(
+    program: &Program<C>,
+    filters: Option<Vec<RpcFilterType>>,
+) -> Result<Vec<(Pubkey, A)>> {
+    let rpc_client = RpcClient::new_with_timeout(program.rpc().url(), Duration::from_secs(120));
+
+    let mut all_filters = vec![RpcFilterType::Memcmp(Memcmp::new_base58_encoded(
+        0,
+        &A::DISCRIMINATOR,
+    ))];
+    if let Some(filters) = filters {
+        all_filters.extend(filters);
+    }
+    let program_accounts = rpc_client.get_program_accounts_with_config(
+        &program.id(),
+        RpcProgramAccountsConfig {
+            filters: Some(all_filters),
+            account_config: RpcAccountInfoConfig {
+                encoding: Some(UiAccountEncoding::Base64Zstd),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+    )?;
+
+    let program_accounts = program_accounts
+        .into_iter()
+        .map(|(address, account)| {
+            A::try_deserialize(&mut account.data.as_slice()).map(|account| (address, account))
+        })
+        .collect::<Result<Vec<_>, anchor_lang::error::Error>>()?;
+
+    Ok(program_accounts)
 }

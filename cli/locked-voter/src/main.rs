@@ -1,28 +1,22 @@
 mod args;
 use crate::args::*;
-use anchor_client::solana_client::rpc_client::RpcClient;
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use anchor_client::solana_sdk::signer::keypair::*;
 use anchor_client::solana_sdk::signer::Signer;
 use anchor_client::{Client, Program};
-use anchor_lang::AccountDeserialize;
-use anchor_lang::Discriminator;
 use anchor_lang::InstructionData;
 use anchor_lang::ToAccountMetas;
 use anchor_spl::associated_token::get_associated_token_address;
 use anyhow::Result;
 use clap::*;
-use solana_account_decoder::UiAccountEncoding;
 use solana_program::instruction::Instruction;
-use solana_rpc_client_api::config::RpcAccountInfoConfig;
-use solana_rpc_client_api::config::RpcProgramAccountsConfig;
 use solana_rpc_client_api::filter::Memcmp;
 use solana_rpc_client_api::filter::RpcFilterType;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::str::FromStr;
-use std::time::Duration;
+use utils_cli::accounts_with_rpc_timeout;
 
 fn main() -> Result<()> {
     let opts = Opts::parse();
@@ -494,31 +488,17 @@ fn get_stakers<C: Deref<Target = impl Signer> + Clone>(
     program: &Program<C>,
     locker: Pubkey,
 ) -> Result<()> {
-    // Fat call, bump timeout
-    let rpc_client = RpcClient::new_with_timeout(program.rpc().url(), Duration::from_secs(120));
-    let program_accounts = rpc_client.get_program_accounts_with_config(
-        &locked_voter::ID,
-        RpcProgramAccountsConfig {
-            filters: Some(vec![
-                RpcFilterType::Memcmp(Memcmp::new_base58_encoded(
-                    0,
-                    &locked_voter::Escrow::DISCRIMINATOR,
-                )),
-                RpcFilterType::Memcmp(Memcmp::new_base58_encoded(8, &locker.to_bytes())),
-            ]),
-            account_config: RpcAccountInfoConfig {
-                encoding: Some(UiAccountEncoding::Base64Zstd),
-                ..Default::default()
-            },
-            ..Default::default()
-        },
+    let program_accounts = accounts_with_rpc_timeout::<C, locked_voter::Escrow>(
+        program,
+        Some(vec![RpcFilterType::Memcmp(Memcmp::new_base58_encoded(
+            8,
+            &locker.to_bytes(),
+        ))]),
     )?;
     println!("Found {} escrows", program_accounts.len());
 
     println!("escrow,owner,amount");
-    for (key, escrow_account) in program_accounts {
-        let escrow =
-            locked_voter::Escrow::try_deserialize(&mut escrow_account.data.as_slice()).unwrap();
+    for (key, escrow) in program_accounts {
         println!("{key},{},{}", escrow.owner, escrow.amount);
     }
 
