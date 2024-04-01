@@ -13,6 +13,7 @@ anchor-lang = "0.28.0"
 anchor-spl = "0.28.0"
 anchor-client = "0.28.0"
 solana-rpc-client-api = "1.16.12"
+solana-account-decoder = "1.16.12"
 anyhow = "1.0.57"
 solana-program = "1.16.12"
 govern = { path = "../../programs/govern" }
