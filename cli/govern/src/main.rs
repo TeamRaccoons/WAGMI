@@ -1,6 +1,8 @@
 mod args;
 
 use crate::args::*;
+use anchor_client::solana_client::rpc_filter::Memcmp;
+use anchor_client::solana_client::rpc_filter::RpcFilterType;
 use anyhow::Result;
 
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
@@ -12,6 +14,7 @@ use clap::*;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::str::FromStr;
+use utils_cli::accounts_with_rpc_timeout;
 // use utils_cli::*;
 
 pub fn derive_event_authority_pda() -> (Pubkey, u8) {
@@ -95,6 +98,9 @@ fn main() -> Result<()> {
             );
             let vote_state: govern::Vote = program.account(vote)?;
             println!("{:?}", vote_state);
+        }
+        CliCommand::ViewVotes { proposal } => {
+            view_votes(&program, proposal)?;
         }
         CliCommand::Verify {
             base,
@@ -401,5 +407,26 @@ fn view_proposal_meta<C: Deref<Target = impl Signer> + Clone>(
     );
     let state: govern::ProposalMeta = program.account(proposal_meta)?;
     println!("{:?}", state);
+    Ok(())
+}
+
+fn view_votes<C: Deref<Target = impl Signer> + Clone>(
+    program: &Program<C>,
+    proposal: Pubkey,
+) -> Result<()> {
+    let program_accounts = accounts_with_rpc_timeout::<C, govern::Vote>(
+        program,
+        Some(vec![RpcFilterType::Memcmp(Memcmp::new_base58_encoded(
+            8,
+            &proposal.to_bytes(),
+        ))]),
+    )?;
+    println!("Found {} escrows", program_accounts.len());
+
+    println!("voter,side,voting_power");
+    for (key, vote) in program_accounts {
+        println!("{key},{},{},{}", vote.voter, vote.side, vote.voting_power);
+    }
+
     Ok(())
 }

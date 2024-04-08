@@ -117,6 +117,10 @@ pub enum CliCommand {
         #[clap(long)]
         voter: Pubkey,
     },
+    ViewVotes {
+        #[clap(long)]
+        proposal: Pubkey,
+    },
 }
 
 #[derive(Parser, Debug)]
