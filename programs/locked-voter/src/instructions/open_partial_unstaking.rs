@@ -2,6 +2,7 @@ use crate::*;
 
 /// Accounts for [voter::open_partial_unstaking].
 #[derive(Accounts)]
+#[instruction(amount: u64, memo: String)]
 pub struct OpenPartialUnstaking<'info> {
     /// [Locker].
     #[account(mut)]
@@ -15,7 +16,7 @@ pub struct OpenPartialUnstaking<'info> {
     #[account(
         init,
         payer = owner,
-        space = 8 + PartialUnstaking::LEN
+        space = 8 + PartialUnstaking::LEN + 4 + memo.as_bytes().len()
     )]
     pub partial_unstake: Account<'info, PartialUnstaking>,
 
@@ -27,7 +28,7 @@ pub struct OpenPartialUnstaking<'info> {
 }
 
 impl<'info> OpenPartialUnstaking<'info> {
-    pub fn open_partial_unstaking(&mut self, amount: u64) -> Result<()> {
+    pub fn open_partial_unstaking(&mut self, amount: u64, memo: String) -> Result<()> {
         let partial_unstake_pk = self.partial_unstake.key();
         let escrow_pk = self.escrow.key();
 
@@ -42,6 +43,7 @@ impl<'info> OpenPartialUnstaking<'info> {
 
         partial_unstake.escrow = escrow_pk;
         partial_unstake.amount = amount;
+        partial_unstake.memo = memo;
 
         let current_time = Clock::get()?.unix_timestamp;
         let remaining_duration =

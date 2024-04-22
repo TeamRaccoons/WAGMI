@@ -160,7 +160,7 @@ impl Escrow {
 
 /// Account to store infor for partial unstaking
 #[account]
-#[derive(Copy, Debug, Default)]
+#[derive(Debug, Default)]
 pub struct PartialUnstaking {
     /// The [Escrow] pubkey.
     pub escrow: Pubkey,
@@ -170,6 +170,8 @@ pub struct PartialUnstaking {
     pub expiration: i64,
     /// buffer for further use
     pub buffers: [u128; 6],
+    /// Memo
+    pub memo: String,
 }
 
 impl PartialUnstaking {

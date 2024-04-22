@@ -6,7 +6,6 @@ import {
     IProposalInstruction,
     SMART_WALLET_PROGRAM_ID,
     LOCKED_VOTER_PROGRAM_ID,
-    VoteSide,
     createAndFundWallet,
     createGovernProgram,
     createGovernor,
@@ -19,13 +18,9 @@ import {
     deriveGovern,
     deriveLocker,
     deriveSmartWallet,
-    deriveVote,
     getOnChainTime,
     getOrCreateATA,
-    getOrCreateVote,
-    invokeAndAssertError,
     sleep,
-    deriveTransaction,
 } from "../utils";
 import { expect } from "chai";
 
@@ -260,8 +255,9 @@ describe("Partial unstaking", () => {
 
 
         const partialUnstakeKP = web3.Keypair.generate();
+        const memo = "user_id_2369";
         // open partial unstaking
-        await voterProgram.methods.openPartialUnstaking(partialUnstakingAmount).accounts({
+        await voterProgram.methods.openPartialUnstaking(partialUnstakingAmount, memo).accounts({
             escrow,
             locker,
             partialUnstake: partialUnstakeKP.publicKey,
@@ -279,6 +275,7 @@ describe("Partial unstaking", () => {
             expect(partialUnstakingState.amount.toString()).to.equal(partialUnstakingAmount.toString());
             expect(partialUnstakingState.escrow.toString()).to.equal(escrow.toString());
             expect(partialUnstakingState.expiration.toString()).to.not.equal("0");
+            expect(partialUnstakingState.memo).to.equal(memo);
         }
 
         // merge 
@@ -308,7 +305,7 @@ describe("Partial unstaking", () => {
 
         const partialUnstakeKP = web3.Keypair.generate();
         // open partial unstaking
-        await voterProgram.methods.openPartialUnstaking(partialUnstakingAmount).accounts({
+        await voterProgram.methods.openPartialUnstaking(partialUnstakingAmount, "").accounts({
             escrow,
             locker,
             partialUnstake: partialUnstakeKP.publicKey,

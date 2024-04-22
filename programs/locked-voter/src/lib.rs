@@ -100,8 +100,12 @@ pub mod locked_voter {
 
     /// Open partial unstaking
     #[access_control(ctx.accounts.validate())]
-    pub fn open_partial_unstaking(ctx: Context<OpenPartialUnstaking>, amount: u64) -> Result<()> {
-        ctx.accounts.open_partial_unstaking(amount)
+    pub fn open_partial_unstaking(
+        ctx: Context<OpenPartialUnstaking>,
+        amount: u64,
+        memo: String,
+    ) -> Result<()> {
+        ctx.accounts.open_partial_unstaking(amount, memo)
     }
 
     /// Merge partial unstaking
