@@ -50,19 +50,6 @@ impl<'info> Withdraw<'info> {
             )?;
         }
 
-        // close escrow_tokens
-        token::close_account(
-            CpiContext::new(
-                self.token_program.to_account_info(),
-                token::CloseAccount {
-                    account: self.escrow_tokens.to_account_info(),
-                    destination: self.payer.to_account_info(),
-                    authority: self.escrow.to_account_info(),
-                },
-            )
-            .with_signer(seeds),
-        )?;
-
         // update the locker
         let locker = &mut self.locker;
         locker.locked_supply = unwrap_int!(locker.locked_supply.checked_sub(self.escrow.amount));
@@ -90,7 +77,12 @@ impl<'info> Validate<'info> for Withdraw<'info> {
         let expiration = self.escrow.escrow_ends_at;
         let now = Clock::get()?.unix_timestamp;
         msg!("now: {}; escrow_ends_at: {}", now, expiration);
-        invariant!(expiration < now, EscrowNotEnded);
+        invariant!(expiration <= now, EscrowNotEnded);
+
+        invariant!(
+            self.escrow.partial_unstaking_amount == 0,
+            PartialUnstakingAmountIsNotZero
+        );
 
         Ok(())
     }
