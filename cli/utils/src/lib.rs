@@ -83,7 +83,7 @@ pub fn accounts_with_rpc_timeout<
     program: &Program<C>,
     filters: Option<Vec<RpcFilterType>>,
 ) -> Result<Vec<(Pubkey, A)>> {
-    let rpc_client = RpcClient::new_with_timeout(program.rpc().url(), Duration::from_secs(120));
+    let rpc_client = RpcClient::new_with_timeout(program.rpc().url(), Duration::from_secs(600));
 
     let mut all_filters = vec![RpcFilterType::Memcmp(Memcmp::new_base58_encoded(
         0,
