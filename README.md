@@ -51,7 +51,7 @@ anchor build
 
 
 ## Audit
-Quarry Protocol has been audited by [Offside Labs](https://offside.io). View the audit report [here](./audits/Raccoons_DAO_Final_Audit_Report.pdf).
+WAGMI Protocol has been audited by [Offside Labs](https://offside.io). View the audit report [here](./audits/Raccoons_DAO_Final_Audit_Report.pdf).
 
 
 ## License
