@@ -119,6 +119,12 @@ pub mod locked_voter {
     pub fn withdraw_partial_unstaking(ctx: Context<WithdrawPartialUnstaking>) -> Result<()> {
         ctx.accounts.withdraw_partial_unstaking()
     }
+
+    /// Move Lock
+    #[access_control(ctx.accounts.validate())]
+    pub fn move_lock(ctx: Context<MoveLock>) -> Result<()> {
+        ctx.accounts.move_lock()
+    }
 }
 
 /// [voter] errors.

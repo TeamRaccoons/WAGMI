@@ -2183,6 +2183,7 @@ dependencies = [
  "govern",
  "num-traits",
  "proptest",
+ "smart-wallet",
  "vipers",
 ]
 
