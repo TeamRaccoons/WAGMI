@@ -87,6 +87,7 @@ impl<'info> Validate<'info> for WithdrawPartialUnstaking<'info> {
         let now = Clock::get()?.unix_timestamp;
         msg!("now: {}; expiration: {}", now, expiration);
         invariant!(expiration <= now, PartialUnstakingIsNotEnded);
+        check_account_not_frozen!(self.escrow);
 
         Ok(())
     }

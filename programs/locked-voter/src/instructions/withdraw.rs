@@ -83,6 +83,7 @@ impl<'info> Validate<'info> for Withdraw<'info> {
             self.escrow.partial_unstaking_amount == 0,
             PartialUnstakingAmountIsNotZero
         );
+        check_account_not_frozen!(self.escrow);
 
         Ok(())
     }

@@ -77,8 +77,10 @@ pub struct Escrow {
     pub is_max_lock: bool,
     /// total amount of partial unstaking amount
     pub partial_unstaking_amount: u64,
-    /// padding for further use
-    pub padding: u64,
+
+    /// Frozen
+    pub frozen_until: i64,
+
     /// buffer for further use
     pub buffers: [u128; 9],
 }

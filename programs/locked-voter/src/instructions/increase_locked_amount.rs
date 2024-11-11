@@ -81,6 +81,8 @@ impl<'info> Validate<'info> for IncreaseLockedAmount<'info> {
             ),
             "invalid duration"
         );
+
+        check_account_not_frozen!(self.escrow);
         require!(
             duration >= self.locker.params.min_stake_duration,
             ErrorCode::LockupDurationTooShort

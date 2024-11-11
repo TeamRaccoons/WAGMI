@@ -67,6 +67,7 @@ impl<'info> OpenPartialUnstaking<'info> {
 
 impl<'info> Validate<'info> for OpenPartialUnstaking<'info> {
     fn validate(&self) -> Result<()> {
+        check_account_not_frozen!(self.escrow);
         Ok(())
     }
 }

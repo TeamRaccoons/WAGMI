@@ -66,10 +66,10 @@ impl<'info> MoveLock<'info> {
             self.escrow_tokens1.amount,
         )?;
 
+        // TODO: do some lock mathematics
+
         // migrate data over
         self.escrow2.amount = self.escrow1.amount;
-
-        // TODO: do some lock mathematics
         self.escrow2.escrow_started_at = self.escrow1.escrow_started_at;
         self.escrow2.escrow_ends_at = self.escrow1.escrow_ends_at;
         self.escrow2.vote_delegate = self.escrow1.vote_delegate;

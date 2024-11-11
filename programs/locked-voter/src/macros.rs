@@ -20,3 +20,13 @@ macro_rules! escrow_seeds {
         ]]
     };
 }
+
+#[macro_export]
+macro_rules! check_account_not_frozen {
+    ($escrow: expr) => {
+        invariant!(
+            $escrow.frozen_until < Clock::get()?.unix_timestamp,
+            "Account is Frozen"
+        );
+    };
+}
