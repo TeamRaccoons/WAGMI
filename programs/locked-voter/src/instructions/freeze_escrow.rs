@@ -1,10 +1,14 @@
 use crate::*;
-/// Accounts for [voter::move_lock].
+/// Accounts for [voter::freeze_escrow].
 #[derive(Accounts)]
 pub struct FreezeEscrow<'info> {
     /// [Escrow].
-    #[account(mut)]
+    #[account(mut,
+        has_one = owner)]
     pub escrow: Box<Account<'info, Escrow>>,
+
+    /// Authority of the [Escrow].
+    pub owner: Signer<'info>,
 }
 
 impl<'info> FreezeEscrow<'info> {
@@ -15,7 +19,7 @@ impl<'info> FreezeEscrow<'info> {
         );
         invariant!(
             freeze_until > self.escrow.frozen_until,
-            "Account is already frozen until"
+            "Account is already frozen"
         );
         self.escrow.frozen_until = freeze_until;
 
@@ -40,7 +44,7 @@ pub struct FreezeEscrowEvent {
     #[index]
     pub escrow: Pubkey,
 
-    /// Freeze time
+    /// Timestamp to unfreeze
     #[index]
     pub freeze_until: i64,
 }

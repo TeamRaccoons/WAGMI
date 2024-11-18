@@ -35,6 +35,21 @@ impl Locker {
         + 16 * 32;
 }
 
+/// A request to move from old escrow to new escrow
+#[account]
+#[derive(Copy, Debug, Default)]
+pub struct Request {
+    /// The old escrow to move out from
+    pub old_escrow: Pubkey,
+    /// The new escrow to move into
+    pub new_escrow: Pubkey,
+}
+
+impl Request {
+    /// LEN of locker
+    pub const LEN: usize = std::mem::size_of::<Pubkey>() * 2 + 8 + 3 * 8;
+}
+
 /// Contains parameters for the [Locker].
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct LockerParams {

@@ -1,48 +1,45 @@
 use crate::*;
 use anchor_spl::token;
-use smart_wallet::SmartWallet;
 /// Accounts for [voter::move_lock].
 #[derive(Accounts)]
 pub struct MoveLock<'info> {
-    /// [Locker1].
-    #[account(mut)]
-    pub locker1: Box<Account<'info, Locker>>,
+    /// [Request].
+    #[account(
+        has_one = old_escrow,
+        has_one = new_escrow,
+    )]
+    pub request: Box<Account<'info, Request>>,
+    /// [New_Escrow].
+    #[account(mut, has_one = locker)]
+    pub old_escrow: Box<Account<'info, Escrow>>,
 
-    /// [Locker2].
-    #[account(mut)]
-    pub locker2: Box<Account<'info, Locker>>,
-
-    /// [Escrow1].
-    #[account(mut, constraint = escrow1.locker == locker1.key())]
-    pub escrow1: Box<Account<'info, Escrow>>,
-
-    /// [Escrow2].
-    #[account(mut, constraint = escrow2.locker == locker2.key())]
-    pub escrow2: Box<Account<'info, Escrow>>,
+    /// [New_Escrow].
+    #[account(mut, has_one = locker)]
+    pub new_escrow: Box<Account<'info, Escrow>>,
 
     /// Token account held by the [Escrow].
     #[account(
         mut,
-        constraint = escrow1.tokens == escrow_tokens1.key()
+        constraint = old_escrow.tokens == escrow_tokens1.key()
     )]
     pub escrow_tokens1: Account<'info, TokenAccount>,
 
     /// Token account held by the [Escrow].
     #[account(
         mut,
-        constraint = escrow2.tokens == escrow_tokens2.key()
+        constraint = new_escrow.tokens == escrow_tokens2.key()
     )]
     pub escrow_tokens2: Account<'info, TokenAccount>,
 
-    #[account(
-        mut,
-        constraint = locker1.governor == governor.key(),
-        constraint = governor.smart_wallet == smart_wallet.key()
-    )]
-    pub smart_wallet: Account<'info, SmartWallet>,
+    // (old = new escrow) => Locker => Governor => Smart Wallet (Sends this IX)
+    #[account(mut, has_one = governor)]
+    pub locker: Box<Account<'info, Locker>>,
+
+    #[account(mut, has_one = smart_wallet)]
+    pub governor: Account<'info, Governor>,
 
     #[account(mut)]
-    pub governor: Account<'info, Governor>,
+    pub smart_wallet: Signer<'info>,
 
     /// Token program.
     pub token_program: Program<'info, Token>,
@@ -50,7 +47,7 @@ pub struct MoveLock<'info> {
 
 impl<'info> MoveLock<'info> {
     pub fn move_lock(&mut self) -> Result<()> {
-        let seeds: &[&[&[u8]]] = escrow_seeds!(self.escrow1);
+        let seeds: &[&[&[u8]]] = escrow_seeds!(self.old_escrow);
 
         // transfer tokens from escrow1 to escrow2
         token::transfer(
@@ -59,7 +56,7 @@ impl<'info> MoveLock<'info> {
                 token::Transfer {
                     from: self.escrow_tokens1.to_account_info(),
                     to: self.escrow_tokens2.to_account_info(),
-                    authority: self.escrow1.to_account_info(),
+                    authority: self.old_escrow.to_account_info(),
                 },
                 seeds,
             ),
@@ -69,18 +66,18 @@ impl<'info> MoveLock<'info> {
         // TODO: do some lock mathematics
 
         // migrate data over
-        self.escrow2.amount = self.escrow1.amount;
-        self.escrow2.escrow_started_at = self.escrow1.escrow_started_at;
-        self.escrow2.escrow_ends_at = self.escrow1.escrow_ends_at;
-        self.escrow2.vote_delegate = self.escrow1.vote_delegate;
-        self.escrow2.is_max_lock = self.escrow1.is_max_lock;
-        self.escrow2.partial_unstaking_amount = self.escrow1.partial_unstaking_amount;
+        self.new_escrow.amount = self.old_escrow.amount;
+        self.new_escrow.escrow_started_at = self.old_escrow.escrow_started_at;
+        self.new_escrow.escrow_ends_at = self.old_escrow.escrow_ends_at;
+        self.new_escrow.vote_delegate = self.old_escrow.vote_delegate;
+        self.new_escrow.is_max_lock = self.old_escrow.is_max_lock;
+        self.new_escrow.partial_unstaking_amount = self.old_escrow.partial_unstaking_amount;
 
         emit!(MoveLockEvent {
-            escrow1: self.escrow1.key(),
-            escrow2: self.escrow2.key(),
-            old_owner: self.escrow1.owner,
-            new_owner: self.escrow2.owner,
+            escrow1: self.old_escrow.key(),
+            escrow2: self.new_escrow.key(),
+            old_owner: self.old_escrow.owner,
+            new_owner: self.new_escrow.owner,
         });
 
         Ok(())
