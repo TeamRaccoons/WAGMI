@@ -1,6 +1,14 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN, Wallet, web3 } from "@coral-xyz/anchor";
 import { TOKEN_PROGRAM_ID, createMint, mintTo } from "@solana/spl-token";
+
+import {
+  Connection,
+  SystemProgram,
+  Transaction,
+  VersionedMessage,
+  VersionedTransaction,
+} from "@solana/web3.js";
 import {
   GOVERN_PROGRAM_ID,
   IProposalInstruction,
@@ -21,15 +29,17 @@ import {
   getOnChainTime,
   getOrCreateATA,
   sleep,
+  invokeAndAssertError,
 } from "../utils";
 import { expect } from "chai";
+import { SystemInstructionCoder } from "@coral-xyz/anchor/dist/cjs/coder/system/instruction";
 
 const provider = anchor.AnchorProvider.env();
 
 const lockAmount = new BN(1000);
 const partialUnstakingAmount = new BN(100);
 
-describe.skip("Partial unstaking", () => {
+describe("Move Lock", () => {
   let locker: web3.PublicKey;
   let govern: web3.PublicKey;
   let smartWallet: web3.PublicKey;
@@ -40,6 +50,7 @@ describe.skip("Partial unstaking", () => {
 
   let rewardMint: web3.PublicKey;
   let userKeypair: web3.Keypair;
+  let newUserKeypair: web3.Keypair;
 
   // Smart wallet config
   let smartWalletOwners: web3.PublicKey[] = [];
@@ -54,6 +65,12 @@ describe.skip("Partial unstaking", () => {
   const minStakeDuration: BN = new BN(10); // 10 seconds
   const maxStakeVoteMultiplier: number = 1;
   const proposalActivationMinVotes: BN = new BN(2); // min 2 vote to activate proposal
+
+  // Freeze test
+  const freeze_before_failure = -10;
+  const freeze_normally = 10;
+  const freeze_extension_failure = 15;
+  const freeze_extension = 20;
 
   async function createSetLockerParamsProposal() {
     const governProgram = createGovernProgram(wallet, GOVERN_PROGRAM_ID);
@@ -256,7 +273,7 @@ describe.skip("Partial unstaking", () => {
       .rpc();
   });
 
-  it("users open partial unstaking and merge it", async () => {
+  it.skip("users can freeze escrow correctly", async () => {
     const userWallet = new Wallet(userKeypair);
     const voterProgram = createLockedVoterProgram(
       userWallet,
@@ -267,112 +284,6 @@ describe.skip("Partial unstaking", () => {
       userWallet.publicKey,
       LOCKED_VOTER_PROGRAM_ID
     );
-
-    {
-      let escrowState = await voterProgram.account.escrow.fetch(escrow);
-      expect(escrowState.amount.toString()).to.equal(lockAmount.toString());
-      expect(escrowState.partialUnstakingAmount.toString()).to.equal("0");
-    }
-
-    const partialUnstakeKP = web3.Keypair.generate();
-    const memo = "user_id_2369";
-    // open partial unstaking
-    await voterProgram.methods
-      .openPartialUnstaking(partialUnstakingAmount, memo)
-      .accounts({
-        escrow,
-        locker,
-        partialUnstake: partialUnstakeKP.publicKey,
-        owner: userKeypair.publicKey,
-        systemProgram: web3.SystemProgram.programId,
-      })
-      .signers([partialUnstakeKP, userKeypair])
-      .rpc();
-    {
-      let escrowState = await voterProgram.account.escrow.fetch(escrow);
-      expect(escrowState.amount.toString()).to.equal(
-        lockAmount.sub(partialUnstakingAmount).toString()
-      );
-      expect(escrowState.partialUnstakingAmount.toString()).to.equal(
-        partialUnstakingAmount.toString()
-      );
-
-      let partialUnstakingState =
-        await voterProgram.account.partialUnstaking.fetch(
-          partialUnstakeKP.publicKey
-        );
-      expect(partialUnstakingState.amount.toString()).to.equal(
-        partialUnstakingAmount.toString()
-      );
-      expect(partialUnstakingState.escrow.toString()).to.equal(
-        escrow.toString()
-      );
-      expect(partialUnstakingState.expiration.toString()).to.not.equal("0");
-      expect(partialUnstakingState.memo).to.equal(memo);
-    }
-
-    // merge
-    await voterProgram.methods
-      .mergePartialUnstaking()
-      .accounts({
-        escrow,
-        locker,
-        partialUnstake: partialUnstakeKP.publicKey,
-        owner: userKeypair.publicKey,
-      })
-      .signers([userKeypair])
-      .rpc();
-
-    {
-      let escrowState = await voterProgram.account.escrow.fetch(escrow);
-      expect(escrowState.amount.toString()).to.equal(lockAmount.toString());
-      expect(escrowState.partialUnstakingAmount.toString()).to.equal("0");
-    }
-  });
-
-  it("users open partial unstaking and withdraw it", async () => {
-    const userWallet = new Wallet(userKeypair);
-    const voterProgram = createLockedVoterProgram(
-      userWallet,
-      LOCKED_VOTER_PROGRAM_ID
-    );
-    const [escrow, _bump] = deriveEscrow(
-      locker,
-      userWallet.publicKey,
-      LOCKED_VOTER_PROGRAM_ID
-    );
-
-    const partialUnstakeKP = web3.Keypair.generate();
-    // open partial unstaking
-    await voterProgram.methods
-      .openPartialUnstaking(partialUnstakingAmount, "")
-      .accounts({
-        escrow,
-        locker,
-        partialUnstake: partialUnstakeKP.publicKey,
-        owner: userKeypair.publicKey,
-        systemProgram: web3.SystemProgram.programId,
-      })
-      .signers([partialUnstakeKP, userKeypair])
-      .rpc();
-
-    while (true) {
-      const [escrowState, onchainTimestamp] = await Promise.all([
-        voterProgram.account.escrow.fetch(escrow),
-        getOnChainTime(provider.connection),
-      ]);
-
-      if (escrowState.escrowEndsAt.toNumber() > onchainTimestamp) {
-        console.log(
-          `${
-            escrowState.escrowEndsAt.toNumber() - onchainTimestamp
-          } seconds until escrow expire`
-        );
-        await sleep(1000);
-      } else {
-        break;
-      }
-    }
 
     const userATA = await getOrCreateATA(
       rewardMint,
@@ -380,7 +291,6 @@ describe.skip("Partial unstaking", () => {
       keypair,
       provider.connection
     );
-
     const escrowATA = await getOrCreateATA(
       rewardMint,
       escrow,
@@ -388,39 +298,123 @@ describe.skip("Partial unstaking", () => {
       provider.connection
     );
 
-    const userATABalanceBefore = await provider.connection
-      .getTokenAccountBalance(userATA)
-      .then((b) => b.value.amount);
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    const chain_time = await getOnChainTime(provider.connection);
+    console.log(
+      `Chain time now: ${chain_time}, Escrow frozen request time: ${
+        chain_time + freeze_before_failure
+      }`
+    );
+    invokeAndAssertError(
+      () => {
+        return voterProgram.methods
+          .freezeEscrow(new BN(chain_time + freeze_before_failure))
+          .accounts({
+            escrow,
+            owner: userKeypair.publicKey,
+          })
+          .signers([userKeypair])
+          .rpc();
+      },
+      "Freeze until time must be more than current timestamp",
+      true
+    );
+    console.log("User cannot freeze using timestamp before current timestamp");
 
-    // withdraw partial unstaking
+    console.log(
+      `Chain time now: ${chain_time}, Escrow frozen request time: ${
+        chain_time + freeze_normally
+      }`
+    );
     await voterProgram.methods
-      .withdrawPartialUnstaking()
+      .freezeEscrow(new BN(chain_time + freeze_normally))
       .accounts({
         escrow,
-        locker,
-        partialUnstake: partialUnstakeKP.publicKey,
         owner: userKeypair.publicKey,
-        payer: userKeypair.publicKey,
-        escrowTokens: escrowATA,
-        destinationTokens: userATA,
-        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([userKeypair])
+      .rpc();
+    console.log("User can freeze escrow normally");
+
+    console.log(
+      `Chain time now: ${chain_time}, Escrow frozen request time: ${
+        chain_time + freeze_extension_failure
+      }`
+    );
+    invokeAndAssertError(
+      () => {
+        return voterProgram.methods
+          .freezeEscrow(new BN(chain_time + freeze_extension_failure))
+          .accounts({
+            escrow,
+            owner: userKeypair.publicKey,
+          })
+          .signers([userKeypair])
+          .rpc();
+      },
+      "Account is already frozen",
+      true
+    );
+    console.log(
+      "User cannot freeze escrow to a time before current frozen_until time"
+    );
+
+    console.log(
+      `Chain time now: ${chain_time}, Escrow frozen request time: ${
+        chain_time + freeze_extension
+      }`
+    );
+    await voterProgram.methods
+      .freezeEscrow(new BN(chain_time + freeze_extension))
+      .accounts({
+        escrow,
+        owner: userKeypair.publicKey,
       })
       .signers([userKeypair])
       .rpc();
 
-    {
-      let escrowState = await voterProgram.account.escrow.fetch(escrow);
-      expect(escrowState.partialUnstakingAmount.toString()).to.equal("0");
-
-      const userATABalance = await provider.connection
-        .getTokenAccountBalance(userATA)
-        .then((b) => b.value.amount);
-      expect(+userATABalance).to.equal(
-        +userATABalanceBefore + partialUnstakingAmount.toNumber()
-      );
-    }
+    console.log("User can extend escrow freeze");
 
     // withdraw escrow
+    invokeAndAssertError(
+      () => {
+        return voterProgram.methods
+          .withdraw()
+          .accounts({
+            destinationTokens: userATA,
+            escrow,
+            escrowOwner: voterProgram.provider.publicKey,
+            escrowTokens: escrowATA,
+            locker,
+            payer: voterProgram.provider.publicKey,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .rpc();
+      },
+      "Account is Frozen",
+      true
+    );
+    console.log("User cannot withdraw while account is frozen");
+
+    while (true) {
+      const [escrowState, onchainTimestamp] = await Promise.all([
+        voterProgram.account.escrow.fetch(escrow),
+        getOnChainTime(provider.connection),
+      ]);
+
+      if (escrowState.frozenUntil.toNumber() + 2 > onchainTimestamp) {
+        console.log(
+          `${
+            escrowState.frozenUntil.toNumber() - onchainTimestamp
+          } seconds until escrow un-freezes`
+        );
+        await sleep(1000);
+      } else {
+        break;
+      }
+    }
+
     await voterProgram.methods
       .withdraw()
       .accounts({
@@ -429,18 +423,114 @@ describe.skip("Partial unstaking", () => {
         escrowOwner: voterProgram.provider.publicKey,
         escrowTokens: escrowATA,
         locker,
-        payer: voterProgram.provider.publicKey,
+        payer: userKeypair.publicKey,
         tokenProgram: TOKEN_PROGRAM_ID,
       })
       .rpc();
+    console.log("User can call withdraw");
+  });
 
-    {
-      const userATABalance = await provider.connection
-        .getTokenAccountBalance(userATA)
-        .then((b) => b.value.amount);
-      expect(+userATABalance).to.equal(
-        +userATABalanceBefore + lockAmount.toNumber()
-      );
+  it.skip("user freeze escrow, request for move, and smart wallet can move  ", async () => {
+    const userWallet = new Wallet(userKeypair);
+    const voterProgram = createLockedVoterProgram(
+      userWallet,
+      LOCKED_VOTER_PROGRAM_ID
+    );
+    const [escrow, _bump] = deriveEscrow(
+      locker,
+      userWallet.publicKey,
+      LOCKED_VOTER_PROGRAM_ID
+    );
+
+    const userATA = await getOrCreateATA(
+      rewardMint,
+      userWallet.publicKey,
+      keypair,
+      provider.connection
+    );
+    const escrowATA = await getOrCreateATA(
+      rewardMint,
+      escrow,
+      keypair,
+      provider.connection
+    );
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    /*
+      1. User 'lost' funds 
+      2. User creates new wallet (NewUser) with Sol
+      3. NewUser(feepayer) and User(authority) signs and move request together with freeze request
+      4. A transaction is created for smart wallet to execute with the move request
+      5. Smart wallet executes the move request transaction 
+      6. Check that NewUser now owns the funds in the lock.
+    */
+
+    const SIGNATURE_FEES = 5000;
+    let lostFundsIX = SystemProgram.transfer({
+      fromPubkey: userKeypair.publicKey,
+      toPubkey: keypair.publicKey,
+      lamports:
+        (await provider.connection.getBalance(userKeypair.publicKey)) -
+        SIGNATURE_FEES,
+    });
+    let lostFundsTX = new VersionedTransaction(
+      new Transaction().add(lostFundsIX).compileMessage()
+    );
+    await voterProgram.provider.send(lostFundsTX, [userKeypair]);
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+    const result = await createAndFundWallet(provider.connection);
+    newUserKeypair = result.keypair;
+    const newUserWallet = result.wallet;
+    console.log("fund new wallet");
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    const chain_time = await getOnChainTime(provider.connection);
+    console.log(
+      `Chain time now: ${chain_time}, Escrow frozen request time: ${
+        chain_time + freeze_normally
+      }`
+    );
+
+    let freeze_ix = await voterProgram.methods
+      .freezeEscrow(new BN(chain_time + freeze_normally))
+      .accounts({
+        escrow,
+        owner: userKeypair.publicKey,
+      })
+      .instruction();
+      let create_request_ix = await voterProgram.methods.
+    while (true) {
+      const [escrowState, onchainTimestamp] = await Promise.all([
+        voterProgram.account.escrow.fetch(escrow),
+        getOnChainTime(provider.connection),
+      ]);
+
+      if (escrowState.frozenUntil.toNumber() + 2 > onchainTimestamp) {
+        console.log(
+          `${
+            escrowState.frozenUntil.toNumber() - onchainTimestamp
+          } seconds until escrow un-freezes`
+        );
+        await sleep(1000);
+      } else {
+        break;
+      }
     }
+
+    await voterProgram.methods
+      .withdraw()
+      .accounts({
+        destinationTokens: userATA,
+        escrow,
+        escrowOwner: voterProgram.provider.publicKey,
+        escrowTokens: escrowATA,
+        locker,
+        payer: userKeypair.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .rpc();
+    console.log("User can call withdraw");
   });
 });

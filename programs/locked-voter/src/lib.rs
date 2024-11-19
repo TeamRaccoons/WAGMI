@@ -120,10 +120,22 @@ pub mod locked_voter {
         ctx.accounts.withdraw_partial_unstaking()
     }
 
-    /// Move Lock
+    /// Move escrow
     #[access_control(ctx.accounts.validate())]
-    pub fn move_lock(ctx: Context<MoveLock>) -> Result<()> {
-        ctx.accounts.move_lock()
+    pub fn move_escrow(ctx: Context<MoveEscrow>) -> Result<()> {
+        ctx.accounts.move_escrow()
+    }
+
+    /// Freeze escrow
+    #[access_control(ctx.accounts.validate())]
+    pub fn create_move_request(ctx: Context<CreateMoveRequest>) -> Result<()> {
+        ctx.accounts.create_move_request()
+    }
+
+    /// Freeze escrow
+    #[access_control(ctx.accounts.validate())]
+    pub fn freeze_escrow(ctx: Context<FreezeEscrow>, freeze_until: i64) -> Result<()> {
+        ctx.accounts.freeze_escrow(freeze_until)
     }
 }
 

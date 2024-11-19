@@ -68,6 +68,7 @@ impl<'info> Withdraw<'info> {
 
 impl<'info> Validate<'info> for Withdraw<'info> {
     fn validate(&self) -> Result<()> {
+        check_account_not_frozen!(self.escrow);
         assert_keys_eq!(self.locker, self.escrow.locker);
         assert_keys_eq!(self.escrow.owner, self.escrow_owner);
         assert_keys_eq!(self.escrow.tokens, self.escrow_tokens);
@@ -83,7 +84,6 @@ impl<'info> Validate<'info> for Withdraw<'info> {
             self.escrow.partial_unstaking_amount == 0,
             PartialUnstakingAmountIsNotZero
         );
-        check_account_not_frozen!(self.escrow);
 
         Ok(())
     }

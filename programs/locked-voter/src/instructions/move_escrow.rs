@@ -1,8 +1,8 @@
 use crate::*;
 use anchor_spl::token;
-/// Accounts for [voter::move_lock].
+/// Accounts for [voter::move_escrow].
 #[derive(Accounts)]
-pub struct MoveLock<'info> {
+pub struct MoveEscrow<'info> {
     /// [Request].
     #[account(
         has_one = old_escrow,
@@ -45,8 +45,8 @@ pub struct MoveLock<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-impl<'info> MoveLock<'info> {
-    pub fn move_lock(&mut self) -> Result<()> {
+impl<'info> MoveEscrow<'info> {
+    pub fn move_escrow(&mut self) -> Result<()> {
         let seeds: &[&[&[u8]]] = escrow_seeds!(self.old_escrow);
 
         // transfer tokens from escrow1 to escrow2
@@ -73,7 +73,7 @@ impl<'info> MoveLock<'info> {
         self.new_escrow.is_max_lock = self.old_escrow.is_max_lock;
         self.new_escrow.partial_unstaking_amount = self.old_escrow.partial_unstaking_amount;
 
-        emit!(MoveLockEvent {
+        emit!(MoveEscrowEvent {
             escrow1: self.old_escrow.key(),
             escrow2: self.new_escrow.key(),
             old_owner: self.old_escrow.owner,
@@ -84,7 +84,7 @@ impl<'info> MoveLock<'info> {
     }
 }
 
-impl<'info> Validate<'info> for MoveLock<'info> {
+impl<'info> Validate<'info> for MoveEscrow<'info> {
     fn validate(&self) -> Result<()> {
         // TODO validate
 
@@ -95,8 +95,8 @@ impl<'info> Validate<'info> for MoveLock<'info> {
 }
 
 #[event]
-/// Event called in [voter::lock].
-pub struct MoveLockEvent {
+/// Event called in [voter::move_escrow].
+pub struct MoveEscrowEvent {
     /// The old [Escrow].
     #[index]
     pub escrow1: Pubkey,

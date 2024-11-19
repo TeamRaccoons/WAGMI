@@ -30,7 +30,7 @@ pub struct CreateMoveRequest<'info> {
     /// Authority of the [Escrow].
     pub owner: Signer<'info>,
 
-    /// Fee payer of the new [Move_Request].
+    /// Fee payer of the new [ Move_Request].
     #[account(mut)]
     pub feepayer: Signer<'info>,
 
