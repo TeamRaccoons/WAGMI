@@ -2,14 +2,14 @@ use crate::*;
 /// Accounts for [voter::create_move_request].
 #[derive(Accounts)]
 pub struct CreateMoveRequest<'info> {
-    /// [Escrow].
+    /// [Old_Escrow].
     #[account(
         mut,
         has_one = owner
     )]
     pub old_escrow: Box<Account<'info, Escrow>>,
 
-    /// [Escrow2].
+    /// [New_Escrow].
     #[account(mut)]
     pub new_escrow: Box<Account<'info, Escrow>>,
 
@@ -23,14 +23,14 @@ pub struct CreateMoveRequest<'info> {
         ],
         bump,
         payer = feepayer, 
-        space = Request::LEN
+        space = MoveRequest::LEN
     )]
-    pub request: Box<Account<'info, Request>>,
+    pub request: Box<Account<'info, MoveRequest>>,
 
-    /// Authority of the [Escrow].
+    /// Authority of the [Old_Escrow].
     pub owner: Signer<'info>,
 
-    /// Fee payer of the new [ Move_Request].
+    /// Fee payer of the new [Move_Request].
     #[account(mut)]
     pub feepayer: Signer<'info>,
 

@@ -460,7 +460,7 @@ describe("Move Lock", () => {
     /*
       1. User 'lost' funds 
       2. User creates new wallet (NewUser) with Sol
-      3. NewUser(feepayer) and User(authority) signs and move request together with freeze request
+      3. NewUser(feepayer) and User(authority) signs and move request together with freeze request, NewUser also creates new escrow
       4. A transaction is created for smart wallet to execute with the move request
       5. Smart wallet executes the move request transaction 
       6. Check that NewUser now owns the funds in the lock.
@@ -485,6 +485,12 @@ describe("Move Lock", () => {
     const newUserWallet = result.wallet;
     console.log("fund new wallet");
 
+    const [newEscrow, __bump] = deriveEscrow(
+      locker,
+      newUserWallet.publicKey,
+      LOCKED_VOTER_PROGRAM_ID
+    );
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     const chain_time = await getOnChainTime(provider.connection);
     console.log(
@@ -500,37 +506,37 @@ describe("Move Lock", () => {
         owner: userKeypair.publicKey,
       })
       .instruction();
-      let create_request_ix = await voterProgram.methods.
-    while (true) {
-      const [escrowState, onchainTimestamp] = await Promise.all([
-        voterProgram.account.escrow.fetch(escrow),
-        getOnChainTime(provider.connection),
-      ]);
 
-      if (escrowState.frozenUntil.toNumber() + 2 > onchainTimestamp) {
-        console.log(
-          `${
-            escrowState.frozenUntil.toNumber() - onchainTimestamp
-          } seconds until escrow un-freezes`
-        );
-        await sleep(1000);
-      } else {
-        break;
-      }
-    }
-
-    await voterProgram.methods
-      .withdraw()
+    let newEscrowIX = await voterProgram.methods
+      .newEscrow()
       .accounts({
-        destinationTokens: userATA,
-        escrow,
-        escrowOwner: voterProgram.provider.publicKey,
-        escrowTokens: escrowATA,
+        escrow: newEscrow,
+        escrowOwner: newUserWallet.publicKey,
         locker,
-        payer: userKeypair.publicKey,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        payer: newUserWallet.publicKey,
+        systemProgram: web3.SystemProgram.programId,
       })
-      .rpc();
-    console.log("User can call withdraw");
+      .instruction();
+    let create_request_ix = await voterProgram.methods
+      .createMoveRequest()
+      .accounts({
+        oldEscrow: escrow,
+        newEscrow: newEscrow,
+      })
+      .instruction();
+
+    let newRequestTx = new VersionedTransaction(
+      new Transaction()
+        .add(newEscrowIX)
+        .add(freeze_ix)
+        .add(create_request_ix)
+        .compileMessage()
+    );
+    await voterProgram.provider.send(newRequestTx, [
+      newUserKeypair,
+      userKeypair,
+    ]);
+
+    console.log("Create new Move_Request is done");
   });
 });

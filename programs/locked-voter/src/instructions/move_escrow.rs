@@ -8,7 +8,7 @@ pub struct MoveEscrow<'info> {
         has_one = old_escrow,
         has_one = new_escrow,
     )]
-    pub request: Box<Account<'info, Request>>,
+    pub request: Box<Account<'info, MoveRequest>>,
     /// [New_Escrow].
     #[account(mut, has_one = locker)]
     pub old_escrow: Box<Account<'info, Escrow>>,
@@ -74,8 +74,8 @@ impl<'info> MoveEscrow<'info> {
         self.new_escrow.partial_unstaking_amount = self.old_escrow.partial_unstaking_amount;
 
         emit!(MoveEscrowEvent {
-            escrow1: self.old_escrow.key(),
-            escrow2: self.new_escrow.key(),
+            old_escrow: self.old_escrow.key(),
+            new_escrow: self.new_escrow.key(),
             old_owner: self.old_escrow.owner,
             new_owner: self.new_escrow.owner,
         });
@@ -88,8 +88,6 @@ impl<'info> Validate<'info> for MoveEscrow<'info> {
     fn validate(&self) -> Result<()> {
         // TODO validate
 
-        // TODO add signature check for old owner
-
         Ok(())
     }
 }
@@ -99,10 +97,10 @@ impl<'info> Validate<'info> for MoveEscrow<'info> {
 pub struct MoveEscrowEvent {
     /// The old [Escrow].
     #[index]
-    pub escrow1: Pubkey,
+    pub old_escrow: Pubkey,
     /// The new [Escrow].
     #[index]
-    pub escrow2: Pubkey,
+    pub new_escrow: Pubkey,
     /// The old owner of the [Escrow].
     pub old_owner: Pubkey,
     /// The new owner of the [Escrow].
