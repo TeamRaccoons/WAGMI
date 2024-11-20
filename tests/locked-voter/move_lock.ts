@@ -1,6 +1,11 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN, Wallet, web3 } from "@coral-xyz/anchor";
-import { TOKEN_PROGRAM_ID, createMint, mintTo } from "@solana/spl-token";
+import {
+  TOKEN_PROGRAM_ID,
+  createMint,
+  mintTo,
+  getAccount,
+} from "@solana/spl-token";
 
 import {
   Connection,
@@ -30,9 +35,13 @@ import {
   getOrCreateATA,
   sleep,
   invokeAndAssertError,
+  BalanceTree,
+  deriveRequest,
+  deriveTransaction,
 } from "../utils";
 import { expect } from "chai";
 import { SystemInstructionCoder } from "@coral-xyz/anchor/dist/cjs/coder/system/instruction";
+import { max } from "bn.js";
 
 const provider = anchor.AnchorProvider.env();
 
@@ -430,7 +439,7 @@ describe("Move Lock", () => {
     console.log("User can call withdraw");
   });
 
-  it.skip("user freeze escrow, request for move, and smart wallet can move  ", async () => {
+  it("user freeze escrow, request for move, and smart wallet can move  ", async () => {
     const userWallet = new Wallet(userKeypair);
     const voterProgram = createLockedVoterProgram(
       userWallet,
@@ -458,7 +467,7 @@ describe("Move Lock", () => {
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     /*
-      1. User 'lost' funds 
+      1. User lost funds 
       2. User creates new wallet (NewUser) with Sol
       3. NewUser(feepayer) and User(authority) signs and move request together with freeze request, NewUser also creates new escrow
       4. A transaction is created for smart wallet to execute with the move request
@@ -474,10 +483,24 @@ describe("Move Lock", () => {
         (await provider.connection.getBalance(userKeypair.publicKey)) -
         SIGNATURE_FEES,
     });
-    let lostFundsTX = new VersionedTransaction(
-      new Transaction().add(lostFundsIX).compileMessage()
+
+    let blockhash = await provider.connection.getLatestBlockhash();
+    let tx = new Transaction(blockhash).add(lostFundsIX);
+    tx.feePayer = userKeypair.publicKey;
+
+    let lostFundsTX = new VersionedTransaction(tx.compileMessage());
+    lostFundsTX.sign([userKeypair]);
+    await provider.connection.sendTransaction(lostFundsTX);
+
+    const escrow_funds_to_be_rescued = (
+      await getAccount(provider.connection, escrowATA)
+    ).amount;
+
+    await sleep(1000);
+    expect(await provider.connection.getBalance(userKeypair.publicKey)).equal(
+      0
     );
-    await voterProgram.provider.send(lostFundsTX, [userKeypair]);
+    console.log("1. user lost funds");
     ///////////////////////////////////////////////////////////////////////////////////////////////////
 
     const result = await createAndFundWallet(provider.connection);
@@ -485,12 +508,7 @@ describe("Move Lock", () => {
     const newUserWallet = result.wallet;
     console.log("fund new wallet");
 
-    const [newEscrow, __bump] = deriveEscrow(
-      locker,
-      newUserWallet.publicKey,
-      LOCKED_VOTER_PROGRAM_ID
-    );
-
+    console.log("2. new wallet is created");
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     const chain_time = await getOnChainTime(provider.connection);
     console.log(
@@ -507,6 +525,19 @@ describe("Move Lock", () => {
       })
       .instruction();
 
+    const [newEscrow, __bump] = deriveEscrow(
+      locker,
+      newUserWallet.publicKey,
+      LOCKED_VOTER_PROGRAM_ID
+    );
+
+    const newEscrowATA = await getOrCreateATA(
+      rewardMint,
+      newEscrow,
+      keypair,
+      provider.connection
+    );
+
     let newEscrowIX = await voterProgram.methods
       .newEscrow()
       .accounts({
@@ -517,26 +548,131 @@ describe("Move Lock", () => {
         systemProgram: web3.SystemProgram.programId,
       })
       .instruction();
+
+    const [request, _rbump] = deriveRequest(
+      escrow,
+      newEscrow,
+      LOCKED_VOTER_PROGRAM_ID
+    );
+
     let create_request_ix = await voterProgram.methods
       .createMoveRequest()
       .accounts({
+        request: request,
         oldEscrow: escrow,
         newEscrow: newEscrow,
+        feepayer: newUserWallet.publicKey,
       })
       .instruction();
 
-    let newRequestTx = new VersionedTransaction(
-      new Transaction()
-        .add(newEscrowIX)
-        .add(freeze_ix)
-        .add(create_request_ix)
-        .compileMessage()
-    );
-    await voterProgram.provider.send(newRequestTx, [
-      newUserKeypair,
-      userKeypair,
-    ]);
+    blockhash = await provider.connection.getLatestBlockhash();
+    tx = new Transaction(blockhash)
+      .add(newEscrowIX)
+      .add(freeze_ix)
+      .add(create_request_ix);
+    tx.feePayer = newUserKeypair.publicKey;
+    let newRequestTx = new VersionedTransaction(tx.compileMessage());
+    newRequestTx.sign([newUserKeypair, userKeypair]);
+    // provider.
+    await provider.connection.sendTransaction(newRequestTx);
 
-    console.log("Create new Move_Request is done");
+    console.log("escrow frozen");
+    console.log("new escrow created");
+    console.log("new move request created");
+
+    console.log("3. new request is created");
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+    const move_lock_instruction = await voterProgram.methods
+      .moveEscrow()
+      .accounts({
+        locker,
+        governor: govern,
+        newEscrow,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        smartWallet,
+        request,
+        oldEscrow: escrow,
+        escrowTokens1: escrowATA,
+        escrowTokens2: newEscrowATA,
+      })
+      .instruction();
+
+    const smartWalletProgram = createSmartWalletProgram(
+      wallet,
+      SMART_WALLET_PROGRAM_ID
+    );
+
+    const smartWalletState = await smartWalletProgram.account.smartWallet.fetch(
+      smartWallet
+    );
+
+    const [transaction, txBump] = deriveTransaction(
+      smartWallet,
+      smartWalletState.numTransactions
+    );
+
+    await smartWalletProgram.methods
+      .createTransaction(txBump, [move_lock_instruction])
+      .accounts({
+        payer: smartWalletProgram.provider.publicKey,
+        proposer: smartWalletProgram.provider.publicKey,
+        smartWallet,
+        systemProgram: web3.SystemProgram.programId,
+        transaction,
+      })
+      .rpc();
+
+    console.log("transaction created");
+    console.log(
+      "4. a proposal is created for smart wallet to execute with the move request"
+    );
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    const txAccount = await smartWalletProgram.account.transaction.fetch(
+      transaction
+    );
+
+    await smartWalletProgram.methods
+      .executeTransaction()
+      .accounts({
+        smartWallet,
+        transaction: transaction,
+        owner: wallet.publicKey,
+      })
+      .remainingAccounts(
+        txAccount.instructions.flatMap((ix) => [
+          {
+            pubkey: ix.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+          ...ix.keys.map((k) => {
+            return {
+              ...k,
+              isSigner: false,
+            };
+          }),
+        ])
+      )
+      .signers([keypair])
+      .rpc();
+
+    console.log("transaction executed");
+    console.log("5. transaction proposal is executed");
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+    const funds_rescued = (await getAccount(provider.connection, newEscrowATA))
+      .amount;
+
+    console.log(
+      "Funds to be rescued: ",
+      escrow_funds_to_be_rescued,
+      " Funds rescued: ",
+      funds_rescued
+    );
+    expect(escrow_funds_to_be_rescued).equal(funds_rescued);
+
+    console.log("6. Funds rescue check done");
   });
 });

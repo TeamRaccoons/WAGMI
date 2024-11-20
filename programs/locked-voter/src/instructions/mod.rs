@@ -2,7 +2,7 @@
 
 pub mod activate_proposal;
 pub mod cast_vote;
-pub mod create_move_request;
+pub mod new_move_request;
 pub mod extend_lock_duration;
 pub mod freeze_escrow;
 pub mod increase_locked_amount;
@@ -19,7 +19,7 @@ pub mod withdraw_partial_unstaking;
 
 pub use activate_proposal::*;
 pub use cast_vote::*;
-pub use create_move_request::*;
+pub use new_move_request::*;
 pub use extend_lock_duration::*;
 pub use freeze_escrow::*;
 pub use increase_locked_amount::*;

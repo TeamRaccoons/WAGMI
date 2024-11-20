@@ -17,7 +17,7 @@ pub struct CreateMoveRequest<'info> {
     #[account( 
         init, 
         seeds = [
-            b"Escrow".as_ref(),
+            b"Request".as_ref(),
             old_escrow.key().as_ref(),
             new_escrow.key().as_ref()
         ],

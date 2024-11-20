@@ -9,7 +9,7 @@ pub struct MoveEscrow<'info> {
         has_one = new_escrow,
     )]
     pub request: Box<Account<'info, MoveRequest>>,
-    /// [New_Escrow].
+    /// [Old_Escrow].
     #[account(mut, has_one = locker)]
     pub old_escrow: Box<Account<'info, Escrow>>,
 
@@ -20,7 +20,7 @@ pub struct MoveEscrow<'info> {
     /// Token account held by the [Escrow].
     #[account(
         mut,
-        constraint = old_escrow.tokens == escrow_tokens1.key()
+        constraint = old_escrow.tokens == escrow_tokens1.key(),
     )]
     pub escrow_tokens1: Account<'info, TokenAccount>,
 
@@ -32,13 +32,12 @@ pub struct MoveEscrow<'info> {
     pub escrow_tokens2: Account<'info, TokenAccount>,
 
     // (old = new escrow) => Locker => Governor => Smart Wallet (Sends this IX)
-    #[account(mut, has_one = governor)]
+    #[account(has_one = governor)]
     pub locker: Box<Account<'info, Locker>>,
 
-    #[account(mut, has_one = smart_wallet)]
-    pub governor: Account<'info, Governor>,
+    #[account(has_one = smart_wallet)]
+    pub governor: Box<Account<'info, Governor>>,
 
-    #[account(mut)]
     pub smart_wallet: Signer<'info>,
 
     /// Token program.
@@ -66,7 +65,7 @@ impl<'info> MoveEscrow<'info> {
         // TODO: do some lock mathematics
 
         // migrate data over
-        self.new_escrow.amount = self.old_escrow.amount;
+        self.new_escrow.amount = self.old_escrow.amount + self.new_escrow.amount;
         self.new_escrow.escrow_started_at = self.old_escrow.escrow_started_at;
         self.new_escrow.escrow_ends_at = self.old_escrow.escrow_ends_at;
         self.new_escrow.vote_delegate = self.old_escrow.vote_delegate;
@@ -87,7 +86,10 @@ impl<'info> MoveEscrow<'info> {
 impl<'info> Validate<'info> for MoveEscrow<'info> {
     fn validate(&self) -> Result<()> {
         // TODO validate
-
+        invariant!(
+            self.old_escrow.frozen_until > Clock::get()?.unix_timestamp,
+            "Escrow must be frozen first"
+        );
         Ok(())
     }
 }
