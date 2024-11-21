@@ -74,10 +74,7 @@ impl<'info> Validate<'info> for CastVote<'info> {
             self.proposal.get_state()? == ProposalState::Active,
             "proposal must be active"
         );
-        invariant!(
-            self.escrow.frozen_until < Clock::get()?.unix_timestamp,
-            "Account is Frozen"
-        );
+        invariant!(!self.escrow.is_frozen()?, "Escrow is frozen");
         Ok(())
     }
 }

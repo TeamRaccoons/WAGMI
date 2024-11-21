@@ -40,9 +40,9 @@ impl Locker {
 #[derive(Copy, Debug, Default)]
 pub struct MoveRequest {
     /// The old escrow to move out from
-    pub old_escrow: Pubkey,
-    /// The new escrow to move into
-    pub new_escrow: Pubkey,
+    pub escrow: Pubkey,
+    /// The new owner to rescue funds
+    pub recovery_key: Pubkey,
 }
 
 impl MoveRequest {
@@ -93,12 +93,17 @@ pub struct Escrow {
     /// total amount of partial unstaking amount
     pub partial_unstaking_amount: u64,
 
+    // Before recovery approval, freezing is to stop leaked keys from withdrawing.
+    // After recovery approval, freezing is to
     /// Frozen
-    pub frozen_until: i64,
-
+    pub freeze_timestamp: i64,
+    /// New ta to recover into
+    pub recovery_key: Pubkey,
     /// buffer for further use
-    pub buffers: [u128; 9],
+    pub buffers: [u8; 31],
 }
+
+const FREEZE_DURATION: i64 = 7 * 24 * 60 * 60;
 
 impl Escrow {
     /// LEN of escrow
@@ -137,6 +142,11 @@ impl Escrow {
         self.escrow_started_at = next_escrow_started_at;
         self.escrow_ends_at = next_escrow_ends_at;
         Ok(())
+    }
+
+    /// Checks if the account
+    pub fn is_frozen(&self) -> Result<bool> {
+        Ok(self.freeze_timestamp + FREEZE_DURATION as i64 > Clock::get()?.unix_timestamp)
     }
 
     /// get remaining duration

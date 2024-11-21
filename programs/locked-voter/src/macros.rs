@@ -22,11 +22,12 @@ macro_rules! escrow_seeds {
 }
 
 #[macro_export]
-macro_rules! check_account_not_frozen {
-    ($escrow: expr) => {
-        invariant!(
-            $escrow.frozen_until < Clock::get()?.unix_timestamp,
-            "Account is Frozen"
+macro_rules! check_account_not_recovered {
+    ($escrow: expr ) => {
+        assert_keys_eq!(
+            $escrow.recovery_key,
+            Pubkey::default(),
+            "Escrow Account is recovered."
         );
     };
 }

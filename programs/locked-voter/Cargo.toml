@@ -16,8 +16,9 @@ cpi = ["no-entrypoint"]
 default = []
 test-bpf = []
 
+
 [dependencies]
-anchor-lang = "0.28.0"
+anchor-lang = { version = "0.28.0", features = ["init-if-needed"] }
 anchor-spl = "0.28.0"
 govern = { path = "../govern", features = ["cpi"] }
 smart-wallet = { path = "../smart-wallet", features = ["cpi"] }

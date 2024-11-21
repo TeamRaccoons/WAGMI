@@ -49,7 +49,8 @@ impl<'info> Validate<'info> for MergePartialUnstaking<'info> {
             lock_duration >= self.locker.params.min_stake_duration,
             crate::ErrorCode::LockupDurationTooShort
         );
-        check_account_not_frozen!(self.escrow);
+
+        invariant!(!self.escrow.is_frozen()?, "Escrow is frozen");
         Ok(())
     }
 }

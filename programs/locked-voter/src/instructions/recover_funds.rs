@@ -1,24 +1,19 @@
 use crate::*;
 use anchor_spl::token;
 
-/// Accounts for [voter::withdraw_partial_unstaking].
+/// Accounts for [voter::recover_funds].
 #[derive(Accounts)]
-pub struct WithdrawPartialUnstaking<'info> {
+pub struct RecoverFunds<'info> {
     /// The [Locker] being exited from.
     #[account(mut)]
     pub locker: Box<Account<'info, Locker>>,
 
     /// The [Escrow] that is being closed.
-    #[account(mut, has_one = locker, has_one= owner)]
+    #[account(mut, has_one = locker, close = payer, has_one = recovery_key)]
     pub escrow: Box<Account<'info, Escrow>>,
 
-    /// The [PartialUnstaking] that is being withdraw.
-    #[account(mut, has_one = escrow, close = payer)]
-    pub partial_unstake: Box<Account<'info, PartialUnstaking>>,
-
-    /// Authority of the [Escrow].
-    pub owner: Signer<'info>,
-
+    /// Recovery_key of the [Escrow].
+    pub recovery_key: Signer<'info>,
     /// Tokens locked up in the [Escrow].
     #[account(mut, constraint = escrow.tokens == escrow_tokens.key())]
     pub escrow_tokens: Account<'info, TokenAccount>,
@@ -34,13 +29,13 @@ pub struct WithdrawPartialUnstaking<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-impl<'info> WithdrawPartialUnstaking<'info> {
-    pub fn withdraw_partial_unstaking(&mut self) -> Result<()> {
+impl<'info> RecoverFunds<'info> {
+    pub fn recover_funds(&mut self) -> Result<()> {
         let seeds: &[&[&[u8]]] = escrow_seeds!(self.escrow);
 
         // transfer tokens from the escrow
         // if there are zero tokens in the escrow, short-circuit.
-        if self.partial_unstake.amount > 0 {
+        if self.escrow.amount > 0 {
             token::transfer(
                 CpiContext::new(
                     self.token_program.to_account_info(),
@@ -51,64 +46,65 @@ impl<'info> WithdrawPartialUnstaking<'info> {
                     },
                 )
                 .with_signer(seeds),
-                self.partial_unstake.amount,
+                self.escrow.amount,
             )?;
         }
 
         // update the locker
         let locker = &mut self.locker;
-        locker.locked_supply = unwrap_int!(locker
-            .locked_supply
-            .checked_sub(self.partial_unstake.amount));
+        locker.locked_supply = unwrap_int!(locker.locked_supply.checked_sub(self.escrow.amount));
 
-        unwrap_int!(self
-            .escrow
-            .withdraw_partial_unstaking_amount(self.partial_unstake.amount));
-
-        emit!(WithdrawPartialUnstakingEvent {
+        emit!(RecoverFundsEvent {
             escrow_owner: self.escrow.owner,
             locker: locker.key(),
-            partial_unstaking: self.partial_unstake.key(),
             locker_supply: locker.locked_supply,
             timestamp: Clock::get()?.unix_timestamp,
-            released_amount: self.partial_unstake.amount,
+            released_amount: self.escrow.amount,
+            recovery_address: self.recovery_key.key(),
         });
 
         Ok(())
     }
 }
 
-impl<'info> Validate<'info> for WithdrawPartialUnstaking<'info> {
+impl<'info> Validate<'info> for RecoverFunds<'info> {
     fn validate(&self) -> Result<()> {
+        invariant!(!self.escrow.is_frozen()?, "Escrow is frozen");
         assert_keys_eq!(self.locker, self.escrow.locker);
+        assert_keys_eq!(self.escrow.recovery_key, self.recovery_key);
+        assert_keys_eq!(self.escrow.tokens, self.escrow_tokens);
         assert_keys_neq!(self.escrow_tokens, self.destination_tokens);
 
-        let expiration = self.partial_unstake.expiration;
+        let cooldown_timestamp =
+            self.escrow.freeze_timestamp + self.locker.params.max_stake_duration as i64;
         let now = Clock::get()?.unix_timestamp;
-        msg!("now: {}; expiration: {}", now, expiration);
-        invariant!(expiration <= now, PartialUnstakingIsNotEnded);
-        invariant!(!self.escrow.is_frozen()?, "Escrow is frozen");
-        check_account_not_recovered!(self.escrow);
+        msg!("now: {}; cooldown_timestamp: {}", now, cooldown_timestamp);
+        invariant!(cooldown_timestamp <= now, EscrowNotEnded);
+
+        invariant!(
+            self.escrow.partial_unstaking_amount == 0,
+            PartialUnstakingAmountIsNotZero
+        );
 
         Ok(())
     }
 }
 
 #[event]
-/// Event called in [voter::withdraw_partial_unstaking].
-pub struct WithdrawPartialUnstakingEvent {
+/// Event called in [voter::withdraw].
+pub struct RecoverFundsEvent {
     /// The owner of the [Escrow].
     #[index]
     pub escrow_owner: Pubkey,
     /// The locker for the [Escrow].
     #[index]
     pub locker: Pubkey,
-    /// address of partial unstaking
-    pub partial_unstaking: Pubkey,
     /// Timestamp for the event.
     pub timestamp: i64,
     /// The amount of tokens locked inside the [Locker].
     pub locker_supply: u64,
     /// The amount released from the [Escrow].
     pub released_amount: u64,
+    /// The recovery_address [Escrow].
+    pub recovery_address: Pubkey,
 }

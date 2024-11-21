@@ -28,8 +28,9 @@ impl<'info> SetVoteDelegate<'info> {
 impl<'info> Validate<'info> for SetVoteDelegate<'info> {
     fn validate(&self) -> Result<()> {
         assert_keys_eq!(self.escrow.owner, self.escrow_owner);
-        check_account_not_frozen!(self.escrow);
 
+        invariant!(!self.escrow.is_frozen()?, "Escrow is frozen");
+        check_account_not_recovered!(self.escrow);
         Ok(())
     }
 }

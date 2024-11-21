@@ -68,7 +68,8 @@ impl<'info> Withdraw<'info> {
 
 impl<'info> Validate<'info> for Withdraw<'info> {
     fn validate(&self) -> Result<()> {
-        check_account_not_frozen!(self.escrow);
+        invariant!(!self.escrow.is_frozen()?, "Escrow is frozen");
+        check_account_not_recovered!(self.escrow);
         assert_keys_eq!(self.locker, self.escrow.locker);
         assert_keys_eq!(self.escrow.owner, self.escrow_owner);
         assert_keys_eq!(self.escrow.tokens, self.escrow_tokens);

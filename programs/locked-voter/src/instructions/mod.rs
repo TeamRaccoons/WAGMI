@@ -1,16 +1,16 @@
 //! Instruction processors.
 
 pub mod activate_proposal;
+pub mod approve_move_request;
 pub mod cast_vote;
-pub mod new_move_request;
 pub mod extend_lock_duration;
-pub mod freeze_escrow;
 pub mod increase_locked_amount;
 pub mod merge_partial_unstaking;
-pub mod move_escrow;
 pub mod new_escrow;
 pub mod new_locker;
+pub mod open_dispute;
 pub mod open_partial_unstaking;
+pub mod recover_funds;
 pub mod set_locker_params;
 pub mod set_vote_delegate;
 pub mod toggle_max_lock;
@@ -18,16 +18,16 @@ pub mod withdraw;
 pub mod withdraw_partial_unstaking;
 
 pub use activate_proposal::*;
+pub use approve_move_request::*;
 pub use cast_vote::*;
-pub use new_move_request::*;
 pub use extend_lock_duration::*;
-pub use freeze_escrow::*;
 pub use increase_locked_amount::*;
 pub use merge_partial_unstaking::*;
-pub use move_escrow::*;
 pub use new_escrow::*;
 pub use new_locker::*;
+pub use open_dispute::*;
 pub use open_partial_unstaking::*;
+pub use recover_funds::*;
 pub use set_locker_params::*;
 pub use set_vote_delegate::*;
 pub use toggle_max_lock::*;
