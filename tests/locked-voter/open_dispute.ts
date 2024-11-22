@@ -34,19 +34,14 @@ import {
   getOnChainTime,
   getOrCreateATA,
   sleep,
-  invokeAndAssertError,
-  BalanceTree,
   deriveRequest,
   deriveTransaction,
 } from "../utils";
-import { expect } from "chai";
-import { SystemInstructionCoder } from "@coral-xyz/anchor/dist/cjs/coder/system/instruction";
-import { max } from "bn.js";
+import { assert, expect } from "chai";
 
 const provider = anchor.AnchorProvider.env();
 
 const lockAmount = new BN(1000);
-const partialUnstakingAmount = new BN(100);
 
 describe("Move Lock", () => {
   let locker: web3.PublicKey;
@@ -74,12 +69,6 @@ describe("Move Lock", () => {
   const minStakeDuration: BN = new BN(10); // 10 seconds
   const maxStakeVoteMultiplier: number = 1;
   const proposalActivationMinVotes: BN = new BN(2); // min 2 vote to activate proposal
-
-  // Freeze test
-  const freeze_before_failure = -10;
-  const freeze_normally = 10;
-  const freeze_extension_failure = 15;
-  const freeze_extension = 20;
 
   async function createSetLockerParamsProposal() {
     const governProgram = createGovernProgram(wallet, GOVERN_PROGRAM_ID);
@@ -282,166 +271,9 @@ describe("Move Lock", () => {
       .rpc();
   });
 
-  it.skip("users can freeze escrow correctly", async () => {
+  it("user opens dispute, gets it approved, and wait for cooldown to claim tokens", async () => {
     const userWallet = new Wallet(userKeypair);
-    const voterProgram = createLockedVoterProgram(
-      userWallet,
-      LOCKED_VOTER_PROGRAM_ID
-    );
-    const [escrow, _bump] = deriveEscrow(
-      locker,
-      userWallet.publicKey,
-      LOCKED_VOTER_PROGRAM_ID
-    );
-
-    const userATA = await getOrCreateATA(
-      rewardMint,
-      userWallet.publicKey,
-      keypair,
-      provider.connection
-    );
-    const escrowATA = await getOrCreateATA(
-      rewardMint,
-      escrow,
-      keypair,
-      provider.connection
-    );
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    const chain_time = await getOnChainTime(provider.connection);
-    console.log(
-      `Chain time now: ${chain_time}, Escrow frozen request time: ${
-        chain_time + freeze_before_failure
-      }`
-    );
-    invokeAndAssertError(
-      () => {
-        return voterProgram.methods
-          .freezeEscrow(new BN(chain_time + freeze_before_failure))
-          .accounts({
-            escrow,
-            owner: userKeypair.publicKey,
-          })
-          .signers([userKeypair])
-          .rpc();
-      },
-      "Freeze until time must be more than current timestamp",
-      true
-    );
-    console.log("User cannot freeze using timestamp before current timestamp");
-
-    console.log(
-      `Chain time now: ${chain_time}, Escrow frozen request time: ${
-        chain_time + freeze_normally
-      }`
-    );
-    await voterProgram.methods
-      .freezeEscrow(new BN(chain_time + freeze_normally))
-      .accounts({
-        escrow,
-        owner: userKeypair.publicKey,
-      })
-      .signers([userKeypair])
-      .rpc();
-    console.log("User can freeze escrow normally");
-
-    console.log(
-      `Chain time now: ${chain_time}, Escrow frozen request time: ${
-        chain_time + freeze_extension_failure
-      }`
-    );
-    invokeAndAssertError(
-      () => {
-        return voterProgram.methods
-          .freezeEscrow(new BN(chain_time + freeze_extension_failure))
-          .accounts({
-            escrow,
-            owner: userKeypair.publicKey,
-          })
-          .signers([userKeypair])
-          .rpc();
-      },
-      "Account is already frozen",
-      true
-    );
-    console.log(
-      "User cannot freeze escrow to a time before current frozen_until time"
-    );
-
-    console.log(
-      `Chain time now: ${chain_time}, Escrow frozen request time: ${
-        chain_time + freeze_extension
-      }`
-    );
-    await voterProgram.methods
-      .freezeEscrow(new BN(chain_time + freeze_extension))
-      .accounts({
-        escrow,
-        owner: userKeypair.publicKey,
-      })
-      .signers([userKeypair])
-      .rpc();
-
-    console.log("User can extend escrow freeze");
-
-    // withdraw escrow
-    invokeAndAssertError(
-      () => {
-        return voterProgram.methods
-          .withdraw()
-          .accounts({
-            destinationTokens: userATA,
-            escrow,
-            escrowOwner: voterProgram.provider.publicKey,
-            escrowTokens: escrowATA,
-            locker,
-            payer: voterProgram.provider.publicKey,
-            tokenProgram: TOKEN_PROGRAM_ID,
-          })
-          .rpc();
-      },
-      "Account is Frozen",
-      true
-    );
-    console.log("User cannot withdraw while account is frozen");
-
-    while (true) {
-      const [escrowState, onchainTimestamp] = await Promise.all([
-        voterProgram.account.escrow.fetch(escrow),
-        getOnChainTime(provider.connection),
-      ]);
-
-      if (escrowState.frozenUntil.toNumber() + 2 > onchainTimestamp) {
-        console.log(
-          `${
-            escrowState.frozenUntil.toNumber() - onchainTimestamp
-          } seconds until escrow un-freezes`
-        );
-        await sleep(1000);
-      } else {
-        break;
-      }
-    }
-
-    await voterProgram.methods
-      .withdraw()
-      .accounts({
-        destinationTokens: userATA,
-        escrow,
-        escrowOwner: voterProgram.provider.publicKey,
-        escrowTokens: escrowATA,
-        locker,
-        payer: userKeypair.publicKey,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
-      .rpc();
-    console.log("User can call withdraw");
-  });
-
-  it("user freeze escrow, request for move, and smart wallet can move  ", async () => {
-    const userWallet = new Wallet(userKeypair);
-    const voterProgram = createLockedVoterProgram(
+    let voterProgram = createLockedVoterProgram(
       userWallet,
       LOCKED_VOTER_PROGRAM_ID
     );
@@ -469,10 +301,11 @@ describe("Move Lock", () => {
     /*
       1. User lost funds 
       2. User creates new wallet (NewUser) with Sol
-      3. NewUser(feepayer) and User(authority) signs and move request together with freeze request, NewUser also creates new escrow
+      3. NewUser(feepayer) and User(authority) signs OpenDispute which also freezes escrow for 7 days
       4. A transaction is created for smart wallet to execute with the move request
       5. Smart wallet executes the move request transaction 
-      6. Check that NewUser now owns the funds in the lock.
+      6. Wait for cooldown period
+      7. NewUser will recover the tokens 
     */
 
     const SIGNATURE_FEES = 5000;
@@ -496,6 +329,7 @@ describe("Move Lock", () => {
       await getAccount(provider.connection, escrowATA)
     ).amount;
 
+    // Wait for RPC to catch up
     await sleep(1000);
     expect(await provider.connection.getBalance(userKeypair.publicKey)).equal(
       0
@@ -506,95 +340,65 @@ describe("Move Lock", () => {
     const result = await createAndFundWallet(provider.connection);
     newUserKeypair = result.keypair;
     const newUserWallet = result.wallet;
+
+    let newUserATA = await getOrCreateATA(
+      rewardMint,
+      newUserKeypair.publicKey,
+      newUserKeypair,
+      provider.connection
+    );
+
+    // Wait for RPC to catch up
+    await sleep(1000);
+    expect(
+      await provider.connection.getBalance(newUserKeypair.publicKey)
+    ).greaterThanOrEqual(100_000_000);
+
     console.log("fund new wallet");
 
     console.log("2. new wallet is created");
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     const chain_time = await getOnChainTime(provider.connection);
     console.log(
-      `Chain time now: ${chain_time}, Escrow frozen request time: ${
-        chain_time + freeze_normally
-      }`
+      `Chain time now: ${chain_time}, Escrow freeze_time: ${chain_time}`
     );
+    voterProgram = createLockedVoterProgram(
+      newUserWallet,
+      LOCKED_VOTER_PROGRAM_ID
+    );
+    const [request, rbump] = deriveRequest(
+      escrow,
+      newUserKeypair.publicKey,
+      voterProgram.programId
+    );
+    voterProgram.provider.publicKey;
 
-    let freeze_ix = await voterProgram.methods
-      .freezeEscrow(new BN(chain_time + freeze_normally))
+    await voterProgram.methods
+      .openDispute()
       .accounts({
+        locker: locker,
         escrow,
         owner: userKeypair.publicKey,
+        request,
+        recoveryKey: newUserKeypair.publicKey,
+        feepayer: newUserKeypair.publicKey,
       })
-      .instruction();
+      .signers([newUserKeypair, userKeypair])
+      .rpc();
 
-    const [newEscrow, __bump] = deriveEscrow(
-      locker,
-      newUserWallet.publicKey,
-      LOCKED_VOTER_PROGRAM_ID
-    );
-
-    const newEscrowATA = await getOrCreateATA(
-      rewardMint,
-      newEscrow,
-      keypair,
-      provider.connection
-    );
-
-    let newEscrowIX = await voterProgram.methods
-      .newEscrow()
-      .accounts({
-        escrow: newEscrow,
-        escrowOwner: newUserWallet.publicKey,
-        locker,
-        payer: newUserWallet.publicKey,
-        systemProgram: web3.SystemProgram.programId,
-      })
-      .instruction();
-
-    const [request, _rbump] = deriveRequest(
-      escrow,
-      newEscrow,
-      LOCKED_VOTER_PROGRAM_ID
-    );
-
-    let create_request_ix = await voterProgram.methods
-      .createMoveRequest()
-      .accounts({
-        request: request,
-        oldEscrow: escrow,
-        newEscrow: newEscrow,
-        feepayer: newUserWallet.publicKey,
-      })
-      .instruction();
-
-    blockhash = await provider.connection.getLatestBlockhash();
-    tx = new Transaction(blockhash)
-      .add(newEscrowIX)
-      .add(freeze_ix)
-      .add(create_request_ix);
-    tx.feePayer = newUserKeypair.publicKey;
-    let newRequestTx = new VersionedTransaction(tx.compileMessage());
-    newRequestTx.sign([newUserKeypair, userKeypair]);
-    // provider.
-    await provider.connection.sendTransaction(newRequestTx);
-
-    console.log("escrow frozen");
-    console.log("new escrow created");
-    console.log("new move request created");
-
+    console.log("escrow frozen and move request created");
     console.log("3. new request is created");
     ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-    const move_lock_instruction = await voterProgram.methods
-      .moveEscrow()
+    const approve_move_request = await voterProgram.methods
+      .approveMoveRequest()
       .accounts({
         locker,
         governor: govern,
-        newEscrow,
-        tokenProgram: TOKEN_PROGRAM_ID,
         smartWallet,
         request,
-        oldEscrow: escrow,
-        escrowTokens1: escrowATA,
-        escrowTokens2: newEscrowATA,
+        escrow: escrow,
+        recoveryKey: newUserKeypair.publicKey,
       })
       .instruction();
 
@@ -613,7 +417,7 @@ describe("Move Lock", () => {
     );
 
     await smartWalletProgram.methods
-      .createTransaction(txBump, [move_lock_instruction])
+      .createTransaction(txBump, [approve_move_request])
       .accounts({
         payer: smartWalletProgram.provider.publicKey,
         proposer: smartWalletProgram.provider.publicKey,
@@ -625,7 +429,7 @@ describe("Move Lock", () => {
 
     console.log("transaction created");
     console.log(
-      "4. a proposal is created for smart wallet to execute with the move request"
+      "4. a proposal is created for smart wallet to execute with the approve the request"
     );
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     const txAccount = await smartWalletProgram.account.transaction.fetch(
@@ -657,22 +461,54 @@ describe("Move Lock", () => {
       .signers([keypair])
       .rpc();
 
-    console.log("transaction executed");
     console.log("5. transaction proposal is executed");
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-    const funds_rescued = (await getAccount(provider.connection, newEscrowATA))
+    while (true) {
+      await sleep(1000);
+      const [escrowState, onchainTimestamp] = await Promise.all([
+        voterProgram.account.escrow.fetch(escrow),
+        getOnChainTime(provider.connection),
+      ]);
+      if (
+        escrowState.freezeTimestamp.toNumber() +
+          maxStakeDuration.toNumber() +
+          2 >
+        onchainTimestamp
+      ) {
+        console.log(
+          `${
+            escrowState.freezeTimestamp.toNumber() +
+            maxStakeDuration.toNumber() -
+            onchainTimestamp
+          } seconds until escrow un-freezes`
+        );
+      } else {
+        break;
+      }
+    }
+
+    console.log("6. wait for cooldown period");
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+    await voterProgram.methods
+      .recoverFunds()
+      .accounts({
+        payer: newUserKeypair.publicKey,
+        locker,
+        escrow,
+        escrowTokens: escrowATA,
+        destinationTokens: newUserATA,
+        recoveryKey: newUserKeypair.publicKey,
+      })
+      .signers([newUserKeypair])
+      .rpc();
+
+    await sleep(1000);
+    const rescued_amount = (await getAccount(provider.connection, newUserATA))
       .amount;
-
-    console.log(
-      "Funds to be rescued: ",
-      escrow_funds_to_be_rescued,
-      " Funds rescued: ",
-      funds_rescued
-    );
-    expect(escrow_funds_to_be_rescued).equal(funds_rescued);
-
-    console.log("6. Funds rescue check done");
+    expect(rescued_amount).equal(escrow_funds_to_be_rescued);
+    console.log("7. Finally recover the tokens and check.");
   });
 });

@@ -34,7 +34,7 @@ const provider = anchor.AnchorProvider.env();
 const userCount = 3;
 const lockAmount = new BN(100);
 
-describe.skip("Locked voter", () => {
+describe("Locked voter", () => {
   let locker: web3.PublicKey;
   let govern: web3.PublicKey;
   let smartWallet: web3.PublicKey;

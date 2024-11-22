@@ -33,9 +33,9 @@ impl<'info> RecoverFunds<'info> {
     pub fn recover_funds(&mut self) -> Result<()> {
         let seeds: &[&[&[u8]]] = escrow_seeds!(self.escrow);
 
-        // transfer tokens from the escrow
+        // transfer tokens from the escrow TA
         // if there are zero tokens in the escrow, short-circuit.
-        if self.escrow.amount > 0 {
+        if self.escrow_tokens.amount > 0 {
             token::transfer(
                 CpiContext::new(
                     self.token_program.to_account_info(),
@@ -69,7 +69,11 @@ impl<'info> RecoverFunds<'info> {
 
 impl<'info> Validate<'info> for RecoverFunds<'info> {
     fn validate(&self) -> Result<()> {
-        invariant!(!self.escrow.is_frozen()?, "Escrow is frozen");
+        invariant!(
+            (self.escrow.freeze_timestamp + self.locker.params.max_stake_duration as i64)
+                <= Clock::get()?.unix_timestamp,
+            "Escrow is frozen"
+        );
         assert_keys_eq!(self.locker, self.escrow.locker);
         assert_keys_eq!(self.escrow.recovery_key, self.recovery_key);
         assert_keys_eq!(self.escrow.tokens, self.escrow_tokens);

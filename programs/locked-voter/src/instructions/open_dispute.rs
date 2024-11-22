@@ -14,15 +14,15 @@ pub struct OpenDispute<'info> {
     pub recovery_key: Signer<'info>,
 
     /// [Request].
-    #[account( 
-        init_if_needed, 
+    #[account(
+        init_if_needed,
         seeds = [
             b"Request".as_ref(),
             escrow.key().as_ref(),
             recovery_key.key().as_ref(),
         ],
         bump,
-        payer = feepayer, 
+        payer = feepayer,
         space = MoveRequest::LEN
     )]
     pub request: Box<Account<'info, MoveRequest>>,
@@ -41,7 +41,6 @@ impl<'info> OpenDispute<'info> {
     pub fn open_dispute(&mut self) -> Result<()> {
         self.request.escrow = self.escrow.key();
         self.request.recovery_key = self.feepayer.key();
-
 
         let now = Clock::get()?.unix_timestamp;
         invariant!(
@@ -66,7 +65,6 @@ impl<'info> Validate<'info> for OpenDispute<'info> {
         Ok(())
     }
 }
-
 
 #[event]
 /// Event called in [voter::new_escrow].

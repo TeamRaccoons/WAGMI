@@ -131,6 +131,12 @@ pub mod locked_voter {
     pub fn open_dispute(ctx: Context<OpenDispute>) -> Result<()> {
         ctx.accounts.open_dispute()
     }
+
+    /// Open Dispute
+    #[access_control(ctx.accounts.validate())]
+    pub fn recover_funds(ctx: Context<RecoverFunds>) -> Result<()> {
+        ctx.accounts.recover_funds()
+    }
 }
 
 /// [voter] errors.

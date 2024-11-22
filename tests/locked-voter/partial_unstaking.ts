@@ -29,7 +29,7 @@ const provider = anchor.AnchorProvider.env();
 const lockAmount = new BN(1000);
 const partialUnstakingAmount = new BN(100);
 
-describe.skip("Partial unstaking", () => {
+describe("Partial unstaking", () => {
   let locker: web3.PublicKey;
   let govern: web3.PublicKey;
   let smartWallet: web3.PublicKey;
