@@ -173,5 +173,5 @@ pub enum ErrorCode {
     #[msg("Partial unstaking has not ended")]
     PartialUnstakingIsNotEnded,
     #[msg("Recovery cooldown has not ended")]
-    CooldawnIsNotEnded,
+    CooldownIsNotEnded,
 }
