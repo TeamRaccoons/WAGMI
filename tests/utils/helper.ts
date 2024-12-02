@@ -70,7 +70,10 @@ export function deriveGovern(basePubkey: web3.PublicKey) {
   );
 }
 
-export function deriveLocker(basePubkey: web3.PublicKey, programId: web3.PublicKey) {
+export function deriveLocker(
+  basePubkey: web3.PublicKey,
+  programId: web3.PublicKey
+) {
   return web3.PublicKey.findProgramAddressSync(
     [Buffer.from("Locker"), basePubkey.toBytes()],
     programId
@@ -91,10 +94,22 @@ export function deriveClaimStatus(index: BN, distributor: web3.PublicKey) {
 export function deriveEscrow(
   locker: web3.PublicKey,
   escrowOwner: web3.PublicKey,
-  voterProgram: web3.PublicKey,
+  voterProgram: web3.PublicKey
+) {
+  const [escrow, _bump] = web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("Escrow"), locker.toBytes(), escrowOwner.toBytes()],
+    voterProgram
+  );
+  return escrow
+}
+
+export function deriveRequest(
+  oldEscrow: web3.PublicKey,
+  newEscrow: web3.PublicKey,
+  voterProgram: web3.PublicKey
 ) {
   return web3.PublicKey.findProgramAddressSync(
-    [Buffer.from("Escrow"), locker.toBytes(), escrowOwner.toBytes()],
+    [Buffer.from("Request"), oldEscrow.toBytes(), newEscrow.toBytes()],
     voterProgram
   );
 }
@@ -166,7 +181,7 @@ export async function createOptionProposal(
   governor: web3.PublicKey,
   instruction: IProposalInstruction[],
   governProgram: Program<Govern>,
-  maxOption: number,
+  maxOption: number
 ) {
   const governState = await governProgram.account.governor.fetch(governor);
   const [proposal, _bump] = deriveProposal(governor, governState.proposalCount);
@@ -189,7 +204,6 @@ export async function createOptionProposal(
 
   return proposal;
 }
-
 
 export async function createOptionProposalMeta(
   proposal: web3.PublicKey,
@@ -252,8 +266,17 @@ export async function createDistributor(
   mdProgram: Program<MerkleDistributor>
 ) {
   const [distributor, _bump] = deriveDistributor(baseKeypair.publicKey);
-  const tokenVault = getAssociatedTokenAddressSync(rewardMint, distributor, true);
-  const clawbackReceiver = await getOrCreateATA(rewardMint, baseKeypair.publicKey, baseKeypair, mdProgram.provider.connection);
+  const tokenVault = getAssociatedTokenAddressSync(
+    rewardMint,
+    distributor,
+    true
+  );
+  const clawbackReceiver = await getOrCreateATA(
+    rewardMint,
+    baseKeypair.publicKey,
+    baseKeypair,
+    mdProgram.provider.connection
+  );
   console.log("Creating distributor", distributor.toBase58());
 
   const tx = await mdProgram.methods
@@ -262,7 +285,7 @@ export async function createDistributor(
       Array.from(new Uint8Array(root)),
       maxTotalClaim,
       maxNodesClaimed,
-      new BN(999999999999),
+      new BN(999999999999)
     )
     .accounts({
       base: baseKeypair.publicKey,
@@ -386,7 +409,10 @@ export async function createMetLocker(
   governor: web3.PublicKey,
   voterProgram: Program<MetVoter>
 ) {
-  const [locker, _bump] = deriveLocker(baseKeypair.publicKey, voterProgram.programId);
+  const [locker, _bump] = deriveLocker(
+    baseKeypair.publicKey,
+    voterProgram.programId
+  );
 
   console.log("Creating locker", locker.toBase58());
 
@@ -416,7 +442,6 @@ export async function createMetLocker(
   return locker;
 }
 
-
 export async function createLocker(
   maxStakeDuration: BN,
   maxStakeVoteMultiplier: number,
@@ -427,10 +452,12 @@ export async function createLocker(
   governor: web3.PublicKey,
   voterProgram: Program<LockedVoter>
 ) {
-  const [locker, _bump] = deriveLocker(baseKeypair.publicKey, voterProgram.programId);
+  const [locker, _bump] = deriveLocker(
+    baseKeypair.publicKey,
+    voterProgram.programId
+  );
 
   console.log("Creating locker", locker.toBase58());
-
 
   const tx = await voterProgram.methods
     .newLocker({

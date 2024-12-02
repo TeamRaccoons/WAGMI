@@ -10,7 +10,7 @@ pub struct ToggleMaxLock<'info> {
     #[account(mut, has_one = locker)]
     pub escrow: Box<Account<'info, Escrow>>,
 
-    /// Authority of the [Escrow] and
+    /// Authority of the [Escrow]
     pub escrow_owner: Signer<'info>,
 }
 
@@ -41,7 +41,7 @@ impl<'info> Validate<'info> for ToggleMaxLock<'info> {
     fn validate(&self) -> Result<()> {
         assert_keys_eq!(self.locker, self.escrow.locker);
         assert_keys_eq!(self.escrow.owner, self.escrow_owner);
-
+        invariant!(self.escrow.is_not_in_dispute(), "Escrow is disputed");
         Ok(())
     }
 }

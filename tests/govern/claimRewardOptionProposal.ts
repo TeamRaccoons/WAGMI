@@ -326,7 +326,7 @@ describe("Locked voter", () => {
         for (const keypair of userKeypairs) {
             const wallet = new Wallet(keypair);
             const voterProgram = createLockedVoterProgram(wallet, LOCKED_VOTER_PROGRAM_ID);
-            const [escrow, _bump] = deriveEscrow(locker, wallet.publicKey, LOCKED_VOTER_PROGRAM_ID);
+            const escrow = deriveEscrow(locker, wallet.publicKey, LOCKED_VOTER_PROGRAM_ID);
 
             await voterProgram.methods
                 .newEscrow()
@@ -479,7 +479,7 @@ describe("Locked voter", () => {
             const wallet = new Wallet(keypair);
             const voterProgram = createLockedVoterProgram(wallet, LOCKED_VOTER_PROGRAM_ID);
             const governProgram = createGovernProgram(wallet, GOVERN_PROGRAM_ID);
-            const [escrow, _eBump] = deriveEscrow(locker, wallet.publicKey, LOCKED_VOTER_PROGRAM_ID);
+            const escrow = deriveEscrow(locker, wallet.publicKey, LOCKED_VOTER_PROGRAM_ID);
             const vote = await getOrCreateVote(proposal, governProgram);
             await voterProgram.methods
                 .castVote(VoteSide.For)

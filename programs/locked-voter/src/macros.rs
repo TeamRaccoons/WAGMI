@@ -20,3 +20,14 @@ macro_rules! escrow_seeds {
         ]]
     };
 }
+
+// #[macro_export]
+// macro_rules! check_account_not_recovered {
+//     ($escrow: expr ) => {
+//         assert_keys_eq!(
+//             $escrow.recovery_key,
+//             Pubkey::default(),
+//             "Escrow Account is recovered."
+//         );
+//     };
+// }

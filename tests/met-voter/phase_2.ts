@@ -219,7 +219,7 @@ describe("Locked voter", () => {
     for (const keypair of userKeypairs) {
       const wallet = new Wallet(keypair);
       const voterProgram = createMetVoterProgram(wallet, MET_VOTER_PROGRAM_ID);
-      const [escrow, _bump] = deriveEscrow(locker, wallet.publicKey, MET_VOTER_PROGRAM_ID);
+      const escrow = deriveEscrow(locker, wallet.publicKey, MET_VOTER_PROGRAM_ID);
 
       await voterProgram.methods
         .newEscrow()
@@ -258,7 +258,7 @@ describe("Locked voter", () => {
     const keypair = userKeypairs[0];
     const userWallet = new Wallet(keypair);
     const voterProgram = createMetVoterProgram(userWallet, MET_VOTER_PROGRAM_ID);
-    const [escrow, _bump] = deriveEscrow(locker, userWallet.publicKey, MET_VOTER_PROGRAM_ID);
+    const escrow = deriveEscrow(locker, userWallet.publicKey, MET_VOTER_PROGRAM_ID);
 
     invokeAndAssertError(
       () => {
@@ -280,7 +280,7 @@ describe("Locked voter", () => {
     const keypair = userKeypairs[0];
     const userWallet = new Wallet(keypair);
     const voterProgram = createMetVoterProgram(userWallet, MET_VOTER_PROGRAM_ID);
-    const [escrow, _bump] = deriveEscrow(locker, userWallet.publicKey, MET_VOTER_PROGRAM_ID);
+    const escrow = deriveEscrow(locker, userWallet.publicKey, MET_VOTER_PROGRAM_ID);
 
     invokeAndAssertError(
       () => {
@@ -302,7 +302,7 @@ describe("Locked voter", () => {
     for (const keypair of userKeypairs) {
       const userWallet = new Wallet(keypair);
       const voterProgram = createMetVoterProgram(userWallet, MET_VOTER_PROGRAM_ID);
-      const [escrow, _bump] = deriveEscrow(locker, userWallet.publicKey, MET_VOTER_PROGRAM_ID);
+      const escrow = deriveEscrow(locker, userWallet.publicKey, MET_VOTER_PROGRAM_ID);
 
       let escrowState = await voterProgram.account.escrow.fetch(escrow);
 
@@ -328,7 +328,7 @@ describe("Locked voter", () => {
       const wallet = new Wallet(keypair);
 
       const voterProgram = createMetVoterProgram(wallet, MET_VOTER_PROGRAM_ID);
-      const [escrow, _bump] = deriveEscrow(locker, wallet.publicKey, MET_VOTER_PROGRAM_ID);
+      const escrow = deriveEscrow(locker, wallet.publicKey, MET_VOTER_PROGRAM_ID);
 
       const escrowATA = await getOrCreateATA(
         rewardMint,
@@ -371,7 +371,7 @@ describe("Locked voter", () => {
     const keypair = userKeypairs[0];
     const userWallet = new Wallet(keypair);
     const voterProgram = createMetVoterProgram(userWallet, MET_VOTER_PROGRAM_ID);
-    const [escrow, _bump] = deriveEscrow(locker, userWallet.publicKey, MET_VOTER_PROGRAM_ID);
+    const escrow = deriveEscrow(locker, userWallet.publicKey, MET_VOTER_PROGRAM_ID);
 
     invokeAndAssertError(
       () => {
@@ -396,7 +396,7 @@ describe("Locked voter", () => {
     const governProgram = createGovernProgram(userWallet, GOVERN_PROGRAM_ID);
     const voterProgram = createMetVoterProgram(userWallet, MET_VOTER_PROGRAM_ID);
 
-    const [escrow, _bump] = deriveEscrow(locker, userWallet.publicKey, MET_VOTER_PROGRAM_ID);
+    const escrow = deriveEscrow(locker, userWallet.publicKey, MET_VOTER_PROGRAM_ID);
 
     const vote = await getOrCreateVote(proposal, governProgram);
 
@@ -425,7 +425,7 @@ describe("Locked voter", () => {
     const wallet = new Wallet(keypair);
     const voterProgram = createMetVoterProgram(wallet, MET_VOTER_PROGRAM_ID);
 
-    const [escrow, _bump] = deriveEscrow(locker, wallet.publicKey, MET_VOTER_PROGRAM_ID);
+    const escrow = deriveEscrow(locker, wallet.publicKey, MET_VOTER_PROGRAM_ID);
 
     await voterProgram.methods
       .activateProposal()
@@ -456,7 +456,7 @@ describe("Locked voter", () => {
     const delegateWallet = new Wallet(delegateKeypair);
 
     let voterProgram = createMetVoterProgram(wallet, MET_VOTER_PROGRAM_ID);
-    const [escrow, _eBump] = deriveEscrow(locker, wallet.publicKey, MET_VOTER_PROGRAM_ID);
+    const escrow = deriveEscrow(locker, wallet.publicKey, MET_VOTER_PROGRAM_ID);
 
     // Delegate voting power
     await voterProgram.methods
@@ -508,7 +508,7 @@ describe("Locked voter", () => {
     const wallet = new Wallet(keypair);
 
     const voterProgram = createMetVoterProgram(wallet, MET_VOTER_PROGRAM_ID);
-    const [escrow, _eBump] = deriveEscrow(locker, wallet.publicKey, MET_VOTER_PROGRAM_ID);
+    const escrow = deriveEscrow(locker, wallet.publicKey, MET_VOTER_PROGRAM_ID);
     const [vote, _vBump] = deriveVote(wallet.publicKey, proposal);
 
     invokeAndAssertError(
@@ -538,7 +538,7 @@ describe("Locked voter", () => {
     const voterProgram = createMetVoterProgram(wallet, MET_VOTER_PROGRAM_ID);
     const governProgram = createGovernProgram(wallet, GOVERN_PROGRAM_ID);
 
-    const [escrow, _eBump] = deriveEscrow(locker, wallet.publicKey, MET_VOTER_PROGRAM_ID);
+    const escrow = deriveEscrow(locker, wallet.publicKey, MET_VOTER_PROGRAM_ID);
 
     const beforeProposalState = await governProgram.account.proposal.fetch(
       proposal
@@ -579,7 +579,7 @@ describe("Locked voter", () => {
     const voterProgram = createMetVoterProgram(wallet, MET_VOTER_PROGRAM_ID);
     const governProgram = createGovernProgram(wallet, GOVERN_PROGRAM_ID);
 
-    const [escrow, _eBump] = deriveEscrow(locker, wallet.publicKey, MET_VOTER_PROGRAM_ID);
+    const escrow = deriveEscrow(locker, wallet.publicKey, MET_VOTER_PROGRAM_ID);
 
     const beforeProposalState = await governProgram.account.proposal.fetch(
       proposal
@@ -618,7 +618,7 @@ describe("Locked voter", () => {
       const userWallet = new Wallet(keypair);
       const voterProgram = createMetVoterProgram(userWallet, MET_VOTER_PROGRAM_ID);
 
-      const [escrow, _bump] = deriveEscrow(locker, userWallet.publicKey, MET_VOTER_PROGRAM_ID);
+      const escrow = deriveEscrow(locker, userWallet.publicKey, MET_VOTER_PROGRAM_ID);
 
       while (true) {
         const [escrowState, onchainTimestamp] = await Promise.all([
@@ -674,7 +674,7 @@ describe("Locked voter", () => {
     const keypair = userKeypairs[0];
     const userWallet = new Wallet(keypair);
     const voterProgram = createMetVoterProgram(userWallet, MET_VOTER_PROGRAM_ID);
-    const [escrow, _bump] = deriveEscrow(locker, userWallet.publicKey, MET_VOTER_PROGRAM_ID);
+    const escrow = deriveEscrow(locker, userWallet.publicKey, MET_VOTER_PROGRAM_ID);
 
     await voterProgram.methods
       .newEscrow()

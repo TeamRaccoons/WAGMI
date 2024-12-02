@@ -11,11 +11,11 @@ use govern::{Governor, Proposal, Vote};
 use vipers::prelude::*;
 
 mod instructions;
-pub mod locker;
 mod state;
-
 pub use instructions::*;
 pub use state::*;
+mod constants;
+pub use constants::*;
 
 declare_id!("voTpe3tHQ7AjQHMapgSue2HJFAh2cGsdokqN3XqmVSj");
 
@@ -119,6 +119,30 @@ pub mod locked_voter {
     pub fn withdraw_partial_unstaking(ctx: Context<WithdrawPartialUnstaking>) -> Result<()> {
         ctx.accounts.withdraw_partial_unstaking()
     }
+
+    /// Open Dispute
+    #[access_control(ctx.accounts.validate())]
+    pub fn open_dispute(ctx: Context<OpenDispute>, new_owner: Pubkey) -> Result<()> {
+        ctx.accounts.open_dispute(new_owner)
+    }
+
+    /// Close Dispute
+    #[access_control(ctx.accounts.validate())]
+    pub fn close_dispute(ctx: Context<CloseDispute>) -> Result<()> {
+        ctx.accounts.close_dispute()
+    }
+
+    /// Resolve dispute
+    #[access_control(ctx.accounts.validate())]
+    pub fn resolve_dispute(ctx: Context<ResolveDispute>) -> Result<()> {
+        ctx.accounts.resolve_dispute()
+    }
+
+    /// Withdraw fund from dispute
+    #[access_control(ctx.accounts.validate())]
+    pub fn withdraw_fund_from_dispute(ctx: Context<WithdrawFundFromDispute>) -> Result<()> {
+        ctx.accounts.withdraw_fund_from_dispute()
+    }
 }
 
 /// [voter] errors.
@@ -154,4 +178,14 @@ pub enum ErrorCode {
     PartialUnstakingAmountIsNotZero,
     #[msg("Partial unstaking has not ended")]
     PartialUnstakingIsNotEnded,
+    #[msg("Recovery cooldown has not ended")]
+    CooldownIsNotEnded,
+    #[msg("Not permit in this phase")]
+    NotPermitInThisPhase,
+    #[msg("Unmatch phase index")]
+    UnmatchPhaseIndex,
+    #[msg("New owner is the same")]
+    NewOwnerIsTheSame,
+    #[msg("Invalid dispute phase")]
+    InvalidDisputePhase,
 }

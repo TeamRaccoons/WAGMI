@@ -74,6 +74,8 @@ impl<'info> Validate<'info> for IncreaseLockedAmount<'info> {
         assert_keys_eq!(self.source_tokens.mint, self.locker.token_mint);
         assert_keys_neq!(self.escrow_tokens, self.source_tokens);
 
+        invariant!(self.escrow.is_not_in_dispute(), "Escrow is disputed");
+
         let duration = unwrap_opt!(
             self.escrow.get_remaining_duration_until_expiration(
                 Clock::get()?.unix_timestamp,

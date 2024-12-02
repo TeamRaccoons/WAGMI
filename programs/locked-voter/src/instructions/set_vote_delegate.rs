@@ -29,6 +29,8 @@ impl<'info> Validate<'info> for SetVoteDelegate<'info> {
     fn validate(&self) -> Result<()> {
         assert_keys_eq!(self.escrow.owner, self.escrow_owner);
 
+        invariant!(self.escrow.is_not_in_dispute(), "Escrow is disputed");
+
         Ok(())
     }
 }

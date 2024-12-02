@@ -19,5 +19,5 @@ test-bpf = []
 [dependencies]
 anchor-lang = "0.28.0"
 anchor-spl = "0.28.0"
-vipers = {path = "../../libs/vipers"}
+vipers = { path = "../../libs/vipers" }
 met-voter = { path = "../met-voter", features = ["cpi"] }

@@ -49,6 +49,9 @@ impl<'info> Validate<'info> for MergePartialUnstaking<'info> {
             lock_duration >= self.locker.params.min_stake_duration,
             crate::ErrorCode::LockupDurationTooShort
         );
+
+        // allow owner to merge partial even the escrow is in disputed
+        // invariant!(!self.escrow.is_in_dispute_process(), "Escrow is disputed");
         Ok(())
     }
 }
