@@ -53,5 +53,5 @@ jobs:
         shell: bash
       - run: npm install
         shell: bash
-      - run: anchor test --run ./tests/govern
+      - run: anchor test --run ./tests/govern -- --features test-bpf
         shell: bash

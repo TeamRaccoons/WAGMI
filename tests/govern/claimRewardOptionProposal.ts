@@ -354,6 +354,14 @@ describe("Locked voter", () => {
             );
 
             await voterProgram.methods
+                .extendLockDuration(maxStakeDuration)
+                .accounts({
+                    escrow,
+                    escrowOwner: wallet.publicKey,
+                    locker,
+                })
+                .rpc();
+            await voterProgram.methods
                 .increaseLockedAmount(lockAmount)
                 .accounts({
                     escrow,
@@ -362,15 +370,6 @@ describe("Locked voter", () => {
                     payer: voterProgram.provider.publicKey,
                     sourceTokens: rewardATA,
                     tokenProgram: TOKEN_PROGRAM_ID,
-                })
-                .rpc();
-
-            await voterProgram.methods
-                .extendLockDuration(maxStakeDuration)
-                .accounts({
-                    escrow,
-                    escrowOwner: wallet.publicKey,
-                    locker,
                 })
                 .rpc();
         }
