@@ -49,7 +49,7 @@ jobs:
           path: ./node_modules
           key: ${{ runner.os }}-${{ hashFiles('./package-lock.json') }}
       # Build CLI
-      - run: cargo build --package merkle-distributor-cli
+      - run: cargo build --package merkle-distributor-cli --locked
         shell: bash
       # Testing
       - run: cargo test --package merkle-distributor -- --nocapture

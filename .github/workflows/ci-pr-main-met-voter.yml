@@ -49,7 +49,7 @@ jobs:
           path: ./node_modules
           key: ${{ runner.os }}-${{ hashFiles('./package-lock.json') }}
       # Build CLI
-      - run: cargo build --package met-voter-cli
+      - run: cargo build --package met-voter-cli --locked
         shell: bash
       # Testing
       - run: cargo test --package met-voter -- --nocapture
