@@ -16,7 +16,7 @@ pub struct OpenDispute<'info> {
     #[account(
         init,
         payer = payer,
-        space = 8 + DisputeRequest::LEN
+        space = 8 + DisputeRequest::INIT_SPACE
     )]
     pub dispute_request: Box<Account<'info, DisputeRequest>>,
 

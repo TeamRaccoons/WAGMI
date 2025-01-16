@@ -10,10 +10,13 @@ pub struct DisputeRequest {
     pub new_owner: Pubkey,
     /// Dispute phase index
     pub phase_index: u64,
+    ///padding
+    pub padding: [u128; 4],
 }
 
-static_assertions::const_assert!(DisputeRequest::INIT_SPACE <= DisputeRequest::LEN);
+static_assertions::const_assert!(DisputeRequest::INIT_SPACE == 136);
 
-impl DisputeRequest {
-    pub const LEN: usize = 152;
+#[test]
+fn test_size() {
+    println!("{}", DisputeRequest::INIT_SPACE);
 }

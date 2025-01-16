@@ -31,9 +31,15 @@ pub struct Escrow {
 
     /// escrow dispute
     pub dispute: Dispute,
+
+    /// padding 0
+    pub padding_0: [u8; 15],
+
+    /// padding 1
+    pub padding_1: [u128; 5],
 }
 
-static_assertions::const_assert!(Escrow::INIT_SPACE <= Escrow::LEN);
+static_assertions::const_assert!(Escrow::INIT_SPACE == Escrow::LEN);
 
 #[derive(
     AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default, PartialEq, Eq, InitSpace,
@@ -191,4 +197,9 @@ impl Escrow {
         self.partial_unstaking_amount = self.partial_unstaking_amount.checked_sub(amount)?;
         Some(())
     }
+}
+
+#[test]
+fn test_size() {
+    println!("{}", Escrow::INIT_SPACE);
 }
