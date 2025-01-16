@@ -16,7 +16,7 @@ pub struct DisputeRequest {
 
 static_assertions::const_assert!(DisputeRequest::INIT_SPACE == 136);
 
-#[test]
-fn test_size() {
-    println!("{}", DisputeRequest::INIT_SPACE);
-}
+// #[test]
+// fn test_size() {
+//     println!("{}", DisputeRequest::INIT_SPACE);
+// }

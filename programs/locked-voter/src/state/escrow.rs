@@ -39,7 +39,7 @@ pub struct Escrow {
     pub padding_1: [u128; 5],
 }
 
-static_assertions::const_assert!(Escrow::INIT_SPACE == Escrow::LEN);
+static_assertions::const_assert!(Escrow::INIT_SPACE == 314);
 
 #[derive(
     AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default, PartialEq, Eq, InitSpace,
@@ -119,10 +119,6 @@ impl Dispute {
 }
 
 impl Escrow {
-    /// LEN of escrow
-    /// 32 * 4 + 1 + 8 + 8 + 8 + 1 + 16 * 10
-    pub const LEN: usize = 314;
-
     /// Gets the amount of voting power the [Escrow] will have at the given time.
     pub fn voting_power_at_time(&self, locker: &Locker, timestamp: i64) -> Option<u64> {
         locker.calculate_voter_power(self, timestamp)
@@ -199,7 +195,7 @@ impl Escrow {
     }
 }
 
-#[test]
-fn test_size() {
-    println!("{}", Escrow::INIT_SPACE);
-}
+// #[test]
+// fn test_size() {
+//     println!("{}", Escrow::INIT_SPACE);
+// }
