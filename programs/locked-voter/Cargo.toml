@@ -1,6 +1,6 @@
 [package]
 name = "locked-voter"
-version = "0.2.0"
+version = "0.3.0"
 description = "Created with Anchor"
 edition = "2021"
 
@@ -16,12 +16,15 @@ cpi = ["no-entrypoint"]
 default = []
 test-bpf = []
 
+
 [dependencies]
-anchor-lang = "0.28.0"
+anchor-lang = { version = "0.28.0", features = ["init-if-needed"] }
 anchor-spl = "0.28.0"
 govern = { path = "../govern", features = ["cpi"] }
+smart-wallet = { path = "../smart-wallet", features = ["cpi"] }
 num-traits = "0.2.16"
-vipers = {path = "../../libs/vipers"}
+vipers = { path = "../../libs/vipers" }
+static_assertions = "1.1.0"
 
 [dev-dependencies]
 proptest = { version = "1.0" }

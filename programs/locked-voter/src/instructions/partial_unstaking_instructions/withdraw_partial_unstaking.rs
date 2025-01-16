@@ -87,6 +87,7 @@ impl<'info> Validate<'info> for WithdrawPartialUnstaking<'info> {
         let now = Clock::get()?.unix_timestamp;
         msg!("now: {}; expiration: {}", now, expiration);
         invariant!(expiration <= now, PartialUnstakingIsNotEnded);
+        invariant!(self.escrow.is_not_in_dispute(), "Escrow is disputed");
 
         Ok(())
     }

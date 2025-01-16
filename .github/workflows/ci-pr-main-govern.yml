@@ -36,10 +36,7 @@ jobs:
       - uses: ./.github/actions/setup-dep
       - uses: ./.github/actions/setup-anchor-cli
       # Install rust + toolchain
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          components: clippy
+      - uses: dtolnay/rust-toolchain@1.76.0
       # Cache rust, cargo
       - uses: Swatinem/rust-cache@v1
       # Cache node_modules
@@ -49,12 +46,12 @@ jobs:
           path: ./node_modules
           key: ${{ runner.os }}-${{ hashFiles('./package-lock.json') }}
       # Build CLI
-      - run: cargo build --package govern-cli
+      - run: cargo build --package govern-cli --locked
         shell: bash
       # Testing
       - run: cargo test --package govern -- --nocapture
         shell: bash
       - run: npm install
         shell: bash
-      - run: anchor test --run ./tests/govern
+      - run: anchor test --run ./tests/govern -- --features test-bpf
         shell: bash

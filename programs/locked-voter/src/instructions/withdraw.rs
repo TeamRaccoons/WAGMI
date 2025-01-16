@@ -68,6 +68,7 @@ impl<'info> Withdraw<'info> {
 
 impl<'info> Validate<'info> for Withdraw<'info> {
     fn validate(&self) -> Result<()> {
+        invariant!(self.escrow.is_not_in_dispute(), "Escrow is disputed");
         assert_keys_eq!(self.locker, self.escrow.locker);
         assert_keys_eq!(self.escrow.owner, self.escrow_owner);
         assert_keys_eq!(self.escrow.tokens, self.escrow_tokens);

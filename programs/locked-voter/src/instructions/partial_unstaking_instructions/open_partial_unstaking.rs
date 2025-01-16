@@ -67,6 +67,7 @@ impl<'info> OpenPartialUnstaking<'info> {
 
 impl<'info> Validate<'info> for OpenPartialUnstaking<'info> {
     fn validate(&self) -> Result<()> {
+        invariant!(self.escrow.is_not_in_dispute(), "Escrow is disputed");
         Ok(())
     }
 }

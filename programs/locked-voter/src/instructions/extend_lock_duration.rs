@@ -71,6 +71,7 @@ impl<'info> Validate<'info> for ExtendLockDuration<'info> {
         assert_keys_eq!(self.locker, self.escrow.locker);
         assert_keys_eq!(self.escrow.owner, self.escrow_owner);
 
+        invariant!(self.escrow.is_not_in_dispute(), "Escrow is disputed");
         Ok(())
     }
 }

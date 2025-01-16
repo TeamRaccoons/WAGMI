@@ -1,7 +1,8 @@
-//! State accounts.
-#![deny(missing_docs)]
+//! Locker math.
+#![deny(clippy::integer_arithmetic)]
 
 use crate::*;
+use num_traits::ToPrimitive;
 
 /// A group of [Escrow]s.
 #[account]
@@ -25,16 +26,6 @@ pub struct Locker {
     pub buffers: [u128; 32],
 }
 
-impl Locker {
-    /// LEN of locker
-    pub const LEN: usize = std::mem::size_of::<Pubkey>() * 3
-        + 1
-        + 8
-        + 8
-        + std::mem::size_of::<LockerParams>()
-        + 16 * 32;
-}
-
 /// Contains parameters for the [Locker].
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct LockerParams {
@@ -48,135 +39,60 @@ pub struct LockerParams {
     /// Minimum number of votes required to activate a proposal.
     pub proposal_activation_min_votes: u64,
 }
-
-/// Locks tokens on behalf of a user.
-#[account]
-#[derive(Copy, Debug, Default)]
-pub struct Escrow {
-    /// The [Locker] that this [Escrow] is part of.
-    pub locker: Pubkey,
-    /// The key of the account that is authorized to stake into/withdraw from this [Escrow].
-    pub owner: Pubkey,
-    /// Bump seed.
-    pub bump: u8,
-
-    /// The token account holding the escrow tokens.
-    pub tokens: Pubkey,
-    /// Amount of tokens staked.
-    pub amount: u64,
-    /// When the [Escrow::owner] started their escrow.
-    pub escrow_started_at: i64,
-    /// When the escrow unlocks; i.e. the [Escrow::owner] is scheduled to be allowed to withdraw their tokens.
-    pub escrow_ends_at: i64,
-
-    /// Account that is authorized to vote on behalf of this [Escrow].
-    /// Defaults to the [Escrow::owner].
-    pub vote_delegate: Pubkey,
-
-    /// Max lock
-    pub is_max_lock: bool,
-    /// total amount of partial unstaking amount
-    pub partial_unstaking_amount: u64,
-    /// padding for further use
-    pub padding: u64,
-    /// buffer for further use
-    pub buffers: [u128; 9],
+impl Locker {
+    /// LEN of locker
+    pub const LEN: usize = std::mem::size_of::<Pubkey>() * 3
+        + 1
+        + 8
+        + 8
+        + std::mem::size_of::<LockerParams>()
+        + 16 * 32;
 }
 
-impl Escrow {
-    /// LEN of escrow
-    pub const LEN: usize = std::mem::size_of::<Pubkey>() * 4 + 1 + 8 + 8 + 8 + 1 + 16 * 10;
-
-    /// Gets the amount of voting power the [Escrow] will have at the given time.
-    pub fn voting_power_at_time(&self, locker: &Locker, timestamp: i64) -> Option<u64> {
-        locker.calculate_voter_power(self, timestamp)
-    }
-
-    /// Gets the amount of voting power the [Escrow] currently has.
-    pub fn voting_power(&self, locker: &Locker) -> Result<u64> {
-        Ok(unwrap_int!(self.voting_power_at_time(
-            locker,
-            Clock::get()?.unix_timestamp
-        )))
-    }
-
-    /// Update the escrow and its locker to account for a increase locked amount event.
-    pub fn record_increase_locked_amount_event(
-        &mut self,
-        locker: &mut Locker,
-        lock_amount: u64,
-    ) -> Result<()> {
-        self.amount = unwrap_int!(self.amount.checked_add(lock_amount));
-        locker.locked_supply = unwrap_int!(locker.locked_supply.checked_add(lock_amount));
-        Ok(())
-    }
-
-    /// Update the escrow and its locker to account for a extend lock duration event.
-    pub fn record_extend_lock_duration_event(
-        &mut self,
-        next_escrow_started_at: i64,
-        next_escrow_ends_at: i64,
-    ) -> Result<()> {
-        self.escrow_started_at = next_escrow_started_at;
-        self.escrow_ends_at = next_escrow_ends_at;
-        Ok(())
-    }
-
-    /// get remaining duration
-    pub fn get_remaining_duration_until_expiration(
-        &self,
-        current_time: i64,
-        locker: &Locker,
-    ) -> Option<u64> {
-        if self.is_max_lock {
-            return Some(locker.params.max_stake_duration);
+impl Locker {
+    /// Calculates the amount of voting power an [Escrow] has.
+    pub fn calculate_voter_power(&self, escrow: &Escrow, now: i64) -> Option<u64> {
+        // invalid `now` argument, should never happen.
+        if now == 0 {
+            return None;
         }
-        if self.escrow_ends_at < current_time {
+
+        // if max lock is indicated, then user always get full voting power
+        if escrow.is_max_lock {
+            let power = escrow
+                .amount
+                .checked_mul(self.params.max_stake_vote_multiplier.into())?;
+            return Some(power);
+        }
+
+        if escrow.escrow_started_at == 0 {
             return Some(0);
         }
-        let duration = self.escrow_ends_at.checked_sub(current_time)?;
-        Some(duration as u64)
-    }
-    /// accumulate partial unstaking amount
-    pub fn accumulate_partial_unstaking_amount(&mut self, amount: u64) -> Option<()> {
-        self.amount = self.amount.checked_sub(amount)?;
-        self.partial_unstaking_amount = self.partial_unstaking_amount.checked_add(amount)?;
-        Some(())
-    }
+        // Lockup had zero power before the start time.
+        if now < escrow.escrow_started_at || now >= escrow.escrow_ends_at {
+            return Some(0);
+        }
 
-    /// accumulate partial unstaking amount
-    pub fn merge_partial_unstaking_amount(&mut self, amount: u64) -> Option<()> {
-        self.amount = self.amount.checked_add(amount)?;
-        self.partial_unstaking_amount = self.partial_unstaking_amount.checked_sub(amount)?;
-        Some(())
+        let seconds_until_lockup_expiry = escrow.escrow_ends_at.checked_sub(now)?;
+        // elapsed seconds, clamped to the maximum duration
+        let relevant_seconds_until_lockup_expiry = seconds_until_lockup_expiry
+            .to_u64()?
+            .min(self.params.max_stake_duration);
+
+        // voting power at max lockup
+        let power_if_max_lockup = escrow
+            .amount
+            .checked_mul(self.params.max_stake_vote_multiplier.into())?;
+
+        // Linear voting power
+        // multiply the max lockup power by the fraction of the max stake duration
+        let power = (power_if_max_lockup as u128)
+            .checked_mul(relevant_seconds_until_lockup_expiry.into())?
+            .checked_div(self.params.max_stake_duration.into())?
+            .to_u64()?;
+
+        Some(power)
     }
-
-    /// withdraw partial unstaking amount
-    pub fn withdraw_partial_unstaking_amount(&mut self, amount: u64) -> Option<()> {
-        self.partial_unstaking_amount = self.partial_unstaking_amount.checked_sub(amount)?;
-        Some(())
-    }
-}
-
-/// Account to store infor for partial unstaking
-#[account]
-#[derive(Debug, Default)]
-pub struct PartialUnstaking {
-    /// The [Escrow] pubkey.
-    pub escrow: Pubkey,
-    /// Amount of this partial unstaking
-    pub amount: u64,
-    /// Timestamp when owner can withdraw the partial unstaking amount
-    pub expiration: i64,
-    /// buffer for further use
-    pub buffers: [u128; 6],
-    /// Memo
-    pub memo: String,
-}
-
-impl PartialUnstaking {
-    /// LEN of PartialUnstaking
-    pub const LEN: usize = std::mem::size_of::<Pubkey>() + 8 + 8 + 16 * 6;
 }
 
 #[cfg(test)]

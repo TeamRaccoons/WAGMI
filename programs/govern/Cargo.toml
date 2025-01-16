@@ -16,10 +16,10 @@ default = []
 test-bpf = []
 
 [dependencies]
-anchor-lang = {version="0.28.0", features=["event-cpi"]}
+anchor-lang = { version = "0.28.0", features = ["event-cpi"] }
 anchor-spl = "0.28.0"
 num-traits = "0.2.16"
-vipers = {path = "../../libs/vipers"}
+vipers = { path = "../../libs/vipers" }
 smart-wallet = { path = "../smart-wallet", features = ["cpi"] }
 
 [dev-dependencies]

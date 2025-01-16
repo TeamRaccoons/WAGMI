@@ -8,9 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Note:** Version 0 of Semantic Versioning is handled differently from version 1 and above.
 The minor version will be incremented upon a breaking change and the patch version will be incremented for features.
 
+
+## Locked-voter[0.3.0]
+
+### Features
+
+- Support open dispute to allow escrow's owner to migrate tokens to other wallet without the need for unstaking process , 4 endpoints: `open_dispute`, `close_dispute`, `resolve_dispute` and `withdraw_fund_from_dispute`.
+- Escrow state add more fields for dispute information
+
 ## Locked-voter[0.2.0] - 2024-03-26
 
 ### Features
 
 - Support partial unstaking in locked voter, owner of escrow can interact with 3 endpoints: `open_partial_unstaking`, `merge_partial_unstaking`, `withdraw_partial_unstaking`.
 - Partial unstaking amount is not counted in voting power.
+
