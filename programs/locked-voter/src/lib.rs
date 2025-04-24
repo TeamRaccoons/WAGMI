@@ -119,6 +119,15 @@ pub mod locked_voter {
     pub fn withdraw_partial_unstaking(ctx: Context<WithdrawPartialUnstaking>) -> Result<()> {
         ctx.accounts.withdraw_partial_unstaking()
     }
+
+    /// Partial merge partial unstaking
+    #[access_control(ctx.accounts.validate())]
+    pub fn partial_merge_partial_unstaking(
+        ctx: Context<PartialMergePartialUnstaking>,
+        amount: u64,
+    ) -> Result<()> {
+        ctx.accounts.partial_merge_partial_unstaking(amount)
+    }
 }
 
 /// [voter] errors.
@@ -154,4 +163,6 @@ pub enum ErrorCode {
     PartialUnstakingAmountIsNotZero,
     #[msg("Partial unstaking has not ended")]
     PartialUnstakingIsNotEnded,
+    #[msg("Amount is too large")]
+    AmountIsTooLarge,
 }
